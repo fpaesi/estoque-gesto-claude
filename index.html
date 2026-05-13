@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Estoque Gesto v15</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estoque Gesto v23</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<style>*{box-sizing:border-box;margin:0;padding:0}:root{--bg1:#fff;--bg2:#f5f5f7;--bg3:#e8e8ed;--tx1:#1c1c1e;--tx2:#6c6c70;--bd3:#d1d1d6;--r1:12px;--r2:8px}@media(prefers-color-scheme:dark){:root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--tx1:#fff;--tx2:#98989d;--bd3:#38383a}}html,body{height:100%;background:var(--bg3);font-family:-apple-system,BlinkMacSystemFont,sans-serif}#app{max-width:430px;margin:0 auto;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;position:relative}.scr{display:none;flex-direction:column;flex:1;min-height:100vh}.scr.on{display:flex}.topbar{background:var(--bg1);border-bottom:.5px solid var(--bd3);padding:13px 16px 11px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}.tt{font-size:17px;font-weight:500;color:var(--tx1)}.ts{font-size:12px;color:var(--tx2);margin-top:1px}.tbtn{background:none;border:none;cursor:pointer;color:var(--tx2);font-size:22px;display:flex;align-items:center;padding:4px}.content{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.bbar{background:var(--bg1);border-top:.5px solid var(--bd3);padding:10px 14px 20px;display:flex;flex-direction:column;gap:7px;flex-shrink:0}.bp{width:100%;padding:13px;border-radius:var(--r1);background:#185FA5;color:#E6F1FB;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}.bp:active{opacity:.85}.bp:disabled{opacity:.4}.bs{width:100%;padding:10px;border-radius:var(--r1);background:var(--bg2);color:var(--tx1);border:.5px solid var(--bd3);font-size:14px;cursor:pointer}.bg_{width:100%;padding:10px;background:none;color:var(--tx2);border:none;font-size:14px;cursor:pointer}.sec{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 2px}.row{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.row:active{background:var(--bg2)}.bdg{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}.bdone{background:#EAF3DE;color:#27500A}.bprog{background:#FAEEDA;color:#633806}.bpend{background:var(--bg2);color:var(--tx2)}.bwarn{background:#FEF3C7;color:#92400E}.ntabs{display:flex;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0}.ntab{flex:1;padding:11px 6px;font-size:12px;font-weight:500;color:var(--tx2);text-align:center;cursor:pointer;border-bottom:2px solid transparent}.ntab.on{color:#185FA5;border-bottom-color:#185FA5}.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{display:inline-flex;align-items:center;padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx2);white-space:nowrap}.chip.on{background:#185FA5;color:#E6F1FB;border-color:#185FA5}.srch{width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none}.srch:focus{border-color:#185FA5}.pcard{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:10px}.pcard.done-card{border-color:#C0DD97}.cntb{display:flex;flex-direction:column;background:var(--bg2);border-radius:var(--r2);overflow:hidden}.cnt-row{display:flex;align-items:center}.cbt{width:52px;height:52px;border:none;background:var(--bg2);color:var(--tx1);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;flex-shrink:0}.cbt:active{background:var(--bg3)}.cctr{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0}.cv{font-size:30px;font-weight:600;color:var(--tx1);line-height:1}.cu{font-size:12px;color:var(--tx2);font-weight:500}.ccv{font-size:13px;color:#185FA5;font-weight:500;text-align:center;padding:7px 12px;border-top:.5px solid var(--bd3);background:var(--bg1)}.decb{background:var(--bg2);border-radius:var(--r2);overflow:hidden}.decl{font-size:11px;font-weight:500;color:var(--tx2);padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.04em}.decr{display:flex;align-items:center}.deci{flex:1;font-size:28px;font-weight:600;color:var(--tx1);padding:6px 12px 10px;background:none;border:none;outline:none;font-family:inherit;min-width:0}.decu{font-size:14px;font-weight:500;color:var(--tx2);padding-right:14px;white-space:nowrap}.sb-cnt{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#F0FDF4;color:#166534;border:.5px solid #BBF7D0;font-weight:500}.sb-dec{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;font-weight:500}.sb-mis{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;font-weight:500}.notei{width:100%;font-size:13px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;height:33px;outline:none}.progr{display:flex;align-items:center;gap:10px}.progt{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}.progf{height:100%;background:#185FA5;border-radius:3px;transition:width .3s}.progp{font-size:12px;color:var(--tx2);white-space:nowrap}.gsep{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd3)}.srow:last-child{border-bottom:none}.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scard{background:var(--bg2);border-radius:var(--r2);padding:11px 12px}.slbl{font-size:11px;color:var(--tx2);margin-bottom:3px}.sval{font-size:20px;font-weight:500;color:var(--tx1)}.card{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px}.syncr{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);justify-content:center}.syncd{width:7px;height:7px;border-radius:50%;background:#639922}.av{width:28px;height:28px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#0C447C}.uc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}.empty{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:10px;color:var(--tx2);font-size:14px;text-align:center}.fthu{width:52px;height:52px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0}.fthp{width:52px;height:52px;border-radius:var(--r2);border:.5px dashed var(--bd3);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--tx2)}.fbtn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:12px;cursor:pointer;font-family:inherit}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center}.modal-bg.on{display:flex}.modal-box{background:var(--bg1);border-radius:var(--r1);padding:16px;width:92%;max-width:380px;display:flex;flex-direction:column;gap:12px;border:.5px solid var(--bd3);max-height:90vh;overflow:hidden}.sl-step{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer}.sl-step.done{border-color:#C0DD97}.sl-step.active{border-color:#185FA5}.sl-sn{width:32px;height:32px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--tx2);flex-shrink:0}.sl-step.done .sl-sn{background:#EAF3DE;color:#27500A}.sl-step.active .sl-sn{background:#185FA5;color:#E6F1FB}.sl-conn{width:2px;height:12px;background:var(--bd3);margin-left:29px}.sl-conn.done{background:#C0DD97}.slnav{background:var(--bg2);border-bottom:.5px solid var(--bd3);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}.slnav::-webkit-scrollbar{display:none}.slni{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:.5px solid transparent}.slni.cur{background:var(--bg1);border-color:#185FA5;color:#185FA5}.slni.dn{color:#639922}.slni.pn{color:var(--tx2)}.ms{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden}.msh{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.msb{display:none;flex-direction:column;border-top:.5px solid var(--bd3)}.msb.open{display:flex}.msr{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.msa{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-top:.5px solid var(--bd3)}.ib{width:30px;height:30px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--tx2);flex-shrink:0}.ib.danger{border-color:#ff3b30;background:#fff5f5;color:#ff3b30}.ib.primary{border-color:#185FA5;background:#E6F1FB;color:#185FA5}.ii{flex:1;font-size:13px;padding:6px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.ii:focus{border-color:#185FA5}.tsl{font-size:10px;padding:2px 7px;border-radius:8px;background:#E6F1FB;color:#0C447C;font-weight:500;white-space:nowrap}.tns{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);font-weight:500}.wb{background:#FEF3C7;border-radius:var(--r1);border:.5px solid #FDE68A;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}.spi{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.spi:last-child{border-bottom:none}.mto{display:flex;background:var(--bg2);border-radius:var(--r2);overflow:hidden;border:.5px solid var(--bd3)}.mo{flex:1;padding:9px 8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;color:var(--tx2);border:none;background:none;font-family:inherit}.mo.on{background:var(--bg1);color:var(--tx1);box-shadow:0 1px 3px rgba(0,0,0,.08)}.fl{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}.fi{width:100%;font-size:14px;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.fi:focus{border-color:#185FA5}.cpv{background:#E6F1FB;border-radius:var(--r2);padding:10px 12px;font-size:13px;color:#0C447C;display:flex;align-items:center;gap:6px}.tipb{font-size:11px;color:var(--tx2);background:var(--bg2);padding:8px 10px;border-radius:var(--r2);line-height:1.5}.bbtn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r1);border:.5px solid var(--bd3);background:var(--bg1);cursor:pointer;font-family:inherit;width:100%;text-align:left}.bbtn:active{opacity:.85}.card-extra{display:none;flex-direction:column;gap:8px;border-top:.5px solid var(--bd3);padding-top:8px;margin-top:4px}.pcard.exp .card-extra{display:flex}.zb{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}.zb.zeroed{background:#E6F1FB;color:#185FA5;border-color:#B5D4F4}
+<style>*{box-sizing:border-box;margin:0;padding:0}:root{--bg1:#fff;--bg2:#f5f5f7;--bg3:#e8e8ed;--tx1:#1c1c1e;--tx2:#6c6c70;--bd3:#d1d1d6;--r1:12px;--r2:8px}@media(prefers-color-scheme:dark){:root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--tx1:#fff;--tx2:#98989d;--bd3:#38383a}}html,body{height:100%;background:var(--bg3);font-family:-apple-system,BlinkMacSystemFont,sans-serif}#app{max-width:430px;margin:0 auto;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;position:relative}.scr{display:none;flex-direction:column;flex:1;min-height:100vh}.scr.on{display:flex}.topbar{background:var(--bg1);border-bottom:.5px solid var(--bd3);padding:13px 16px 11px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}.tt{font-size:17px;font-weight:500;color:var(--tx1)}.ts{font-size:12px;color:var(--tx2);margin-top:1px}.tbtn{background:none;border:none;cursor:pointer;color:var(--tx2);font-size:22px;display:flex;align-items:center;padding:4px}.content{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.bbar{background:var(--bg1);border-top:.5px solid var(--bd3);padding:10px 14px 20px;display:flex;flex-direction:column;gap:7px;flex-shrink:0}.bp{width:100%;padding:13px;border-radius:var(--r1);background:var(--acc);color:#E6F1FB;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}.bp:active{opacity:.85}.bp:disabled{opacity:.4}.bs{width:100%;padding:10px;border-radius:var(--r1);background:var(--bg2);color:var(--tx1);border:.5px solid var(--bd3);font-size:14px;cursor:pointer}.bg_{width:100%;padding:10px;background:none;color:var(--tx2);border:none;font-size:14px;cursor:pointer}.sec{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 2px}.row{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.row:active{background:var(--bg2)}.bdg{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}.bdone{background:#EAF3DE;color:#27500A}.bprog{background:#FAEEDA;color:#633806}.bpend{background:var(--bg2);color:var(--tx2)}.bwarn{background:#FEF3C7;color:#92400E}.ntabs{display:flex;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0}.ntab{flex:1;padding:11px 6px;font-size:12px;font-weight:500;color:var(--tx2);text-align:center;cursor:pointer;border-bottom:2px solid transparent}.ntab.on{color:var(--acc);border-bottom-color:var(--acc)}.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{display:inline-flex;align-items:center;padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx2);white-space:nowrap}.chip.on{background:var(--acc);color:#E6F1FB;border-color:var(--acc)}.srch{width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none}.srch:focus{border-color:var(--acc)}.pcard{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:10px}.pcard.done-card{border-color:#C0DD97}.cntb{display:flex;flex-direction:column;background:var(--bg2);border-radius:var(--r2);overflow:hidden}.cnt-row{display:flex;align-items:center}.cbt{width:52px;height:52px;border:none;background:var(--bg2);color:var(--tx1);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;flex-shrink:0}.cbt:active{background:var(--bg3)}.cctr{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0}.cv{font-size:30px;font-weight:600;color:var(--tx1);line-height:1}.cu{font-size:12px;color:var(--tx2);font-weight:500}.ccv{font-size:13px;color:var(--acc);font-weight:500;text-align:center;padding:7px 12px;border-top:.5px solid var(--bd3);background:var(--bg1)}.decb{background:var(--bg2);border-radius:var(--r2);overflow:hidden}.decl{font-size:11px;font-weight:500;color:var(--tx2);padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.04em}.decr{display:flex;align-items:center}.deci{flex:1;font-size:28px;font-weight:600;color:var(--tx1);padding:6px 12px 10px;background:none;border:none;outline:none;font-family:inherit;min-width:0}.decu{font-size:14px;font-weight:500;color:var(--tx2);padding-right:14px;white-space:nowrap}.sb-cnt{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#F0FDF4;color:#166534;border:.5px solid #BBF7D0;font-weight:500}.sb-dec{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;font-weight:500}.sb-mis{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;font-weight:500}.notei{width:100%;font-size:13px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;height:33px;outline:none}.progr{display:flex;align-items:center;gap:10px}.progt{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}.progf{height:100%;background:var(--acc);border-radius:3px;transition:width .3s}.progp{font-size:12px;color:var(--tx2);white-space:nowrap}.gsep{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd3)}.srow:last-child{border-bottom:none}.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scard{background:var(--bg2);border-radius:var(--r2);padding:11px 12px}.slbl{font-size:11px;color:var(--tx2);margin-bottom:3px}.sval{font-size:20px;font-weight:500;color:var(--tx1)}.card{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px}.syncr{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);justify-content:center}.syncd{width:7px;height:7px;border-radius:50%;background:#639922}.av{width:28px;height:28px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#0C447C}.uc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}.empty{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:10px;color:var(--tx2);font-size:14px;text-align:center}.fthu{width:52px;height:52px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0}.fthp{width:52px;height:52px;border-radius:var(--r2);border:.5px dashed var(--bd3);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--tx2)}.fbtn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:12px;cursor:pointer;font-family:inherit}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center}.modal-bg.on{display:flex}.modal-box{background:var(--bg1);border-radius:var(--r1);padding:16px;width:92%;max-width:380px;display:flex;flex-direction:column;gap:12px;border:.5px solid var(--bd3);max-height:90vh;overflow:hidden}.sl-step{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer}.sl-step.done{border-color:#C0DD97}.sl-step.active{border-color:var(--acc)}.sl-sn{width:32px;height:32px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--tx2);flex-shrink:0}.sl-step.done .sl-sn{background:#EAF3DE;color:#27500A}.sl-step.active .sl-sn{background:var(--acc);color:#E6F1FB}.sl-conn{width:2px;height:12px;background:var(--bd3);margin-left:29px}.sl-conn.done{background:#C0DD97}.slnav{background:var(--bg2);border-bottom:.5px solid var(--bd3);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}.slnav::-webkit-scrollbar{display:none}.slni{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:.5px solid transparent}.slni.cur{background:var(--bg1);border-color:var(--acc);color:var(--acc)}.slni.dn{color:#639922}.slni.pn{color:var(--tx2)}.ms{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden}.msh{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.msb{display:none;flex-direction:column;border-top:.5px solid var(--bd3)}.msb.open{display:flex}.msr{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.msa{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-top:.5px solid var(--bd3)}.ib{width:44px;height:44px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--tx2);flex-shrink:0}.ib.danger{border-color:#ff3b30;background:#fff5f5;color:#ff3b30}.ib.primary{border-color:var(--acc);background:var(--acc-bg);color:var(--acc)}.ii{flex:1;font-size:13px;padding:6px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.ii:focus{border-color:var(--acc)}.tsl{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--acc-bg);color:var(--acc-tx);font-weight:500;white-space:nowrap}.tns{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);font-weight:500}.wb{background:#FEF3C7;border-radius:var(--r1);border:.5px solid #FDE68A;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}.spi{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.spi:last-child{border-bottom:none}.mto{display:flex;background:var(--bg2);border-radius:var(--r2);overflow:hidden;border:.5px solid var(--bd3)}.mo{flex:1;padding:9px 8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;color:var(--tx2);border:none;background:none;font-family:inherit}.mo.on{background:var(--bg1);color:var(--tx1);box-shadow:0 1px 3px rgba(0,0,0,.08)}.fl{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}.fi{width:100%;font-size:14px;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.fi:focus{border-color:var(--acc)}.cpv{background:var(--acc-bg);border-radius:var(--r2);padding:10px 12px;font-size:13px;color:var(--acc-tx);display:flex;align-items:center;gap:6px}.tipb{font-size:11px;color:var(--tx2);background:var(--bg2);padding:8px 10px;border-radius:var(--r2);line-height:1.5}.bbtn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r1);border:.5px solid var(--bd3);background:var(--bg1);cursor:pointer;font-family:inherit;width:100%;text-align:left}.bbtn:active{opacity:.85}.card-extra{display:none;flex-direction:column;gap:8px;border-top:.5px solid var(--bd3);padding-top:8px;margin-top:4px}.pcard.exp .card-extra{display:flex}.zb{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}.zb.zeroed{background:var(--acc-bg);color:var(--acc);border-color:var(--acc-bd)}
 .hist-entry{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}.hist-entry:active{background:var(--bg2)}.hist-date-sep{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;padding:8px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.hist-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;background:#EAF3DE;color:#27500A}.hist-badge-partial{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;background:#FAEEDA;color:#633806}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* =====================================================
@@ -107,7 +107,7 @@
   .av{background:#1e3a5f;color:#90c4f4}
 
   /* --- Botão primário (ajuste de contraste) --- */
-  .bp{background:#1a6dbf}
+  .bp{background:var(--acc)}
 
   /* --- Botão de segmento ativo --- */
   .mo.on{background:var(--bg1);color:var(--tx1)}
@@ -119,6 +119,105 @@
   /* Garante que textos com color:#185FA5 herdado sejam legíveis */
   a[style*="185FA5"],span[style*="185FA5"],button[style*="185FA5"]{color:var(--acc)!important}
 }
+
+/* ── UX v19 IMPROVEMENTS ─────────────────────────────────────────── */
+
+/* Login: logo com identidade visual */
+.login-logo-wrap{width:64px;height:64px;border-radius:18px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 6px 20px rgba(24,95,165,.35);color:#E6F1FB}
+@media(prefers-color-scheme:dark){.login-logo-wrap{box-shadow:0 6px 20px rgba(77,166,255,.25)}}
+
+/* Login: wrapper de senha com toggle olho */
+.pwd-wrap{position:relative}
+.pwd-wrap .fi{padding-right:44px}
+.pwd-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx2);font-size:18px;padding:4px;display:flex;align-items:center;line-height:1}
+.pwd-eye:hover{color:var(--tx1)}
+
+/* Login: link "esqueci minha senha" */
+.forgot-link{background:none;border:none;font-size:13px;color:var(--acc);cursor:pointer;padding:4px;font-family:inherit;text-decoration:underline;text-underline-offset:2px;font-weight:500}
+
+/* Login: botão loading */
+.btn-spinner{width:16px;height:16px;border:2px solid rgba(230,241,251,.35);border-top-color:#E6F1FB;border-radius:50%;animation:spin-v19 .7s linear infinite;flex-shrink:0}
+@keyframes spin-v19{to{transform:rotate(360deg)}}
+
+/* Tabs com ícone (home) */
+.ntab-icon{display:block;font-size:16px;margin-bottom:2px}
+.ntab.with-icon{padding:7px 4px 6px;font-size:10px}
+
+/* Barra de progresso mini nos cards de local */
+.local-prog{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:4px}
+.local-prog-fill{height:100%;border-radius:2px;background:var(--acc);transition:width .4s}
+
+/* Busca: wrapper com botão limpar */
+.srch-wrap{position:relative}
+.srch-wrap .srch{padding-right:34px}
+.srch-clear{display:none;position:absolute;right:9px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:var(--tx2);color:var(--bg1);font-size:11px;font-weight:700;border:none;cursor:pointer;align-items:center;justify-content:center;line-height:1;padding:0}
+.srch-wrap.has-value .srch-clear{display:flex}
+
+/* Indicador de sync melhorado */
+.sync-pulse{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-pulse.synced{background:var(--syncd);animation:sync-blink 3s ease-in-out infinite}
+.sync-pulse.syncing{background:var(--acc);animation:pulse 1s infinite}
+.sync-pulse.error{background:#ff3b30}
+.sync-pulse.local{background:#92400E}
+@keyframes sync-blink{0%,80%,100%{opacity:1}90%{opacity:.4}}
+.syncr.synced{color:var(--syncd)}
+.syncr.syncing{color:var(--acc)}
+.syncr.error{color:#ff3b30}
+
+/* Empty states melhorados */
+.empty-v2{display:flex;flex-direction:column;align-items:center;padding:44px 24px;gap:12px;text-align:center}
+.empty-icon-wrap{width:64px;height:64px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:28px}
+.empty-title{font-size:15px;font-weight:500;color:var(--tx1)}
+.empty-sub{font-size:13px;color:var(--tx2);line-height:1.55;max-width:240px}
+.empty-cta{margin-top:4px;padding:9px 18px;border-radius:var(--r1);background:var(--acc);color:#E6F1FB;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+
+/* Bottom sheet modal (foto) */
+.bs-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0);z-index:100;align-items:flex-end;justify-content:center;transition:background .25s}
+.bs-modal-bg.on{display:flex;background:rgba(0,0,0,.45)}
+.bs-sheet{background:var(--bg1);border-radius:20px 20px 0 0;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.bs-modal-bg.on .bs-sheet{transform:translateY(0)}
+.bs-handle{width:36px;height:4px;border-radius:2px;background:var(--bd3);margin:10px auto 0}
+.bs-title{padding:10px 16px 12px;font-size:13px;font-weight:500;color:var(--tx2);text-align:center;border-bottom:.5px solid var(--bd3)}
+.bs-btn{width:100%;padding:15px 16px;text-align:left;font-size:15px;cursor:pointer;border:none;border-bottom:.5px solid var(--bd3);background:none;color:var(--tx1);display:flex;align-items:center;gap:12px;font-family:inherit}
+.bs-btn:active{background:var(--bg2)}
+.bs-btn-cancel{width:100%;padding:15px 16px;text-align:center;font-size:15px;cursor:pointer;border:none;background:none;color:#ff3b30;font-family:inherit;font-weight:500}
+.bs-btn-icon{font-size:22px;color:var(--acc)}
+
+/* ── UX v20 – Gestão > Locais improvements ─────────────────────────── */
+/* Auto-save visual feedback: borda + fundo verde momentâneo */
+.inp-autosaved{border-color:var(--ok-bd)!important;background:var(--ok-bg)!important;color:var(--ok-tx)!important;transition:border-color .3s,background .3s,color .3s}
+/* Header do local: agora clicável inteiro */
+.msh-clickable{cursor:pointer;transition:background .15s}
+.msh-clickable:active{background:var(--bg2)}
+/* Edição do local dentro do painel expandido */
+.local-edit-row{padding:10px 14px;display:flex;gap:8px;align-items:center;background:var(--bg2);border-bottom:.5px solid var(--bd3)}
+/* Badge para sub-sublocais */
+.ssub-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:500;cursor:pointer;flex-shrink:0;font-family:inherit;border:none}
+.ssub-badge.has{background:var(--acc-bg);color:var(--acc-tx);border:.5px solid var(--acc-bd)}
+.ssub-badge.empty{background:var(--bg2);color:var(--tx2);border:.5px dashed var(--bd3)}
+@media(prefers-color-scheme:dark){.ssub-badge.has{background:var(--acc-bg);color:var(--acc-tx)}.ssub-badge.empty{background:var(--bg2);color:var(--tx2)}}
+/* Card expansível de adicionar local */
+.add-local-trigger{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s}
+.add-local-trigger:active{background:var(--bg2)}
+.add-local-form{padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--bg2);border-top:.5px solid var(--acc-bd)}
+/* Botão "Criar local" */
+.btn-criar-local{width:100%;padding:11px;border-radius:var(--r2);background:var(--acc);border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-criar-local:active{opacity:.85}
+/* Campo com label inline */
+.fi-lbl{font-size:10px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+
+/* ── UX v21 IMPROVEMENTS ─────────────────────────────────────────── */
+
+/* Login: caixa de erro acessível com ícone */
+.login-error-box:not(:empty){display:flex;align-items:center;gap:8px;background:#fff5f5;border:.5px solid #ffb3b3;border-radius:var(--r2);padding:9px 11px;font-size:13px;color:#c62828;line-height:1.4;margin-top:2px}
+.login-error-box:not(:empty)::before{content:"\ea15";font-family:"tabler-icons";font-size:16px;flex-shrink:0;color:#d32f2f}
+@media(prefers-color-scheme:dark){.login-error-box:not(:empty){background:#2a0a0a;border-color:#7f1d1d;color:#fca5a5}.login-error-box:not(:empty)::before{color:#fca5a5}}
+
+/* Ícone da logo vetorial */
+.login-logo-wrap i{font-size:32px;line-height:1}
+
+/* Modal ícone decorativo (substituiu emojis grandes) */
+.modal-icon{font-size:32px;color:var(--acc);display:block;text-align:center;margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -127,7 +226,7 @@
 <!-- Tela de Login -->
 <div id="s-login" class="scr on" style="background:var(--bg1)">
   <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:24px">
-    <div style="font-size:56px;line-height:1">📦</div>
+    <div class="login-logo-wrap"><i class="ti ti-building-store"></i></div>
     <div style="text-align:center">
       <div style="font-size:22px;font-weight:600;color:var(--tx1)">Estoque Gesto</div>
       <div style="font-size:14px;color:var(--tx2);margin-top:8px;line-height:1.5">Faça login para acessar o sistema</div>
@@ -139,12 +238,15 @@
       </div>
       <div>
         <div class="fl">Senha</div>
-        <input id="login-pwd" class="fi" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        <div class="pwd-wrap">
+          <input id="login-pwd" class="fi" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="pwd-eye" id="btn-pwd-toggle" type="button" title="Mostrar/ocultar senha"><i class="ti ti-eye"></i></button>
+        </div>
       </div>
       <button id="btn-login" class="bp" style="margin-top:4px">Entrar</button>
-      <button id="btn-forgot-pwd" style="background:none;border:none;font-size:13px;color:#185FA5;cursor:pointer;padding:4px;font-family:inherit">Esqueci minha senha</button>
+      <button id="btn-forgot-pwd" class="forgot-link">Esqueci minha senha</button>
     </div>
-    <div id="login-status" style="font-size:12px;color:#ff3b30;text-align:center;min-height:16px"></div>
+    <div id="login-status" role="alert" aria-live="assertive" class="login-error-box" style="min-height:16px"></div>
   </div>
   <div style="padding:16px 24px 32px;text-align:center;font-size:11px;color:var(--tx2);line-height:1.6">
     Acesso restrito. Solicite ao administrador a criação da sua conta.
@@ -154,11 +256,11 @@
 <div id="s-home" class="scr">
   <div class="topbar"><div><div class="tt">Estoque</div><div class="ts" id="home-date"></div></div><div class="uc" style="cursor:pointer" id="btn-user-menu"><div class="av" id="user-av">?</div><span id="user-name">...</span></div></div>
   <div class="ntabs">
-    <div class="ntab on" data-home-tab="locais">Locais</div>
-    <div class="ntab" data-home-tab="consolidado">Consolidado</div>
-    <div class="ntab" data-home-tab="gestao" id="tab-gestao">Gestão</div>
-    <div class="ntab" data-home-tab="historico">Histórico</div>
-    <div class="ntab" data-home-tab="usuarios" id="tab-usuarios" style="display:none">Usuários</div>
+    <div class="ntab with-icon on" data-home-tab="locais"><i class="ti ti-map-pin ntab-icon"></i>Locais</div>
+    <div class="ntab with-icon" data-home-tab="consolidado"><i class="ti ti-chart-bar ntab-icon"></i>Resumo</div>
+    <div class="ntab with-icon" data-home-tab="historico"><i class="ti ti-clock ntab-icon"></i>Histórico</div>
+    <div class="ntab with-icon" data-home-tab="gestao" id="tab-gestao"><i class="ti ti-settings ntab-icon"></i>Gestão</div>
+    <div class="ntab with-icon" data-home-tab="usuarios" id="tab-usuarios" style="display:none"><i class="ti ti-users ntab-icon"></i>Usuários</div>
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
@@ -196,7 +298,10 @@
   </div>
   <div class="slnav" id="sl-nav"></div>
   <div style="padding:8px 12px 4px;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0">
-    <input id="srch-inp" class="srch" placeholder="Buscar produto..."/>
+    <div class="srch-wrap" id="srch-wrap">
+      <input id="srch-inp" class="srch" placeholder="Buscar produto..."/>
+      <button class="srch-clear" id="srch-clear" title="Limpar busca">×</button>
+    </div>
   </div>
   <div style="padding:6px 12px 2px;flex-shrink:0"><div class="chips" id="grupo-chips"></div></div>
   <div class="content" id="count-list"></div>
@@ -290,17 +395,20 @@
     <div id="import-status" style="font-size:12px;min-height:18px;color:var(--tx2)"></div>
     <div style="display:flex;gap:8px">
       <button id="import-cancel" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid var(--bd3);font-size:14px;cursor:pointer;color:var(--tx2)">Cancelar</button>
-      <button id="import-confirm" style="flex:2;padding:10px;border-radius:var(--r2);background:#185FA5;border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB">Restaurar</button>
+      <button id="import-confirm" style="flex:2;padding:10px;border-radius:var(--r2);background:var(--acc);border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB">Restaurar</button>
     </div>
   </div>
 </div>
 
-<div class="modal-bg" id="modal-foto-opts">
-  <div class="modal-box" style="gap:0;padding:0;overflow:hidden">
-    <div style="padding:14px;font-size:13px;font-weight:500;color:var(--tx2);border-bottom:.5px solid var(--bd3)">Adicionar foto</div>
-    <button id="fopts-cam" style="width:100%;padding:14px;text-align:left;font-size:14px;cursor:pointer;border:none;border-bottom:.5px solid var(--bd3);background:none;color:var(--tx1);display:flex;align-items:center;gap:10px;font-family:inherit"><i class="ti ti-camera" style="font-size:20px;color:#185FA5"></i> Tirar foto</button>
-    <button id="fopts-gal" style="width:100%;padding:14px;text-align:left;font-size:14px;cursor:pointer;border:none;border-bottom:.5px solid var(--bd3);background:none;color:var(--tx1);display:flex;align-items:center;gap:10px;font-family:inherit"><i class="ti ti-photo" style="font-size:20px;color:#185FA5"></i> Escolher da galeria</button>
-    <button id="fopts-cancel" style="width:100%;padding:14px;text-align:center;font-size:14px;cursor:pointer;border:none;background:none;color:var(--tx2);font-family:inherit">Cancelar</button>
+<!-- Bottom sheet foto (v19 UX improvement) -->
+<div class="bs-modal-bg" id="modal-foto-opts">
+  <div class="bs-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-title">Adicionar foto</div>
+    <button id="fopts-cam" class="bs-btn"><i class="ti ti-camera bs-btn-icon"></i> Tirar foto</button>
+    <button id="fopts-gal" class="bs-btn"><i class="ti ti-photo bs-btn-icon"></i> Escolher da galeria</button>
+    <button id="fopts-cancel" class="bs-btn-cancel">Cancelar</button>
+    <div style="height:env(safe-area-inset-bottom,16px)"></div>
   </div>
 </div>
 <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none"/>
@@ -353,12 +461,12 @@
 
 <div class="modal-bg" id="modal-extra-check">
   <div class="modal-box" style="gap:16px">
-    <div style="text-align:center;font-size:28px">🔍</div>
+    <i class="ti ti-search-check modal-icon"></i>
     <div style="text-align:center">
       <div style="font-size:15px;font-weight:500" id="extra-check-title">Verificar sublocal</div>
       <div style="font-size:13px;color:var(--tx2);margin-top:6px;line-height:1.55" id="extra-check-msg">Há algum item neste sublocal que não estava na lista e não foi contado?</div>
     </div>
-    <button id="extra-check-yes" style="width:100%;padding:13px;border-radius:var(--r1);background:var(--bg2);border:.5px solid var(--bd3);font-size:14px;font-weight:500;cursor:pointer;color:var(--tx1);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-plus" style="font-size:16px;color:#185FA5"></i>Sim, quero adicionar um item</button>
+    <button id="extra-check-yes" style="width:100%;padding:13px;border-radius:var(--r1);background:var(--bg2);border:.5px solid var(--bd3);font-size:14px;font-weight:500;cursor:pointer;color:var(--tx1);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-plus" style="font-size:16px;color:var(--acc)"></i>Sim, quero adicionar um item</button>
     <button id="extra-check-no" class="bp">Não, pode continuar</button>
     <button id="extra-check-cancel" style="background:none;border:none;font-size:13px;color:var(--tx2);cursor:pointer;padding:0;font-family:inherit">Cancelar</button>
   </div>
@@ -902,7 +1010,7 @@ let locais=[...DEFAULT_LOCAIS];
 let sublocais={},subsubs={},vinculos={},ajustes={},specs={};
 let historico=[];
 let extraCheckCallback=null;
-let gestaoTabId='locais',gestaoSpecLocal=DEFAULT_LOCAIS[0].id,gestaoSpecSearch='',editSpecModo='contador';
+let gestaoTabId='locais',gestaoSpecLocal=DEFAULT_LOCAIS[0].id,gestaoSpecSearch='',editSpecModo='contador',gestaoAddLocalOpen=false;
 let editingLocalId=null;
 const SK='app-estoque-gesto-v2';
 const SK_HIST='app-estoque-gesto-v2-hist';
@@ -978,14 +1086,17 @@ try {
 
 // ── Status de sync ────────────────────────────────────────────────────────────
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
+let lastSyncTime=null;
 function getSyncHTML(){
-  if(syncState==='syncing') return `<div class="syncr"><div style="width:7px;height:7px;border-radius:50%;background:#185FA5;animation:pulse 1s infinite"></div><span>Sincronizando...</span></div>`;
-  if(syncState==='synced')  return `<div class="syncr"><div class="syncd"></div><span>Sincronizado na nuvem</span></div>`;
-  if(syncState==='error')   return `<div class="syncr"><div style="width:7px;height:7px;border-radius:50%;background:#ff3b30"></div><span>Erro ao sincronizar</span></div>`;
-  return `<div class="syncr"><div style="width:7px;height:7px;border-radius:50%;background:#92400E"></div><span>Dados salvos localmente</span></div>`;
+  const timeStr=lastSyncTime?new Date(lastSyncTime).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+  if(syncState==='syncing') return `<div class="syncr syncing"><div class="sync-pulse syncing"></div><span>Sincronizando...</span></div>`;
+  if(syncState==='synced')  return `<div class="syncr synced"><div class="sync-pulse synced"></div><span>Sincronizado${timeStr?' · '+timeStr:''}</span></div>`;
+  if(syncState==='error')   return `<div class="syncr error"><div class="sync-pulse error"></div><span>⚠ Sem conexão — salvo localmente</span></div>`;
+  return `<div class="syncr"><div class="sync-pulse local"></div><span>Dados salvos localmente</span></div>`;
 }
 function setSyncState(s){
   syncState=s;
+  if(s==='synced') lastSyncTime=Date.now();
   const bbar=document.getElementById('home-bbar');
   if(bbar){const sr=bbar.querySelector('.syncr');if(sr){const tmp=document.createElement('div');tmp.innerHTML=getSyncHTML();sr.replaceWith(tmp.firstChild);}}
   const savedMsg=document.getElementById('saved-cloud-msg');
@@ -1314,6 +1425,51 @@ async function confirmarFimContagem(){
   }
 }
 
+// Exporta CSV das especificações (todos os locais)
+function exportarEspecsCSV(){
+  const agora=new Date();
+  const dataExport=agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const cabecalho=['Data de Exportação','Local','Sublocal 1','Sublocal 2','COD Saipos','Nome do Item','Embalagem física','Unidade de Contagem','Fator','Unidade Saipos'];
+  const linhas=[];
+  locais.forEach(local=>{
+    const lid=local.id;
+    const prods=getProdsLocal(lid);
+    prods.forEach(p=>{
+      const spec=getSpec(lid,p.cod);
+      const prod=CATALOGO.find(c=>c.cod===p.cod);
+      const slId=getVinculo(lid,p.cod);
+      let sub1='',sub2='';
+      if(slId){
+        const sl1=getSubs(lid).find(s=>s.id===slId);
+        if(sl1){sub1=sl1.nome;sub2='';}
+        else{for(const sl of getSubs(lid)){const ssl=getSubSubs(lid,sl.id).find(s=>s.id===slId);if(ssl){sub1=sl.nome;sub2=ssl.nome;break;}}}
+      }
+      let embalagem='',unidContagem='',fator='';
+      if(spec&&spec.modo==='contador'){
+        embalagem=spec.embalagem||'';
+        unidContagem=spec.unidContagem||spec.embalagem||'';
+        fator=String(spec.fator||1);
+      } else if(spec&&spec.modo==='decimal'){
+        embalagem='—';unidContagem='—';fator='—';
+      }
+      const unidSaipos=prod?.unidade||'';
+      linhas.push([dataExport,local.nome,sub1,sub2,p.cod,p.nome,embalagem,unidContagem,fator,unidSaipos]);
+    });
+  });
+  if(!linhas.length){alert('Nenhum item encontrado para exportar.');return;}
+  linhas.sort((a,b)=>a[1].localeCompare(b[1],'pt-BR')||a[2].localeCompare(b[2],'pt-BR')||a[3].localeCompare(b[3],'pt-BR')||a[5].localeCompare(b[5],'pt-BR'));
+  const csv=[cabecalho,...linhas]
+    .map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';'))
+    .join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`especificacoes-estoque-${agora.toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Exporta o CSV consolidado
 function exportarCSV(){
   if(!dataFimContagem)return;
@@ -1355,6 +1511,17 @@ function exportarCSV(){
 }
 
 // ── Autenticação ──────────────────────────────────────────────────────────────
+function setLoginLoading(on){
+  const btn=document.getElementById('btn-login');
+  if(!btn)return;
+  if(on){
+    btn.disabled=true;
+    btn.innerHTML='<span class="btn-spinner"></span> Entrando...';
+  } else {
+    btn.disabled=false;
+    btn.innerHTML='Entrar';
+  }
+}
 function signIn(){
   if(!firebaseReady){alert('Configure o Firebase primeiro.');return;}
   const email=document.getElementById('login-email').value.trim();
@@ -1362,10 +1529,10 @@ function signIn(){
   const st=document.getElementById('login-status');
   if(!email||!pwd){if(st)st.textContent='Preencha e-mail e senha.';return;}
   if(st)st.textContent='';
-  document.getElementById('btn-login').disabled=true;
+  setLoginLoading(true);
   auth.signInWithEmailAndPassword(email,pwd)
     .catch(e=>{
-      document.getElementById('btn-login').disabled=false;
+      setLoginLoading(false);
       if(st)st.textContent=(e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'||e.code==='auth/invalid-email')
         ?'E-mail ou senha incorretos.'
         :'Erro: '+e.message;
@@ -1388,7 +1555,7 @@ if(firebaseReady){
             await auth.signOut();
             const st=document.getElementById('login-status');
             if(st)st.textContent='Conta desativada. Contate o administrador.';
-            document.getElementById('btn-login').disabled=false;
+            setLoginLoading(false);
             return;
           }
           currentUserRole=perf.role||'operador';
@@ -1408,7 +1575,7 @@ if(firebaseReady){
         currentUserNome=user.email;
       }
       currentUser=user;
-      document.getElementById('btn-login').disabled=false;
+      setLoginLoading(false);
       // Atualiza avatar e nome na topbar
       const initials=currentUserNome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
       const avEl=document.getElementById('user-av');if(avEl)avEl.textContent=initials;
@@ -1438,7 +1605,7 @@ function exportarBackup(){
 function handleBackupFile(evt){
   const file=evt.target.files[0];if(!file)return;
   const r=new FileReader();
-  r.onload=e=>{document.getElementById('import-txt').value=e.target.result;document.getElementById('import-status').textContent='Arquivo carregado.';document.getElementById('import-status').style.color='#185FA5';};
+  r.onload=e=>{document.getElementById('import-txt').value=e.target.result;document.getElementById('import-status').textContent='Arquivo carregado.';document.getElementById('import-status').style.color='var(--acc)';};
   r.readAsText(file);evt.target.value='';
 }
 function doImport(){
@@ -1545,7 +1712,7 @@ function rascunhoInfo(lid){
     else tempoTxt=ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   }
   return `<div style="display:flex;align-items:center;gap:4px;margin-top:3px">
-    <div style="width:16px;height:16px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:#0C447C;flex-shrink:0">${r.userAvatar||'?'}</div>
+    <div style="width:16px;height:16px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:var(--acc-tx);flex-shrink:0">${r.userAvatar||'?'}</div>
     <span style="font-size:11px;color:var(--tx2)">${nomeDisplay} ${statusTxt}${tempoTxt?' · '+tempoTxt:''}</span>
   </div>`;
 }
@@ -1624,12 +1791,12 @@ function renderHome(){
     let h=`<div style="background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:13px;font-weight:500;color:var(--tx2)">Progresso geral</div>
-        <div style="font-size:13px;font-weight:600;color:${tudo?'#27500A':'#185FA5'}">${nFin}/${total} locais</div>
+        <div style="font-size:13px;font-weight:600;color:${tudo?'#27500A':'var(--acc)'}">${nFin}/${total} locais</div>
       </div>
-      <div class="progt" style="height:6px;background:var(--bg3)"><div style="height:100%;width:${pct}%;background:${tudo?'#639922':'#185FA5'};border-radius:3px;transition:width .4s"></div></div>
+      <div class="progt" style="height:6px;background:var(--bg3)"><div style="height:100%;width:${pct}%;background:${tudo?'#639922':'var(--acc)'};border-radius:3px;transition:width .4s"></div></div>
       ${tudo?`<div style="font-size:12px;color:#27500A;text-align:center;font-weight:500"><i class="ti ti-circle-check"></i> Todos os locais finalizados!</div>`:
         `<div style="display:flex;gap:12px;font-size:11px;color:var(--tx2)">
-          <span><span style="color:#185FA5;font-weight:600">${emContagem.length}</span> em contagem</span>
+          <span><span style="color:var(--acc);font-weight:600">${emContagem.length}</span> em contagem</span>
           <span><span style="color:var(--tx2);font-weight:600">${aContar.length}</span> a contar</span>
           <span><span style="color:#639922;font-weight:600">${nFin}</span> finalizado${nFin!==1?'s':''}</span>
         </div>`}
@@ -1648,21 +1815,21 @@ function renderHome(){
         const nomeUser=isMeu?'Você':(r?.userName?.split(' ')[0]||'Usuário');
         const avatarUser=r?.userAvatar||'?';
         const inicioTxt=r?.startedAt?fmtDT(r.startedAt):'';
-        h+=`<div class="row" style="background:#E6F1FB;border-color:#B5D4F4;flex-direction:column;align-items:stretch;gap:8px;cursor:pointer" data-lid="${l.id}" data-action="local">
+        h+=`<div class="row" style="background:var(--acc-bg);border-color:#B5D4F4;flex-direction:column;align-items:stretch;gap:8px;cursor:pointer" data-lid="${l.id}" data-action="local">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="font-size:22px;width:32px;text-align:center">${l.icon}</div>
             <div style="flex:1">
               <div style="font-size:15px;font-weight:500;color:var(--tx1)">${l.nome}</div>
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-                <div style="width:18px;height:18px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#E6F1FB;flex-shrink:0">${avatarUser}</div>
-                <span style="font-size:11px;color:#185FA5">${nomeUser}${inicioTxt?' · Início: '+inicioTxt:''}</span>
+                <div style="width:18px;height:18px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#E6F1FB;flex-shrink:0">${avatarUser}</div>
+                <span style="font-size:11px;color:var(--acc)">${nomeUser}${inicioTxt?' · Início: '+inicioTxt:''}</span>
               </div>
             </div>
             <span class="bdg bprog">${done}/${total}</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <div class="progt" style="flex:1;height:4px;background:#B5D4F4"><div style="height:100%;width:${pct}%;background:#185FA5;border-radius:3px"></div></div>
-            <span style="font-size:11px;color:#185FA5;white-space:nowrap">${pct}%</span>
+            <div class="progt" style="flex:1;height:4px;background:#B5D4F4"><div style="height:100%;width:${pct}%;background:var(--acc);border-radius:3px"></div></div>
+            <span style="font-size:11px;color:var(--acc);white-space:nowrap">${pct}%</span>
           </div>
         </div>`;
       });
@@ -1747,7 +1914,7 @@ function renderPlano(lid){
   let h='';
   if(semSpec>0)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
     <div><div style="font-size:13px;font-weight:500;color:#92400E">${semSpec} itens sem especificação</div>
-    <button id="btn-ir-gestao" style="margin-top:6px;font-size:12px;color:#185FA5;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Ir para Gestão →</button></div></div>`;
+    <button id="btn-ir-gestao" style="margin-top:6px;font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Ir para Gestão →</button></div></div>`;
   h+='<div class="sec">Roteiro de contagem</div>';
   subs.forEach((sl,i)=>{
     const prods=getProdsSublocal(lid,sl.id).filter(p=>hasSpec(lid,p.cod));
@@ -1755,7 +1922,7 @@ function renderPlano(lid){
     const status=slStatus(lid,sl.id);const isNext=i===proximoIdx&&totalDone<totalProds;
     const numEl=status==='done'?`<div class="sl-sn" style="background:#EAF3DE"><i class="ti ti-check" style="color:#27500A;font-size:14px"></i></div>`:
       status==='prog'?`<div class="sl-sn" style="background:#FAEEDA;color:#633806">${i+1}</div>`:
-      `<div class="sl-sn" ${isNext?'style="background:#185FA5;color:#E6F1FB"':''}>${i+1}</div>`;
+      `<div class="sl-sn" ${isNext?'style="background:var(--acc);color:#E6F1FB"':''}>${i+1}</div>`;
     const cls=status==='done'?'done':status==='prog'?'active':isNext?'active':'';
     const badge=status==='done'?'<span class="bdg bdone">Concluído</span>':
       status==='prog'?`<span class="bdg bprog">${done}/${prods.length}</span>`:
@@ -1765,7 +1932,7 @@ function renderPlano(lid){
     h+=`<div class="sl-step ${cls}" data-slid="${sl.id}" data-action="sublocal">
       ${numEl}<div style="flex:1"><div style="font-size:15px;font-weight:500">${slLabel}</div>
       <div style="font-size:12px;color:var(--tx2);margin-top:2px">${prods.length} itens${status==='prog'?` · ${done} contados`:''}</div>
-      ${isNext&&status!=='done'?'<div style="font-size:11px;color:#185FA5;margin-top:3px;font-weight:500">↑ Começar aqui</div>':''}</div>${badge}</div>`;
+      ${isNext&&status!=='done'?'<div style="font-size:11px;color:var(--acc);margin-top:3px;font-weight:500">↑ Começar aqui</div>':''}</div>${badge}</div>`;
   });
   document.getElementById('plano-list').innerHTML=h;
   document.getElementById('plano-list').querySelectorAll('[data-action="sublocal"]').forEach(el=>el.addEventListener('click',()=>entrarContagem(lid,el.dataset.slid)));
@@ -1881,7 +2048,7 @@ function renderCount(){
     const slId=getVinculo(aLocal,p.cod);const slInfo=allFlat.find(s=>s.id===slId);
     const slNomeDisplay=slInfo?(slInfo._parentNome?`${slInfo._parentNome} › ${slInfo.nome}`:slInfo.nome):null;
     const slTag=allFlat.length?(slInfo?`<span class="tsl">📍 ${slNomeDisplay}</span>`:'<span class="tns">Sem sublocal</span>'):'';
-    const slBtn=allFlat.length?`<button class="btn-assign" data-cod="${p.cod}" style="font-size:11px;color:#185FA5;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">${slInfo?'Trocar':'Definir'}</button>`:'';
+    const slBtn=allFlat.length?`<button class="btn-assign" data-cod="${p.cod}" style="font-size:11px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">${slInfo?'Trocar':'Definir'}</button>`:'';
     const specBadge=spec.modo==='contador'?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${spec.embalagem} · ×${spec.fator} ${p.unidade}</span>`:`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${p.unidade}</span>`;
     const isZeroed=d.touched&&(spec.modo==='decimal'?(d.qtyDec!==''&&parseFloat(d.qtyDec)===0):(d.qty||0)===0);
     const zbCls=isZeroed?'zeroed':'';const zbTxt=isZeroed?'Zero ✓':'Zero';
@@ -2037,7 +2204,7 @@ function openAssign(cod){
     return `<div class="row ${sl.id===cur?'row-active':''}" data-slid="${sl.id}" data-action="assign">
     <i class="ti ti-${sl._parentNome?'corner-down-right':'box'}" style="font-size:18px;color:var(--tx2)"></i>
     <div style="flex:1;font-size:14px;font-weight:500">${nomeDisplay}</div>
-    ${sl.id===cur?'<i class="ti ti-check" style="color:#185FA5"></i>':'<i class="ti ti-chevron-right" style="color:var(--tx2)"></i>'}</div>`;}).join('')+
+    ${sl.id===cur?'<i class="ti ti-check" style="color:var(--acc)"></i>':'<i class="ti ti-chevron-right" style="color:var(--tx2)"></i>'}</div>`;}).join('')+
     (cur?`<div class="row" style="border-style:dashed" data-slid="" data-action="assign-remove">
       <i class="ti ti-x" style="font-size:18px;color:var(--tx2)"></i>
       <div style="flex:1;font-size:14px;color:var(--tx2)">Remover vínculo</div></div>`:'');
@@ -2063,7 +2230,7 @@ function goFinish(){
     const convV=spec?.modo==='contador'&&spec.fator!==1?fmtNum(calcV(aLocal,p.cod,d.qty||0)):null;
     const fi=d.foto?`<img src="${d.foto}" style="width:28px;height:28px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'<i class="ti ti-photo-off" style="color:var(--tx2);font-size:14px;opacity:.4"></i>';
     h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fi}<span style="font-size:13px;color:var(--tx2)">${p.nome}</span></div>
-      <div style="text-align:right"><div style="font-weight:500">${qtdTxt}</div>${convV?`<div style="font-size:11px;color:#185FA5">= ${convV} ${p.unidade}</div>`:''}</div></div>`;
+      <div style="text-align:right"><div style="font-weight:500">${qtdTxt}</div>${convV?`<div style="font-size:11px;color:var(--acc)">= ${convV} ${p.unidade}</div>`:''}</div></div>`;
   });
   h+='</div>';
   if(prods.length-done>0){
@@ -2111,67 +2278,96 @@ function renderGestao(c){
     locais.forEach(l=>{
       const subs=getSubs(l.id);
       const totalSubFlat=getAllSubsFlat(l.id).length;
-      h+=`<div class="ms"><div class="msh" style="gap:8px;cursor:default">
-        <input class="ii inp-local-icon" data-lid="${l.id}" value="${l.icon}" style="width:40px;text-align:center;font-size:18px;padding:4px 4px;flex-shrink:0"/>
-        <div style="flex:1;min-width:0">
-          <input class="ii inp-local-nome" data-lid="${l.id}" value="${l.nome}" placeholder="Nome do local" style="font-size:14px;font-weight:500;width:100%"/>
-          <div style="font-size:12px;color:var(--tx2);margin-top:2px;padding:0 2px">${totalSubFlat?totalSubFlat+' sublocais (total)':'Sem sublocais'}</div>
+      // v20: header inteiro clicável (melhoria 3); sem botão salvar (melhoria 1)
+      h+=`<div class="ms">
+        <div class="msh msh-clickable" data-bodyid="msb-${l.id}" data-chevid="chev-${l.id}" data-action="toggle" style="gap:8px">
+          <div style="width:36px;height:36px;border-radius:8px;background:var(--bg2);border:.5px solid var(--bd3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${l.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500;color:var(--tx1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.nome}</div>
+            <div style="font-size:12px;color:var(--tx2);margin-top:2px">${totalSubFlat?totalSubFlat+' sublocais':'Sem sublocais'}</div>
+          </div>
+          <i class="ti ti-chevron-down" id="chev-${l.id}" style="font-size:16px;color:var(--tx2);transform:rotate(180deg);transition:transform .2s;flex-shrink:0"></i>
         </div>
-        <button class="ib primary btn-save-local" data-lid="${l.id}" style="flex-shrink:0"><i class="ti ti-check"></i></button>
-        <button class="ib danger btn-del-local" data-lid="${l.id}" style="flex-shrink:0"><i class="ti ti-trash"></i></button>
-        <div data-bodyid="msb-${l.id}" data-chevid="chev-${l.id}" data-action="toggle" style="cursor:pointer;padding:4px;display:flex;align-items:center">
-          <i class="ti ti-chevron-down" id="chev-${l.id}" style="font-size:16px;color:var(--tx2);transform:rotate(180deg);transition:transform .2s"></i>
-        </div></div>
         <div class="msb open" id="msb-${l.id}">
+          <!-- v20: edição de ícone + nome no painel expandido, com auto-save no blur (melhoria 1 + 5) -->
+          <div class="local-edit-row">
+            <input class="ii inp-local-icon" data-lid="${l.id}" value="${l.icon}" style="width:44px;text-align:center;font-size:18px;padding:4px;flex-shrink:0" title="Ícone do local (emoji)"/>
+            <input class="ii inp-local-nome" data-lid="${l.id}" value="${l.nome}" placeholder="Nome do local" style="font-size:14px;font-weight:500;flex:1"/>
+            <!-- v20: botão deletar local isolado no painel (melhoria 1) -->
+            <button class="ib danger btn-del-local" data-lid="${l.id}" style="flex-shrink:0" title="Remover local"><i class="ti ti-trash"></i></button>
+          </div>
           <!-- Sublocais nível 1 -->
           ${subs.map(sl=>{
             const ssubs=getSubSubs(l.id,sl.id);
+            // v20: badge de sub-sublocais com contagem legível (melhoria 4)
+            const ssubBadge=`<button class="ssub-badge ${ssubs.length?'has':'empty'} btn-toggle-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-bodyid="ssub-${sl.id}" data-chevid="ssub-chev-${sl.id}" title="Sub-sublocais"><i class="ti ti-${ssubs.length?'box-multiple':'plus'}" style="font-size:11px"></i>${ssubs.length?ssubs.length+' sub-sub':'sub-sub'}<i class="ti ti-chevron-down" id="ssub-chev-${sl.id}" style="font-size:10px;transition:transform .2s${ssubs.length?';transform:rotate(180deg)':''}"></i></button>`;
             return `<div class="msr" style="flex-direction:column;align-items:stretch;padding:0">
-              <div style="display:flex;align-items:center;gap:8px;padding:8px 14px 8px 48px">
-                <i class="ti ti-box" style="font-size:15px;color:var(--tx2);flex-shrink:0"></i>
-                <input class="ii inp-sub" data-lid="${l.id}" data-slid="${sl.id}" value="${sl.nome}"/>
-                <button class="ib danger btn-del-sub" data-lid="${l.id}" data-slid="${sl.id}"><i class="ti ti-trash"></i></button>
-                <button class="ib btn-toggle-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-bodyid="ssub-${sl.id}" data-chevid="ssub-chev-${sl.id}" style="border-color:#185FA5;background:#E6F1FB;color:#185FA5" title="Sub-sublocais"><i class="ti ti-chevron-down" id="ssub-chev-${sl.id}" style="font-size:13px;transition:transform .2s;${ssubs.length?'':'opacity:.4'}"></i></button>
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 14px 8px 32px">
+                <i class="ti ti-corner-down-right" style="font-size:13px;color:var(--tx2);flex-shrink:0"></i>
+                <input class="ii inp-sub" data-lid="${l.id}" data-slid="${sl.id}" value="${sl.nome}" style="font-size:13px"/>
+                ${ssubBadge}
+                <!-- v20: botão delete de sublocal, confirmação adicionada no JS (melhoria 2) -->
+                <button class="ib danger btn-del-sub" data-lid="${l.id}" data-slid="${sl.id}" style="width:28px;height:28px" title="Remover sublocal"><i class="ti ti-trash" style="font-size:13px"></i></button>
               </div>
               <!-- Sub-sublocais nível 2 -->
               <div id="ssub-${sl.id}" style="display:${ssubs.length?'flex':'none'};flex-direction:column;background:var(--bg2)">
-                ${ssubs.map(ssl=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 14px 6px 64px;border-top:.5px solid var(--bd3)">
-                  <i class="ti ti-corner-down-right" style="font-size:13px;color:var(--tx2);flex-shrink:0"></i>
+                ${ssubs.map(ssl=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 14px 6px 48px;border-top:.5px solid var(--bd3)">
+                  <i class="ti ti-corner-down-right" style="font-size:12px;color:var(--tx2);flex-shrink:0"></i>
                   <input class="ii inp-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" value="${ssl.nome}" style="font-size:12px"/>
-                  <button class="ib danger btn-del-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" style="width:26px;height:26px"><i class="ti ti-trash" style="font-size:13px"></i></button>
+                  <!-- v20: confirmação adicionada no JS (melhoria 2) -->
+                  <button class="ib danger btn-del-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" style="width:26px;height:26px" title="Remover sub-sublocal"><i class="ti ti-trash" style="font-size:12px"></i></button>
                 </div>`).join('')}
-                <div style="display:flex;align-items:center;gap:8px;padding:6px 14px 6px 64px;border-top:.5px solid var(--bd3)">
-                  <i class="ti ti-plus" style="font-size:13px;color:#185FA5;flex-shrink:0"></i>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 14px 6px 48px;border-top:.5px solid var(--bd3)">
+                  <i class="ti ti-plus" style="font-size:12px;color:var(--acc);flex-shrink:0"></i>
                   <input class="ii inp-new-ssub" data-lid="${l.id}" data-slid="${sl.id}" id="new-ssl-${sl.id}" placeholder="Novo sub-sublocal..." style="font-size:12px"/>
-                  <button class="ib primary btn-add-ssub" data-lid="${l.id}" data-slid="${sl.id}" style="width:26px;height:26px"><i class="ti ti-check" style="font-size:13px"></i></button>
+                  <button class="ib primary btn-add-ssub" data-lid="${l.id}" data-slid="${sl.id}" style="width:26px;height:26px"><i class="ti ti-check" style="font-size:12px"></i></button>
                 </div>
               </div>
             </div>`;
           }).join('')}
           <!-- Adicionar sublocal nível 1 -->
           <div class="msa">
-            <i class="ti ti-plus" style="font-size:15px;color:#185FA5;flex-shrink:0"></i>
-            <input class="ii inp-new-sub" data-lid="${l.id}" id="new-sl-${l.id}" placeholder="Novo sublocal..."/>
+            <i class="ti ti-plus" style="font-size:14px;color:var(--acc);flex-shrink:0"></i>
+            <input class="ii inp-new-sub" data-lid="${l.id}" id="new-sl-${l.id}" placeholder="Novo sublocal..." style="font-size:13px"/>
             <button class="ib primary btn-add-sub" data-lid="${l.id}"><i class="ti ti-check"></i></button>
           </div>
-        </div></div>`;
+        </div>
+      </div>`;
     });
-    // Adicionar novo local
-    h+=`<div class="card" style="border-style:dashed">
-      <div style="font-size:12px;font-weight:500;color:var(--tx2);margin-bottom:8px">Adicionar novo local</div>
-      <div style="display:flex;gap:8px">
-        <input id="new-local-icon" class="ii" value="📍" style="width:48px;text-align:center;font-size:18px;padding:4px 6px" maxlength="4"/>
-        <input id="new-local-nome" class="ii" placeholder="Nome do local..." style="flex:1"/>
-        <button class="ib primary" id="btn-add-local"><i class="ti ti-plus"></i></button>
+    // v20: card expansível para adicionar local com labels e botão "Criar local" (melhoria 6)
+    h+=`<div class="ms" style="border-color:${gestaoAddLocalOpen?'var(--acc)':'var(--bd3)'}">
+      <div class="add-local-trigger" id="add-local-trigger">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--acc-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="ti ti-plus" style="font-size:15px;color:var(--acc)"></i>
+        </div>
+        <span style="flex:1;font-size:13px;font-weight:500;color:var(--acc)">Adicionar novo local</span>
+        <i class="ti ti-chevron-${gestaoAddLocalOpen?'up':'down'}" style="font-size:14px;color:var(--acc)"></i>
       </div>
+      ${gestaoAddLocalOpen?`<div class="add-local-form">
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div>
+            <div class="fi-lbl">Ícone</div>
+            <input id="new-local-icon" class="ii" value="📍" style="width:52px;text-align:center;font-size:20px;padding:6px 4px" maxlength="4"/>
+          </div>
+          <div style="flex:1">
+            <div class="fi-lbl">Nome do local</div>
+            <input id="new-local-nome" class="ii" placeholder="Ex: Galpão Norte" style="width:100%;font-size:14px"/>
+          </div>
+        </div>
+        <button class="btn-criar-local" id="btn-add-local"><i class="ti ti-check" style="font-size:15px"></i>Criar local</button>
+      </div>`:''}
     </div>`;
   } else if(gestaoTabId==='specs'){
     h+=`<div class="sec">Selecione o local</div>
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
         ${locais.map(l=>`<div class="chip ${gestaoSpecLocal===l.id?'on':''} btn-spec-local" data-lid="${l.id}">${l.icon} ${l.nome}</div>`).join('')}</div>`;
     const lid=gestaoSpecLocal;const prods=getProdsLocal(lid);const comSpec=prods.filter(p=>hasSpec(lid,p.cod)).length;
-    h+=`<div class="sgrid"><div class="scard"><div class="slbl">Com especificação</div><div class="sval" style="color:#166534">${comSpec}</div></div>
+    h+=`<div class="sgrid"><div class="scard"><div class="slbl">Com especificação</div><div class="sval" style="color:#166634">${comSpec}</div></div>
       <div class="scard"><div class="slbl">Sem especificação</div><div class="sval" style="color:#92400E">${prods.length-comSpec}</div></div></div>
+      <button class="bbtn" id="btn-exportar-specs" style="border-color:var(--acc);background:var(--acc-bg)">
+        <i class="ti ti-table-export" style="font-size:22px;color:var(--acc);flex-shrink:0"></i>
+        <div><div style="font-size:14px;font-weight:500;color:var(--acc)">Exportar especificações (.csv)</div>
+        <div style="font-size:11px;color:var(--acc);opacity:.8;margin-top:2px">Todos os locais · Local, Sublocal, Embalagem, Fator...</div></div></button>
       <input class="srch" id="spec-srch" placeholder="Buscar item..." value="${gestaoSpecSearch}"/>`;
     const term=gestaoSpecSearch.toLowerCase();
     let filtrado=term?prods.filter(p=>p.nome.toLowerCase().includes(term)||p.cod.includes(term)):prods;
@@ -2180,7 +2376,7 @@ function renderGestao(c){
     filtrado.slice(0,40).forEach((p,i)=>{
       const spec=getSpec(lid,p.cod);const prod=CATALOGO.find(c=>c.cod===p.cod);
       const specInfo=spec?(spec.modo==='contador'?
-        `<div style="text-align:right"><div class="sb-cnt" style="display:inline-flex">${spec.embalagem}</div><div style="font-size:10px;color:#185FA5;margin-top:1px">×${spec.fator} ${prod?.unidade||''}</div></div>`:
+        `<div style="text-align:right"><div class="sb-cnt" style="display:inline-flex">${spec.embalagem}</div><div style="font-size:10px;color:var(--acc);margin-top:1px">×${spec.fator} ${prod?.unidade||''}</div></div>`:
         `<div class="sb-dec" style="display:inline-flex">Digitar ${prod?.unidade||''}</div>`):'<span class="sb-mis"><i class="ti ti-alert-circle" style="font-size:11px"></i>Sem spec</span>';
       h+=`<div class="spi" ${i===Math.min(filtrado.length,40)-1?'style="border-bottom:none"':''}>
         <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
@@ -2200,10 +2396,10 @@ function renderGestao(c){
       <div class="scard"><div class="slbl">Sublocais</div><div class="sval">${nSubs}</div></div>
       <div class="scard"><div class="slbl">Sub-sublocais</div><div class="sval">${nSSubs}</div></div></div>
       <div class="sec">Exportar</div>
-      <button class="bbtn" id="btn-exportar" style="border-color:#185FA5;background:#E6F1FB">
-        <i class="ti ti-download" style="font-size:22px;color:#185FA5;flex-shrink:0"></i>
-        <div><div style="font-size:14px;font-weight:500;color:#185FA5">Baixar backup (.json)</div>
-        <div style="font-size:11px;color:#185FA5;opacity:.8;margin-top:2px">Salva especificações, sublocais e vínculos</div></div></button>
+      <button class="bbtn" id="btn-exportar" style="border-color:var(--acc);background:#E6F1FB">
+        <i class="ti ti-download" style="font-size:22px;color:var(--acc);flex-shrink:0"></i>
+        <div><div style="font-size:14px;font-weight:500;color:var(--acc)">Baixar backup (.json)</div>
+        <div style="font-size:11px;color:var(--acc);opacity:.8;margin-top:2px">Salva especificações, sublocais e vínculos</div></div></button>
       <div class="sec">Importar</div>
       <button class="bbtn" id="btn-importar-file" style="border-color:#27500A;background:#EAF3DE">
         <i class="ti ti-upload" style="font-size:22px;color:#27500A;flex-shrink:0"></i>
@@ -2217,38 +2413,57 @@ function renderGestao(c){
   c.innerHTML=h;
 
   // Event listeners
-  c.querySelectorAll('[data-action="gestao-tab"]').forEach(el=>el.addEventListener('click',()=>{gestaoTabId=el.dataset.tab;renderGestao(c);}));
+  c.querySelectorAll('[data-action="gestao-tab"]').forEach(el=>el.addEventListener('click',()=>{gestaoTabId=el.dataset.tab;gestaoAddLocalOpen=false;renderGestao(c);}));
+  // v20: toggle agora está no msh inteiro (melhoria 3)
   c.querySelectorAll('[data-action="toggle"]').forEach(el=>el.addEventListener('click',()=>{
     const b=document.getElementById(el.dataset.bodyid),ch=document.getElementById(el.dataset.chevid);
     if(!b)return;b.classList.toggle('open');if(ch)ch.style.transform=b.classList.contains('open')?'rotate(180deg)':'rotate(0deg)';
   }));
-  // Locais CRUD
-  c.querySelectorAll('.inp-local-icon,.inp-local-nome').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'){const btn=c.querySelector(`.btn-save-local[data-lid="${el.dataset.lid}"]`);if(btn)btn.click();}}));
-  c.querySelectorAll('.btn-save-local').forEach(el=>el.addEventListener('click',()=>{
-    const iconEl=c.querySelector(`.inp-local-icon[data-lid="${el.dataset.lid}"]`);
+  // v20: Auto-save no blur para ícone e nome do local (melhoria 1 + 5)
+  function flashSaved(el){
+    el.classList.add('inp-autosaved');
+    setTimeout(()=>el.classList.remove('inp-autosaved'),1500);
+  }
+  c.querySelectorAll('.inp-local-icon').forEach(el=>el.addEventListener('blur',()=>{
     const nomeEl=c.querySelector(`.inp-local-nome[data-lid="${el.dataset.lid}"]`);
-    renomearLocal(el.dataset.lid,(nomeEl?.value||'').trim(),(iconEl?.value||'📦').trim());
+    const nome=(nomeEl?.value||'').trim();const icon=(el.value||'📦').trim();
+    if(nome){renomearLocal(el.dataset.lid,nome,icon);flashSaved(el);if(nomeEl)flashSaved(nomeEl);}
   }));
+  c.querySelectorAll('.inp-local-nome').forEach(el=>el.addEventListener('blur',()=>{
+    const iconEl=c.querySelector(`.inp-local-icon[data-lid="${el.dataset.lid}"]`);
+    const nome=(el.value||'').trim();const icon=(iconEl?.value||'📦').trim();
+    if(nome){renomearLocal(el.dataset.lid,nome,icon);flashSaved(el);if(iconEl)flashSaved(iconEl);}
+  }));
+  c.querySelectorAll('.inp-local-nome').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')el.blur();}));
+  // v20: delete local permanece com confirm interno no removerLocal
   c.querySelectorAll('.btn-del-local').forEach(el=>el.addEventListener('click',()=>removerLocal(el.dataset.lid)));
+  // v20: card expansível de adicionar local (melhoria 6)
+  const addTrigger=c.querySelector('#add-local-trigger');
+  if(addTrigger)addTrigger.addEventListener('click',()=>{gestaoAddLocalOpen=!gestaoAddLocalOpen;renderGestao(c);setTimeout(()=>{const n=c.querySelector('#new-local-nome');if(n)n.focus();},50);});
   const btnAddLocal=c.querySelector('#btn-add-local');
   if(btnAddLocal)btnAddLocal.addEventListener('click',()=>adicionarLocal());
   const newLocalNome=c.querySelector('#new-local-nome');
   if(newLocalNome)newLocalNome.addEventListener('keydown',e=>{if(e.key==='Enter')adicionarLocal();});
-  // Sublocais nível 1
-  c.querySelectorAll('.inp-sub').forEach(el=>el.addEventListener('change',()=>renomearSub(el.dataset.lid,el.dataset.slid,el.value)));
+  // v20: Sublocais nível 1 — auto-save no blur com feedback visual (melhoria 5)
+  c.querySelectorAll('.inp-sub').forEach(el=>el.addEventListener('blur',()=>{renomearSub(el.dataset.lid,el.dataset.slid,el.value);flashSaved(el);}));
+  c.querySelectorAll('.inp-sub').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')el.blur();}));
+  // v20: confirmação adicionada dentro de removerSub (melhoria 2)
   c.querySelectorAll('.btn-del-sub').forEach(el=>el.addEventListener('click',()=>removerSub(el.dataset.lid,el.dataset.slid)));
   c.querySelectorAll('.btn-add-sub').forEach(el=>el.addEventListener('click',()=>adicionarSub(el.dataset.lid)));
   c.querySelectorAll('.inp-new-sub').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')adicionarSub(el.dataset.lid);}));
-  // Toggle sub-sublocais
-  c.querySelectorAll('.btn-toggle-ssub').forEach(el=>el.addEventListener('click',()=>{
+  // v20: Toggle sub-sublocais via badge (melhoria 4)
+  c.querySelectorAll('.btn-toggle-ssub').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();
     const b=document.getElementById(el.dataset.bodyid),ch=document.getElementById(el.dataset.chevid);
     if(!b)return;
     const isOpen=b.style.display!=='none';
     b.style.display=isOpen?'none':'flex';
     if(ch)ch.style.transform=isOpen?'rotate(0deg)':'rotate(180deg)';
   }));
-  // Sub-sublocais nível 2
-  c.querySelectorAll('.inp-ssub').forEach(el=>el.addEventListener('change',()=>renomearSubSub(el.dataset.lid,el.dataset.slid,el.dataset.sslid,el.value)));
+  // v20: Sub-sublocais nível 2 — auto-save no blur com feedback visual (melhoria 5)
+  c.querySelectorAll('.inp-ssub').forEach(el=>el.addEventListener('blur',()=>{renomearSubSub(el.dataset.lid,el.dataset.slid,el.dataset.sslid,el.value);flashSaved(el);}));
+  c.querySelectorAll('.inp-ssub').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')el.blur();}));
+  // v20: confirmação adicionada dentro de removerSubSub (melhoria 2)
   c.querySelectorAll('.btn-del-ssub').forEach(el=>el.addEventListener('click',()=>removerSubSub(el.dataset.lid,el.dataset.slid,el.dataset.sslid)));
   c.querySelectorAll('.btn-add-ssub').forEach(el=>el.addEventListener('click',()=>adicionarSubSub(el.dataset.lid,el.dataset.slid)));
   c.querySelectorAll('.inp-new-ssub').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')adicionarSubSub(el.dataset.lid,el.dataset.slid);}));
@@ -2257,6 +2472,7 @@ function renderGestao(c){
   const specSrch=c.querySelector('#spec-srch');
   if(specSrch)specSrch.addEventListener('input',()=>{gestaoSpecSearch=specSrch.value;renderGestao(c);});
   c.querySelectorAll('.btn-edit-spec').forEach(el=>el.addEventListener('click',()=>editSpec(el.dataset.lid,el.dataset.cod)));
+  const btnExpSpecs=c.querySelector('#btn-exportar-specs');if(btnExpSpecs)btnExpSpecs.addEventListener('click',exportarEspecsCSV);
   const btnExp=c.querySelector('#btn-exportar');if(btnExp)btnExp.addEventListener('click',exportarBackup);
   const btnImpF=c.querySelector('#btn-importar-file');if(btnImpF)btnImpF.addEventListener('click',()=>document.getElementById('backup-file-input').click());
   const btnImpT=c.querySelector('#btn-importar-txt');if(btnImpT)btnImpT.addEventListener('click',()=>document.getElementById('modal-import').classList.add('on'));
@@ -2302,7 +2518,7 @@ function editSpec(lid,cod){
   const btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px';
   btns.innerHTML=`<button id="btn-spec-cancel" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid var(--bd3);font-size:14px;cursor:pointer;color:var(--tx2)">Cancelar</button>
     ${cur.modo?`<button id="btn-spec-remove" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid #ff3b30;font-size:14px;cursor:pointer;color:#ff3b30">Remover</button>`:''}
-    <button id="btn-spec-save" style="flex:2;padding:10px;border-radius:var(--r2);background:#185FA5;border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB">Salvar</button>`;
+    <button id="btn-spec-save" style="flex:2;padding:10px;border-radius:var(--r2);background:var(--acc);border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB">Salvar</button>`;
 
   box.appendChild(header);box.appendChild(modoDiv);box.appendChild(camposCnt);box.appendChild(camposDec);box.appendChild(btns);
   overlay.appendChild(box);document.body.appendChild(overlay);
@@ -2417,6 +2633,12 @@ function adicionarSub(lid){
 function renomearSub(lid,slId,nome){const sl=(sublocais[lid]||[]).find(s=>s.id===slId);if(sl){sl.nome=nome;salvar();}}
 function removerSub(lid,slId){
   if(!sublocais[lid])return;
+  // v20: confirmação antes de remover sublocal (melhoria 2)
+  const sl=sublocais[lid].find(s=>s.id===slId);
+  const nome=sl?sl.nome:slId;
+  const nSSubs=getSubSubs(lid,slId).length;
+  const msg=nSSubs>0?`Remover "${nome}" e seus ${nSSubs} sub-sublocais? Os vínculos serão desfeitos.`:`Remover "${nome}"? Os vínculos serão desfeitos.`;
+  if(!confirm(msg))return;
   // Remover sub-sublocais associados
   if(subsubs[lid])delete subsubs[lid][slId];
   // Remover vínculos
@@ -2437,8 +2659,8 @@ function adicionarLocal(){
   if(!nome)return;
   const id='loc-'+Date.now();
   locais.push({id,nome,icon});
-  if(nomeEl)nomeEl.value='';
-  if(iconEl)iconEl.value='📍';
+  // v20: fecha o card expansível após criar (melhoria 6)
+  gestaoAddLocalOpen=false;
   salvar();renderGestao(document.getElementById('home-cnt'));
 }
 function renomearLocal(lid,nome,icon){
@@ -2469,6 +2691,10 @@ function renomearSubSub(lid,slId,sslId,nome){
 }
 function removerSubSub(lid,slId,sslId){
   if(!subsubs[lid]||!subsubs[lid][slId])return;
+  // v20: confirmação antes de remover sub-sublocal (melhoria 2)
+  const ssl=subsubs[lid][slId].find(s=>s.id===sslId);
+  const nome=ssl?ssl.nome:sslId;
+  if(!confirm(`Remover "${nome}"? Os vínculos serão desfeitos.`))return;
   if(vinculos[lid])Object.keys(vinculos[lid]).forEach(c=>{if(vinculos[lid][c]===sslId)delete vinculos[lid][c];});
   subsubs[lid][slId]=subsubs[lid][slId].filter(s=>s.id!==sslId);
   salvar();if(homeTabId==='gestao')renderGestao(document.getElementById('home-cnt'));
@@ -2521,7 +2747,7 @@ function renderConsolidado(c){
   const nContados=locaisContados.length;
   const pct=Math.round(nContados/totalLocais*100);
   const tudo=nContados===totalLocais;
-  const cor=tudo?'#639922':'#185FA5';
+  const cor=tudo?'#639922':'var(--acc)';
   const bgCor=tudo?'#EAF3DE':'#E6F1FB';
   const txCor=tudo?'#27500A':'#0C447C';
 
@@ -2576,7 +2802,7 @@ function renderConsolidado(c){
     h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fEl}
       <div><div style="font-size:13px;font-weight:500">${nome}</div>
       <div style="font-size:11px;color:var(--tx2)">${d.locais.join(' · ')}</div></div></div>
-      <div style="text-align:right"><div style="font-size:15px;font-weight:500;color:#185FA5">${fmtNum(d.total)}</div>
+      <div style="text-align:right"><div style="font-size:15px;font-weight:500;color:var(--acc)">${fmtNum(d.total)}</div>
       <div style="font-size:11px;color:var(--tx2)">${d.unidade}</div></div></div>`;
   });
   c.innerHTML=h+'</div>';
@@ -2685,7 +2911,12 @@ function salvarHistorico(){
 
 function renderHistorico(c){
   if(!historico.length){
-    c.innerHTML='<div class="empty"><i class="ti ti-history" style="font-size:36px;opacity:.3"></i><span>Nenhuma contagem finalizada ainda</span><span style="font-size:12px;text-align:center">Finalize uma contagem para ver o histórico aqui</span></div>';
+    c.innerHTML=`<div class="empty-v2">
+      <div class="empty-icon-wrap"><i class="ti ti-history" style="font-size:28px;opacity:.5"></i></div>
+      <div class="empty-title">Nenhuma contagem finalizada</div>
+      <div class="empty-sub">Suas contagens concluídas aparecerão aqui. Inicie uma nova contagem na aba <strong>Locais</strong>.</div>
+      <button class="empty-cta" onclick="document.querySelector('[data-home-tab=locais]').click()">Ir para Locais →</button>
+    </div>`;
     return;
   }
   // Agrupar por data
@@ -2759,7 +2990,7 @@ function abrirDetalheHistorico(entry){
         const conv=spec.fator!==1?` = ${fmtNum((d.qty||0)*spec.fator)} ${p.unidade}`:'';
         qtdTxt=`${d.qty||0} ${spec.unidContagem||'un'}${conv}`;
       }else{qtdTxt=`${d.qty||0} un`;}
-      const noteEl=d.note?`<div style="font-size:11px;color:#185FA5;margin-top:2px">📝 ${d.note}</div>`:'';
+      const noteEl=d.note?`<div style="font-size:11px;color:var(--acc);margin-top:2px"><i class="ti ti-note" style="font-size:11px"></i> ${d.note}</div>`:'';
       h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${p.nome}${noteEl}</span>
         <span style="font-size:13px;font-weight:500;text-align:right;white-space:nowrap">${qtdTxt}</span></div>`;
     });
@@ -2879,7 +3110,7 @@ function abrirGerenciarUsuario(perf){
   body.innerHTML=`
     <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">${perf.email}</div>
     <div style="margin-bottom:14px;display:flex;align-items:center;gap:6px">
-      <span class="bdg" style="background:#E6F1FB;color:#0C447C">${ROLE_LABEL[perf.role]||perf.role}</span>
+      <span class="bdg" style="background:var(--acc-bg);color:var(--acc-tx)">${ROLE_LABEL[perf.role]||perf.role}</span>
       ${perf.disabled?'<span class="bdg" style="background:#fff0f0;color:#ff3b30">Desativado</span>':''}
     </div>
     <button class="bp" id="gu-reset" style="margin-bottom:8px;width:100%"><i class="ti ti-mail"></i> Enviar redefinição de senha</button>
@@ -2992,6 +3223,47 @@ document.getElementById('gal-input').addEventListener('change',handleFile);
 document.querySelectorAll('.ntab[data-home-tab]').forEach(el=>el.addEventListener('click',()=>homeTab(el.dataset.homeTab)));
 document.getElementById('hist-det-close').addEventListener('click',()=>closeModal('modal-hist-detail'));
 
+// ── UX v19: Botão mostrar/ocultar senha ──────────────────────────────────────
+(function(){
+  const btn=document.getElementById('btn-pwd-toggle');
+  const inp=document.getElementById('login-pwd');
+  if(!btn||!inp)return;
+  let visible=false;
+  btn.addEventListener('click',()=>{
+    visible=!visible;
+    inp.type=visible?'text':'password';
+    btn.innerHTML=visible?'<i class="ti ti-eye-off"></i>':'<i class="ti ti-eye"></i>';
+    inp.focus();
+  });
+})();
+
+// ── UX v19: Busca com botão limpar (sobrescreve listener original) ────────────
+(function(){
+  const inp=document.getElementById('srch-inp');
+  const wrap=document.getElementById('srch-wrap');
+  const btn=document.getElementById('srch-clear');
+  if(!inp||!wrap||!btn)return;
+  // Substituir o listener padrão por um que também controla o botão de limpar
+  inp.addEventListener('input',e=>{
+    wrap.classList.toggle('has-value',e.target.value.length>0);
+    // setSearch já é chamado pelo listener original adicionado antes
+  });
+  btn.addEventListener('click',()=>{
+    inp.value='';
+    wrap.classList.remove('has-value');
+    setSearch('');
+    inp.focus();
+  });
+})();
+
+// ── UX v19: Bottom sheet foto — fechar ao clicar no fundo ───────────────────
+(function(){
+  const bg=document.getElementById('modal-foto-opts');
+  if(!bg)return;
+  bg.addEventListener('click',e=>{
+    if(e.target===bg) closeModal('modal-foto-opts');
+  });
+})();
 
 /* Theme change listener - re-renders dynamic content on OS theme switch */
 (function(){
