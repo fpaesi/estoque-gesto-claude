@@ -1377,8 +1377,8 @@ async function marcarRascunhoConcluido(lid){
 // Verifica se todos os locais com itens estão finalizados
 function todosLocaisFinalizados(){
   return locais.every(l=>{
-    const prods=getProdsLocal(l.id).filter(p=>hasSpec(l.id,p.cod));
-    if(!prods.length)return true; // local sem itens com spec não bloqueia
+    const prods=getProdsLocal(l.id);
+    if(!prods.length)return true; // local sem itens não bloqueia
     return rascunhos[l.id]?.status==='concluido';
   });
 }
@@ -1670,7 +1670,7 @@ function getProdsSublocal(lid,slId){
   return all.filter(p=>getVinculo(lid,p.cod)===slId);
 }
 function slStatus(lid,slId){
-  const prods=getProdsSublocal(lid,slId).filter(p=>hasSpec(lid,p.cod));
+  const prods=getProdsSublocal(lid,slId);
   const cnt=counts[lid]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
   if(done===0)return 'pend';if(done<prods.length)return 'prog';return 'done';
 }
@@ -1688,9 +1688,7 @@ function goToLocal(lid){aLocal=lid;const subs=getSubs(lid);if(!subs.length){aSub
 function localBadge(lid){
   const prods=getProdsLocal(lid),cnt=counts[lid]||{};
   const done=Object.values(cnt).filter(x=>x.touched).length;
-  const semSpec=countSemSpec(lid);
   const r=rascunhos[lid];
-  if(semSpec>0)return `<span class="bdg bwarn">${semSpec} sem spec</span>`;
   if(r&&r.status==='concluido')return `<span class="bdg bdone">Concluído ✓</span>`;
   if(done===0)return `<span class="bdg bpend">${prods.length} itens</span>`;
   if(done<prods.length)return `<span class="bdg bprog">${done}/${prods.length}</span>`;
@@ -1727,7 +1725,7 @@ function renderHome(){
     if(!tudo){
       // Ainda há locais pendentes — mostra quantos faltam
       const faltam=locais.filter(l=>{
-        const prods=getProdsLocal(l.id).filter(p=>hasSpec(l.id,p.cod));
+        const prods=getProdsLocal(l.id);
         return prods.length>0&&rascunhos[l.id]?.status!=='concluido';
       }).length;
       homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">${faltam} local${faltam!==1?'is':''} ainda não finalizado${faltam!==1?'s':''}</div>${getSyncHTML()}`;
@@ -1751,7 +1749,7 @@ function renderHome(){
     if(meuLocal){
       const cnt=counts[meuLocal.id]||{};
       const done=Object.values(cnt).filter(x=>x.touched).length;
-      const total=getProdsLocal(meuLocal.id).filter(p=>hasSpec(meuLocal.id,p.cod)).length;
+      const total=getProdsLocal(meuLocal.id).length;
       homeBbar.innerHTML=`<button id="btn-home-retomar" class="bp"><i class="ti ti-player-play"></i> Continuar: ${meuLocal.icon} ${meuLocal.nome} · ${done}/${total}</button>${getSyncHTML()}`;
       document.getElementById('btn-home-retomar').addEventListener('click',()=>goToLocal(meuLocal.id));
     } else {
@@ -1810,7 +1808,7 @@ function renderHome(){
         const r=rascunhos[l.id];
         const cnt=counts[l.id]||{};
         const done=Object.values(cnt).filter(x=>x.touched).length;
-        const total=getProdsLocal(l.id).filter(p=>hasSpec(l.id,p.cod)).length;
+        const total=getProdsLocal(l.id).length;
         const pct=total?Math.round(done/total*100):0;
         const isMeu=currentUser&&r&&r.userId===currentUser.uid;
         const nomeUser=isMeu?'Você':(r?.userName?.split(' ')[0]||'Usuário');
@@ -1841,8 +1839,7 @@ function renderHome(){
       h+=`<div class="sec">A contar · ${aContar.length}</div>`;
       aContar.forEach(l=>{
         const subs=getAllSubsFlat(l.id);
-        const semSpec=countSemSpec(l.id);
-        const badge=semSpec>0?`<span class="bdg bwarn">${semSpec} sem spec</span>`:`<span class="bdg bpend">${getProdsLocal(l.id).length} itens</span>`;
+        const badge=`<span class="bdg bpend">${getProdsLocal(l.id).length} itens</span>`;
         h+=`<div class="row" data-lid="${l.id}" data-action="local">
           <div style="font-size:22px;width:32px;text-align:center">${l.icon}</div>
           <div style="flex:1">
@@ -1860,7 +1857,7 @@ function renderHome(){
         const r=rascunhos[l.id];
         const cnt=counts[l.id]||{};
         const done=Object.values(cnt).filter(x=>x.touched).length;
-        const total=getProdsLocal(l.id).filter(p=>hasSpec(l.id,p.cod)).length;
+        const total=getProdsLocal(l.id).length;
         const isMeu=currentUser&&r&&r.userId===currentUser.uid;
         const nomeUser=isMeu?'Você':(r?.userName?.split(' ')[0]||'Usuário');
         const avatarUser=r?.userAvatar||'?';
@@ -1907,7 +1904,7 @@ function renderSel(){
 function renderPlano(lid){
   const l=getLocal(lid);const subs=getAllSubsFlat(lid);const cnt=counts[lid]||{};
   document.getElementById('plano-title').textContent=`${l.icon} ${l.nome}`;
-  const totalProds=getProdsLocal(lid).filter(p=>hasSpec(lid,p.cod)).length;
+  const totalProds=getProdsLocal(lid).length;
   const totalDone=Object.values(cnt).filter(x=>x.touched).length;
   const semSpec=countSemSpec(lid);
   document.getElementById('plano-sub').textContent=semSpec>0?`⚠️ ${semSpec} sem especificação`:totalDone>0?`${totalDone}/${totalProds} contados`:`${totalProds} itens`;
@@ -1918,7 +1915,7 @@ function renderPlano(lid){
     <button id="btn-ir-gestao" style="margin-top:6px;font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Ir para Gestão →</button></div></div>`;
   h+='<div class="sec">Roteiro de contagem</div>';
   subs.forEach((sl,i)=>{
-    const prods=getProdsSublocal(lid,sl.id).filter(p=>hasSpec(lid,p.cod));
+    const prods=getProdsSublocal(lid,sl.id);
     const done=prods.filter(p=>cnt[p.cod]?.touched).length;
     const status=slStatus(lid,sl.id);const isNext=i===proximoIdx&&totalDone<totalProds;
     const numEl=status==='done'?`<div class="sl-sn" style="background:#EAF3DE"><i class="ti ti-check" style="color:#27500A;font-size:14px"></i></div>`:
@@ -1940,7 +1937,7 @@ function renderPlano(lid){
   const btnGestao=document.getElementById('btn-ir-gestao');
   if(btnGestao)btnGestao.addEventListener('click',()=>{homeTab('gestao');show('s-home');});
   const bbar=document.getElementById('plano-bbar');
-  const allDone=getProdsLocal(lid).filter(p=>hasSpec(lid,p.cod)).every(p=>counts[lid]?.[p.cod]?.touched);
+  const allDone=getProdsLocal(lid).every(p=>counts[lid]?.[p.cod]?.touched);
   if(allDone&&totalProds>0){
     bbar.innerHTML=`<button id="btn-salvar-plano" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button>
       <button id="btn-revisar-plano" class="bs">Revisar</button>`;
@@ -1948,7 +1945,7 @@ function renderPlano(lid){
     document.getElementById('btn-revisar-plano').addEventListener('click',()=>entrarContagem(lid,'__todos__'));
   } else {
     const proxSl=subs[proximoIdx]||subs[0];
-    bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp" ${semSpec>0&&totalDone===0?'disabled':''}><i class="ti ti-player-play"></i> ${totalDone>0?`Continuar · ${proxSl?.nome||''}`:`Iniciar · ${proxSl?.nome||''}`}</button>
+    bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp"><i class="ti ti-player-play"></i> ${totalDone>0?`Continuar · ${proxSl?.nome||''}`:`Iniciar · ${proxSl?.nome||''}`}</button>
       <button id="btn-pausar-plano" class="bg_">Pausar e sair</button>`;
     document.getElementById('btn-iniciar-plano').addEventListener('click',()=>entrarContagem(lid,'__todos__'));
     document.getElementById('btn-pausar-plano').addEventListener('click',()=>{show('s-home');renderHome();});
@@ -1996,7 +1993,7 @@ function renderSlNav(){
   if(!allFlat.length){document.getElementById('sl-nav').style.display='none';return;}
   document.getElementById('sl-nav').style.display='flex';
   const nav=document.getElementById('sl-nav');
-  const allProds=getProdsLocal(aLocal).filter(p=>hasSpec(aLocal,p.cod));
+  const allProds=getProdsLocal(aLocal);
   const allDoneCount=Object.values(counts[aLocal]||{}).filter(x=>x.touched).length;
   const todosStatus=allDoneCount>=allProds.length&&allProds.length>0?'done':'pend';
   const todosCur=aSublocal==='__todos__';
@@ -2017,7 +2014,7 @@ function mudarSublocal(slId){
 
 function renderCount(){
   const allProds=getProdsSublocal(aLocal,aSublocal);
-  const contaveis=allProds.filter(p=>hasSpec(aLocal,p.cod));
+  const contaveis=allProds;
   const semSpec=allProds.filter(p=>!hasSpec(aLocal,p.cod));
   const cnt=counts[aLocal]||{};const done=contaveis.filter(p=>cnt[p.cod]?.touched).length;
   const subs=getSubs(aLocal);
@@ -2032,7 +2029,7 @@ function renderCount(){
   if(aGrupo!=='todos')filtrado=filtrado.filter(p=>p.grupo===aGrupo);
   if(sTerm)filtrado=filtrado.filter(p=>p.nome.toLowerCase().includes(sTerm)||p.cod.includes(sTerm));
   let h='';
-  if(semSpec.length)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12px;color:#92400E"><strong>${semSpec.length} sem especificação</strong> — cadastre em Gestão.</div></div>`;
+  if(semSpec.length)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12px;color:#92400E"><strong>${semSpec.length} ${semSpec.length===1?'item':'itens'} sem especificação</strong> — contados em Unidade Saipos. <button id="btn-gestao-spec" style="font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Cadastrar especificação →</button></div></div>`;
   if(!filtrado.length){
     const isSublocEspecifico=aSublocal&&aSublocal!=='__todos__'&&aSublocal!=='__sem__';
     const emptyMsg=isSublocEspecifico?
@@ -2051,15 +2048,15 @@ function renderCount(){
     const slNomeDisplay=slInfo?(slInfo._parentNome?`${slInfo._parentNome} › ${slInfo.nome}`:slInfo.nome):null;
     const slTag=allFlat.length?(slInfo?`<span class="tsl">📍 ${slNomeDisplay}</span>`:'<span class="tns">Sem sublocal</span>'):'';
     const slBtn=allFlat.length?`<button class="btn-assign" data-cod="${p.cod}" style="font-size:11px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">${slInfo?'Trocar':'Definir'}</button>`:'';
-    const specBadge=spec.modo==='contador'?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${spec.embalagem} · ×${spec.fator} ${p.unidade}</span>`:`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${p.unidade}</span>`;
-    const isZeroed=d.touched&&(spec.modo==='decimal'?(d.qtyDec!==''&&parseFloat(d.qtyDec)===0):(d.qty||0)===0);
+    const specBadge=!spec?`<span class="sb-dec" style="background:#FEF3C7;color:#92400E;border-color:#FCD34D"><i class="ti ti-alert-triangle" style="font-size:10px"></i>Unidade Saipos · ${p.unidade}</span>`:spec.modo==='contador'?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${spec.embalagem} · ×${spec.fator} ${p.unidade}</span>`:`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${p.unidade}</span>`;
+    const isZeroed=d.touched&&(!spec||spec.modo==='decimal'?(d.qtyDec!==''&&parseFloat(d.qtyDec)===0):(d.qty||0)===0);
     const zbCls=isZeroed?'zeroed':'';const zbTxt=isZeroed?'Zero ✓':'Zero';
     const hasObs=!!(d.note&&d.note.trim());
     const obsTxt=hasObs?'Obs. ✓':'+ Obs.';
     const fotoBtn=d.foto?`<img class="fthu btn-foto" data-cod="${p.cod}" src="${d.foto}" style="width:32px;height:32px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0" alt="Foto"/>`:
       `<button class="ib btn-foto-opts" data-cod="${p.cod}" title="Foto" style="flex-shrink:0"><i class="ti ti-camera"></i></button>`;
     let ei='';
-    if(spec.modo==='contador'){
+    if(spec&&spec.modo==='contador'){
       const qty=d.qty||0;const v=calcV(aLocal,p.cod,qty);
       ei=`<div class="cntb"><div class="cnt-row">
         <button class="cbt btn-minus" data-cod="${p.cod}">−</button>
@@ -2068,9 +2065,10 @@ function renderCount(){
         <div class="ccv" id="conv-${p.cod}">${spec.fator!==1?`= ${fmtNum(v)} ${p.unidade}`:`${fmtNum(v)} ${p.unidade}`}</div></div>`;
     } else {
       const qd=d.qtyDec!==undefined&&d.qtyDec!==''?d.qtyDec:'';
-      ei=`<div class="decb"><div class="decl">Quantidade em ${p.unidade}</div>
+      const unidLabel=spec?p.unidade:p.unidade;
+      ei=`<div class="decb"><div class="decl">Quantidade em ${unidLabel}</div>
         <div class="decr"><input class="deci inp-dec" data-cod="${p.cod}" type="number" step="0.001" min="0" placeholder="0.000" value="${qd}"/>
-        <span class="decu">${p.unidade}</span></div></div>`;
+        <span class="decu">${unidLabel}</span></div></div>`;
     }
     h+=`<div class="pcard ${d.touched?'done-card':''}${hasObs?' exp':''}" id="pc-${p.cod}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
@@ -2110,6 +2108,7 @@ function renderCount(){
   cl.querySelectorAll('.btn-obs-toggle').forEach(el=>el.addEventListener('click',()=>toggleCardExtra(el.dataset.cod)));
   cl.querySelectorAll('.btn-rem-inline').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();if(confirm(`Remover "${el.dataset.nome}" deste local?`))removerItem(el.dataset.cod);}));
   document.getElementById('btn-add-item-top')?.addEventListener('click',openAdicionarItem);
+  document.getElementById('btn-gestao-spec')?.addEventListener('click',()=>{homeTab('gestao');show('s-home');});
   updProg(contaveis,done);renderCountBbar(contaveis,done);
 }
 
@@ -2124,7 +2123,7 @@ function checkExtras(slNome,onConfirm){
 function renderCountBbar(prods,done){
   const subs=getSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('count-bbar');
-  const allDone=getProdsLocal(aLocal).filter(p=>hasSpec(aLocal,p.cod)).every(p=>counts[aLocal]?.[p.cod]?.touched);
+  const allDone=getProdsLocal(aLocal).every(p=>counts[aLocal]?.[p.cod]?.touched);
   const slAtual=getSubs(aLocal).find(s=>s.id===aSublocal);
   const slNomeAtual=slAtual?.nome||(aSublocal==='__todos__'?getLocal(aLocal).nome:aSublocal);
   if(allDone){
@@ -2177,7 +2176,7 @@ function chgDecBlur(cod,val){
   if(!counts[aLocal]?.[cod])return;
   if(val===''||isNaN(parseFloat(val)))counts[aLocal][cod].touched=false;
   else{counts[aLocal][cod].touched=true;markTouched(cod);updTopbarProgress();}
-  const prods=getProdsSublocal(aLocal,aSublocal).filter(p=>hasSpec(aLocal,p.cod));
+  const prods=getProdsSublocal(aLocal,aSublocal);
   const cnt=counts[aLocal]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
   renderCountBbar(prods,done);
 }
@@ -2187,14 +2186,14 @@ function markTouched(cod){
     if(!top.querySelector('i.ti-check')){const ic=document.createElement('i');ic.className='ti ti-check';ic.style.cssText='color:#639922;font-size:18px;flex-shrink:0';top.appendChild(ic);}}
 }
 function checkRowDone(cod){
-  const prods=getProdsSublocal(aLocal,aSublocal).filter(p=>hasSpec(aLocal,p.cod));
+  const prods=getProdsSublocal(aLocal,aSublocal);
   const cnt=counts[aLocal]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
   if(done===prods.length)renderCountBbar(prods,done);
 }
 function setNote(cod,val){if(counts[aLocal]?.[cod]){counts[aLocal][cod].note=val;agendarSalvarRascunho(aLocal);}}
 function updProg(prods,done){
   const pbar=document.getElementById('pbar'),ppct=document.getElementById('ppct');
-  if(!prods){prods=getProdsSublocal(aLocal,aSublocal).filter(p=>hasSpec(aLocal,p.cod));const cnt=counts[aLocal]||{};done=prods.filter(p=>cnt[p.cod]?.touched).length;}
+  if(!prods){prods=getProdsSublocal(aLocal,aSublocal);const cnt=counts[aLocal]||{};done=prods.filter(p=>cnt[p.cod]?.touched).length;}
   const pct=prods.length?Math.round(done/prods.length*100):0;
   if(pbar)pbar.style.width=pct+'%';if(ppct)ppct.textContent=pct+'%';
 }
@@ -2222,7 +2221,7 @@ function doAssign(slId){setVinculo(aLocal,pendingAssignCod,slId);closeModal('mod
 function goFinish(){
   const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
   document.getElementById('fin-label').textContent=sl?`${l.icon} ${l.nome} › ${sl.nome}`:`${l.icon} ${l.nome}`;
-  const prods=getProdsSublocal(aLocal,aSublocal).filter(p=>hasSpec(aLocal,p.cod)),cnt=counts[aLocal]||{};
+  const prods=getProdsSublocal(aLocal,aSublocal),cnt=counts[aLocal]||{};
   const done=prods.filter(p=>cnt[p.cod]?.touched).length;const comFoto=prods.filter(p=>cnt[p.cod]?.foto).length;
   let h=`<div class="sgrid"><div class="scard"><div class="slbl">Contados</div><div class="sval">${done}</div></div>
     <div class="scard"><div class="slbl">Com foto</div><div class="sval">${comFoto}</div></div></div>
@@ -2246,7 +2245,7 @@ function goFinish(){
   document.getElementById('fin-cnt').innerHTML=h;
   const subs=getSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('fin-bbar');
-  const allDone=getProdsLocal(aLocal).filter(p=>hasSpec(aLocal,p.cod)).every(p=>counts[aLocal]?.[p.cod]?.touched);
+  const allDone=getProdsLocal(aLocal).every(p=>counts[aLocal]?.[p.cod]?.touched);
   if(allDone){
     bbar.innerHTML='<button id="btn-fin-salvar" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button><button id="btn-fin-rev" class="bs">Revisar</button>';
     document.getElementById('btn-fin-salvar').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
@@ -2266,7 +2265,7 @@ function goFinish(){
 }
 
 function renderSaved(){
-  const l=getLocal(aLocal);const prods=getProdsLocal(aLocal).filter(p=>hasSpec(aLocal,p.cod));
+  const l=getLocal(aLocal);const prods=getProdsLocal(aLocal);
   const cnt=counts[aLocal]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
   document.getElementById('saved-sum').innerHTML=`<div class="srow"><span style="color:var(--tx2)">Local</span><span style="font-weight:500">${l.icon} ${l.nome}</span></div>
     <div class="srow"><span style="color:var(--tx2)">Itens registrados</span><span style="font-weight:500">${done} de ${prods.length}</span></div>
@@ -2765,17 +2764,17 @@ function renderConsolidado(c){
   // ── Progresso por local ──────────────────────────────────────────────────
   const totalLocais=locais.length;
   const locaisContados=locais.filter(l=>{
-    const prods=getProdsLocal(l.id).filter(p=>hasSpec(l.id,p.cod));
+    const prods=getProdsLocal(l.id);
     return prods.length>0&&prods.every(p=>counts[l.id]?.[p.cod]?.touched);
   });
   const locaisEmAndamento=locais.filter(l=>{
-    const prods=getProdsLocal(l.id).filter(p=>hasSpec(l.id,p.cod));
+    const prods=getProdsLocal(l.id);
     if(!prods.length)return false;
     const done=prods.filter(p=>counts[l.id]?.[p.cod]?.touched).length;
     return done>0&&done<prods.length;
   });
   const locaisPendentes=locais.filter(l=>{
-    const prods=getProdsLocal(l.id).filter(p=>hasSpec(l.id,p.cod));
+    const prods=getProdsLocal(l.id);
     if(!prods.length)return false;
     return !prods.every(p=>counts[l.id]?.[p.cod]?.touched)&&!locaisEmAndamento.find(x=>x.id===l.id);
   });
@@ -2876,7 +2875,7 @@ function openFotoOpts(cod){
   document.getElementById('modal-foto-opts').classList.add('on');
 }
 function updTopbarProgress(){
-  const total=getProdsLocal(aLocal).filter(p=>hasSpec(aLocal,p.cod)).length;
+  const total=getProdsLocal(aLocal).length;
   const done=Object.values(counts[aLocal]||{}).filter(x=>x.touched).length;
   const subNome=getSublocNome(aLocal,aSublocal);
   const subTxt=aSublocal&&aSublocal!=='__todos__'&&aSublocal!=='__sem__'?`📍 ${subNome}`:aSublocal==='__sem__'?'Sem sublocal':'Todos os itens';
@@ -2889,7 +2888,7 @@ function updTopbarProgress(){
 function salvarHistorico(){
   const lid=aLocal;
   const l=getLocal(lid);
-  const prods=getProdsLocal(lid).filter(p=>hasSpec(lid,p.cod));
+  const prods=getProdsLocal(lid);
   const cnt=counts[lid]||{};
   const done=prods.filter(p=>cnt[p.cod]?.touched).length;
   const itens={};
@@ -2993,7 +2992,7 @@ function abrirDetalheHistorico(entry){
   document.getElementById('hist-det-title').textContent=`${l.icon} ${l.nome}`;
   document.getElementById('hist-det-sub').textContent=`${dtStr.charAt(0).toUpperCase()+dtStr.slice(1)} às ${hora}`;
   const body=document.getElementById('hist-det-body');
-  const prods=getProdsLocal(entry.local).filter(p=>hasSpec(entry.local,p.cod));
+  const prods=getProdsLocal(entry.local);
   const contados=prods.filter(p=>entry.itens[p.cod]);
   const pendentes=prods.filter(p=>!entry.itens[p.cod]);
   const inicioHistTxt=entry.startedAt?fmtDT(entry.startedAt):'';
