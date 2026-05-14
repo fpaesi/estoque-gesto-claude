@@ -264,7 +264,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente</span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v30</span></span></div>
   </div>
 </div>
 
@@ -1086,14 +1086,16 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
+const APP_VERSION = 'v30';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
   const timeStr=lastSyncTime?new Date(lastSyncTime).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
-  if(syncState==='syncing') return `<div class="syncr syncing"><div class="sync-pulse syncing"></div><span>Sincronizando...</span></div>`;
-  if(syncState==='synced')  return `<div class="syncr synced"><div class="sync-pulse synced"></div><span>Sincronizado${timeStr?' · '+timeStr:''}</span></div>`;
-  if(syncState==='error')   return `<div class="syncr error"><div class="sync-pulse error"></div><span>⚠ Sem conexão — salvo localmente</span></div>`;
-  return `<div class="syncr"><div class="sync-pulse local"></div><span>Dados salvos localmente</span></div>`;
+  const ver=`<span style="opacity:.45;margin-left:4px">${APP_VERSION}</span>`;
+  if(syncState==='syncing') return `<div class="syncr syncing"><div class="sync-pulse syncing"></div><span>Sincronizando...${ver}</span></div>`;
+  if(syncState==='synced')  return `<div class="syncr synced"><div class="sync-pulse synced"></div><span>Sincronizado${timeStr?' · '+timeStr:''}${ver}</span></div>`;
+  if(syncState==='error')   return `<div class="syncr error"><div class="sync-pulse error"></div><span>⚠ Sem conexão — salvo localmente${ver}</span></div>`;
+  return `<div class="syncr"><div class="sync-pulse local"></div><span>Dados salvos localmente${ver}</span></div>`;
 }
 function setSyncState(s){
   syncState=s;
