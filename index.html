@@ -281,7 +281,7 @@
   <div class="topbar">
     <button class="tbtn" onclick="show('s-sel');renderSel()"><i class="ti ti-arrow-left"></i></button>
     <div style="text-align:center"><div class="tt" id="plano-title"></div><div class="ts" id="plano-sub"></div></div>
-    <div style="width:36px"></div>
+    <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit">🏠 Início</button>
   </div>
   <div class="content" id="plano-list"></div>
   <div class="bbar" id="plano-bbar"></div>
@@ -294,6 +294,7 @@
     <div style="display:flex;align-items:center;gap:4px">
       <div id="ct-save-indicator" style="display:none;align-items:center;gap:3px;font-size:10px;color:var(--tx2)"><div style="width:6px;height:6px;border-radius:50%;background:#639922"></div></div>
       <button id="btn-count-mgr" class="tbtn"><i class="ti ti-list-check"></i></button>
+      <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit">🏠 Início</button>
     </div>
   </div>
   <div class="slnav" id="sl-nav"></div>
@@ -312,7 +313,7 @@
   <div class="topbar">
     <button class="tbtn" onclick="backCount()"><i class="ti ti-arrow-left"></i></button>
     <div style="text-align:center"><div class="tt">Resumo</div><div class="ts" id="fin-label"></div></div>
-    <div style="width:36px"></div>
+    <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit">🏠 Início</button>
   </div>
   <div class="content" id="fin-cnt"></div>
   <div class="bbar" id="fin-bbar"></div>
@@ -2039,6 +2040,7 @@ function renderCount(){
       '<div class="empty"><i class="ti ti-search" style="font-size:30px;opacity:.3"></i><span>Nenhum item</span></div>';
     document.getElementById('count-list').innerHTML=h||emptyMsg;updProg(contaveis,done);renderCountBbar(contaveis,done);return;
   }
+  h+=`<div style="padding:8px 12px 4px"><button id="btn-add-item-top" style="width:100%;padding:10px 14px;border-radius:var(--r1);background:none;border:.5px dashed var(--acc-bd);font-size:13px;font-weight:500;color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit"><i class="ti ti-plus"></i> Adicionar item ao local</button></div>`;
   let lastG=null;
   filtrado.forEach(p=>{
     if(p.grupo!==lastG){h+=`<div class="gsep">${p.grupo}</div>`;lastG=p.grupo;}
@@ -2074,7 +2076,8 @@ function renderCount(){
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div style="flex:1"><div style="font-size:14px;font-weight:500">${p.nome}</div>
         <div style="font-size:11px;color:var(--tx2);margin-top:1px">COD ${p.cod}</div>
-        <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${specBadge}${subs.length?slTag+slBtn:''}</div></div>${checkIco}</div>
+        <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${specBadge}${subs.length?slTag+slBtn:''}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${checkIco}<button class="btn-rem-inline" data-cod="${p.cod}" data-nome="${p.nome.replace(/"/g,'&quot;')}" style="background:none;border:none;padding:2px 4px;cursor:pointer;color:var(--tx2);font-size:20px;line-height:1;opacity:0.4" title="Remover do local">×</button></div></div>
       ${ei}
       <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
         <button class="zb ${zbCls} btn-zero" data-cod="${p.cod}">${zbTxt}</button>
@@ -2105,6 +2108,8 @@ function renderCount(){
   cl.querySelectorAll('.btn-zero').forEach(el=>el.addEventListener('click',()=>zeroItem(el.dataset.cod)));
   cl.querySelectorAll('.btn-foto-opts').forEach(el=>el.addEventListener('click',()=>openFotoOpts(el.dataset.cod)));
   cl.querySelectorAll('.btn-obs-toggle').forEach(el=>el.addEventListener('click',()=>toggleCardExtra(el.dataset.cod)));
+  cl.querySelectorAll('.btn-rem-inline').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();if(confirm(`Remover "${el.dataset.nome}" deste local?`))removerItem(el.dataset.cod);}));
+  document.getElementById('btn-add-item-top')?.addEventListener('click',openAdicionarItem);
   updProg(contaveis,done);renderCountBbar(contaveis,done);
 }
 
@@ -2372,7 +2377,7 @@ function renderGestao(c){
     const term=gestaoSpecSearch.toLowerCase();
     let filtrado=term?prods.filter(p=>p.nome.toLowerCase().includes(term)||p.cod.includes(term)):prods;
     filtrado=[...filtrado].sort((a,b)=>{const aH=hasSpec(lid,a.cod),bH=hasSpec(lid,b.cod);return aH===bH?0:aH?1:-1;});
-    h+=`<div class="ms"><div style="padding:4px 0">`;
+    h+=`<div class="ms" id="spec-list-container"><div style="padding:4px 0">`;
     filtrado.slice(0,40).forEach((p,i)=>{
       const spec=getSpec(lid,p.cod);const prod=CATALOGO.find(c=>c.cod===p.cod);
       const specInfo=spec?(spec.modo==='contador'?
@@ -2470,12 +2475,36 @@ function renderGestao(c){
   // Specs
   c.querySelectorAll('.btn-spec-local').forEach(el=>el.addEventListener('click',()=>{gestaoSpecLocal=el.dataset.lid;gestaoSpecSearch='';renderGestao(c);}));
   const specSrch=c.querySelector('#spec-srch');
-  if(specSrch)specSrch.addEventListener('input',()=>{gestaoSpecSearch=specSrch.value;renderGestao(c);});
+  if(specSrch)specSrch.addEventListener('input',()=>{gestaoSpecSearch=specSrch.value;renderSpecList(gestaoSpecLocal,gestaoSpecSearch.toLowerCase());});
   c.querySelectorAll('.btn-edit-spec').forEach(el=>el.addEventListener('click',()=>editSpec(el.dataset.lid,el.dataset.cod)));
   const btnExpSpecs=c.querySelector('#btn-exportar-specs');if(btnExpSpecs)btnExpSpecs.addEventListener('click',exportarEspecsCSV);
   const btnExp=c.querySelector('#btn-exportar');if(btnExp)btnExp.addEventListener('click',exportarBackup);
   const btnImpF=c.querySelector('#btn-importar-file');if(btnImpF)btnImpF.addEventListener('click',()=>document.getElementById('backup-file-input').click());
   const btnImpT=c.querySelector('#btn-importar-txt');if(btnImpT)btnImpT.addEventListener('click',()=>document.getElementById('modal-import').classList.add('on'));
+}
+
+function renderSpecList(lid,term){
+  const container=document.getElementById('spec-list-container');
+  if(!container)return;
+  const prods=getProdsLocal(lid);
+  let filtrado=term?prods.filter(p=>p.nome.toLowerCase().includes(term)||p.cod.includes(term)):prods;
+  filtrado=[...filtrado].sort((a,b)=>{const aH=hasSpec(lid,a.cod),bH=hasSpec(lid,b.cod);return aH===bH?0:aH?1:-1;});
+  let h='<div style="padding:4px 0">';
+  filtrado.slice(0,40).forEach((p,i)=>{
+    const spec=getSpec(lid,p.cod);const prod=CATALOGO.find(c=>c.cod===p.cod);
+    const specInfo=spec?(spec.modo==='contador'?
+      `<div style="text-align:right"><div class="sb-cnt" style="display:inline-flex">${spec.embalagem}</div><div style="font-size:10px;color:var(--acc);margin-top:1px">×${spec.fator} ${prod?.unidade||''}</div></div>`:
+      `<div class="sb-dec" style="display:inline-flex">Digitar ${prod?.unidade||''}</div>`):'<span class="sb-mis"><i class="ti ti-alert-circle" style="font-size:11px"></i>Sem spec</span>';
+    h+=`<div class="spi" ${i===Math.min(filtrado.length,40)-1?'style="border-bottom:none"':''}>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
+      <div style="font-size:11px;color:var(--tx2)">Saipos: ${prod?.unidade||'—'}</div></div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">${specInfo}
+      <button class="ib ${spec?'':'primary'} btn-edit-spec" data-lid="${lid}" data-cod="${p.cod}"><i class="ti ti-${spec?'pencil':'plus'}"></i></button></div></div>`;
+  });
+  if(filtrado.length>40)h+=`<div style="padding:10px 14px;font-size:12px;color:var(--tx2)">+ ${filtrado.length-40} itens — refine a busca</div>`;
+  h+='</div>';
+  container.innerHTML=h;
+  container.querySelectorAll('.btn-edit-spec').forEach(el=>el.addEventListener('click',()=>editSpec(el.dataset.lid,el.dataset.cod)));
 }
 
 function editSpec(lid,cod){
@@ -2567,6 +2596,12 @@ function openGerenciarItens(){
   const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
   document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+sl.nome:''}`;
   mgrTab('remover');document.getElementById('modal-mgr').classList.add('on');
+}
+function openAdicionarItem(){
+  const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
+  document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+sl.nome:''}`;
+  document.getElementById('modal-mgr').classList.add('on');
+  mgrTab('adicionar');
 }
 function mgrTab(t){
   document.getElementById('mgr-tab-rem').classList.toggle('on',t==='remover');
