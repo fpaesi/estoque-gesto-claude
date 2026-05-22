@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v37</title>
+<title>Estoque Gesto v38</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -261,11 +261,10 @@
     <div class="ntab with-icon" data-home-tab="consolidado"><i class="ti ti-chart-bar ntab-icon"></i>Resumo</div>
     <div class="ntab with-icon" data-home-tab="historico"><i class="ti ti-clock ntab-icon"></i>Histórico</div>
     <div class="ntab with-icon" data-home-tab="gestao" id="tab-gestao"><i class="ti ti-settings ntab-icon"></i>Gestão</div>
-    <div class="ntab with-icon" data-home-tab="usuarios" id="tab-usuarios" style="display:none"><i class="ti ti-users ntab-icon"></i>Usuários</div>
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v37</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v38</span></span></div>
   </div>
 </div>
 
@@ -1118,7 +1117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v37';
+const APP_VERSION = 'v38';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1795,12 +1794,24 @@ function goSel(){show('s-sel');renderSel();}
 function backCount(){renderCount();show('s-count');}
 function voltarAoPlano(){show('s-plano');renderPlano(aLocal);}
 function homeTab(t){
-  if((t==='gestao'||t==='usuarios')&&!isAdminRole())t='locais';
+  if(t==='usuarios')t='gestao';
+  if(t==='gestao'&&!isAdminRole())t='locais';
   homeTabId=t;
   document.querySelectorAll('#s-home .ntab').forEach(el=>el.classList.toggle('on',el.dataset.homeTab===t));
   renderHome();
 }
 function goToLocal(lid){aLocal=lid;const subs=getSubs(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
+
+function abrirNovoUsuario(){
+  document.getElementById('nu-nome').value='';
+  document.getElementById('nu-email').value='';
+  document.getElementById('nu-pwd').value='';
+  document.getElementById('nu-status').textContent='';
+  nuRole='contador_conferente';
+  document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
+  document.getElementById('modal-novo-usuario').classList.add('on');
+  setTimeout(()=>document.getElementById('nu-nome').focus(),100);
+}
 
 function localBadge(lid){
   const prods=getProdsLocal(lid),cnt=counts[lid]||{};
@@ -1881,18 +1892,9 @@ function renderHome(){
       homeBbar.innerHTML=getSyncHTML();
     }
   }
-  if(homeTabId==='usuarios'){
-    homeBbar.innerHTML=`<button id="btn-novo-usuario" class="bp"><i class="ti ti-user-plus"></i> Novo usuário</button>`;
-    document.getElementById('btn-novo-usuario').addEventListener('click',()=>{
-      document.getElementById('nu-nome').value='';
-      document.getElementById('nu-email').value='';
-      document.getElementById('nu-pwd').value='';
-      document.getElementById('nu-status').textContent='';
-      nuRole='contador_conferente';
-      document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
-      document.getElementById('modal-novo-usuario').classList.add('on');
-      setTimeout(()=>document.getElementById('nu-nome').focus(),100);
-    });
+  if(homeTabId==='gestao'&&gestaoTabId==='usuarios'){
+    homeBbar.innerHTML=`<button id="btn-novo-usuario" class="bp"><i class="ti ti-user-plus"></i> Novo usuário</button>${getSyncHTML()}`;
+    document.getElementById('btn-novo-usuario').addEventListener('click',abrirNovoUsuario);
   }
   const c=document.getElementById('home-cnt');
   if(homeTabId==='locais'){
@@ -2013,7 +2015,6 @@ function renderHome(){
     c.querySelectorAll('[data-action="local"]').forEach(el=>el.addEventListener('click',()=>goToLocal(el.dataset.lid)));
   } else if(homeTabId==='consolidado'){renderConsolidado(c);
   } else if(homeTabId==='historico'){renderHistorico(c);
-  } else if(homeTabId==='usuarios'){renderUsuarios(c);
   } else {renderGestao(c);}
 }
 
@@ -2453,9 +2454,9 @@ function renderSaved(){
 
 function renderGestao(c){
   if(!isAdminRole()){homeTab('locais');return;}
-  const tabs=['locais','specs','backup'];
+  const tabs=['locais','specs','usuarios','backup'];
   let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden">
-    ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1">${t==='locais'?'Locais':t==='specs'?'Especificações':'Backup'}</div>`).join('')}</div>`;
+    ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1">${t==='locais'?'Locais':t==='specs'?'Especificações':t==='usuarios'?'Usuários':'Backup'}</div>`).join('')}</div>`;
 
   if(gestaoTabId==='locais'){
     h+='<div class="sec">Locais e sublocais</div>';
@@ -2570,6 +2571,8 @@ function renderGestao(c){
     });
     if(filtrado.length>40)h+=`<div style="padding:10px 14px;font-size:12px;color:var(--tx2)">+ ${filtrado.length-40} itens — refine a busca</div>`;
     h+=`</div></div>`;
+  } else if(gestaoTabId==='usuarios'){
+    h+='<div id="gestao-usuarios-list"></div>';
   } else {
     const nSpecs=Object.values(specs).reduce((a,b)=>a+Object.keys(b).length,0);
     const nSubs=Object.values(sublocais).reduce((a,b)=>a+b.length,0);
@@ -2596,8 +2599,13 @@ function renderGestao(c){
   }
   c.innerHTML=h;
 
+  if(gestaoTabId==='usuarios'){
+    const alvo=c.querySelector('#gestao-usuarios-list');
+    if(alvo)renderUsuarios(alvo);
+  }
+
   // Event listeners
-  c.querySelectorAll('[data-action="gestao-tab"]').forEach(el=>el.addEventListener('click',()=>{gestaoTabId=el.dataset.tab;gestaoAddLocalOpen=false;renderGestao(c);}));
+  c.querySelectorAll('[data-action="gestao-tab"]').forEach(el=>el.addEventListener('click',()=>{gestaoTabId=el.dataset.tab;gestaoAddLocalOpen=false;renderHome();}));
   // v20: toggle agora está no msh inteiro (melhoria 3)
   c.querySelectorAll('[data-action="toggle"]').forEach(el=>el.addEventListener('click',()=>{
     const b=document.getElementById(el.dataset.bodyid),ch=document.getElementById(el.dataset.chevid);
@@ -3247,11 +3255,9 @@ function abrirDetalheHistorico(entry){
 // ── Controle de acesso por nível ─────────────────────────────────────────────
 function ajustarTabsPorRole(){
   const tabGestao=document.getElementById('tab-gestao');
-  const tabUsuarios=document.getElementById('tab-usuarios');
   currentUserRole=normalizeRole(currentUserRole);
   const isAdmin=isAdminRole();
   if(tabGestao)tabGestao.style.display=isAdmin?'':'none';
-  if(tabUsuarios)tabUsuarios.style.display=isAdmin?'':'none';
   if(!isAdmin&&(homeTabId==='gestao'||homeTabId==='usuarios'))homeTabId='locais';
 }
 
@@ -3374,7 +3380,7 @@ function abrirGerenciarUsuario(perf){
     const msg=novoDisabled?`Desativar ${perf.nome}? Eles não conseguirão mais fazer login.`:`Reativar ${perf.nome}?`;
     if(!confirm(msg))return;
     const r=await toggleDesativar(perf.uid,novoDisabled);
-    if(r.success){closeModal('modal-gerenciar-usuario');homeTab('usuarios');}
+    if(r.success){closeModal('modal-gerenciar-usuario');gestaoTabId='usuarios';homeTab('gestao');}
     else alert('Erro: '+r.error);
   });
 }
@@ -3428,7 +3434,8 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
     document.getElementById('nu-nome').value='';document.getElementById('nu-email').value='';document.getElementById('nu-pwd').value='';
     nuRole='contador_conferente';document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
     st.textContent='';
-    homeTab('usuarios');
+    gestaoTabId='usuarios';
+    homeTab('gestao');
     alert('Usuário criado. Login: '+emailToLogin(loginToEmail(login))+' | Senha temporária: '+tempPwd);
   }else{st.textContent=r.error;}
 });
