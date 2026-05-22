@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v34</title>
+<title>Estoque Gesto v35</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -265,7 +265,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v34</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v35</span></span></div>
   </div>
 </div>
 
@@ -1118,7 +1118,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v34';
+const APP_VERSION = 'v35';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -3359,9 +3359,11 @@ function abrirGerenciarUsuario(perf){
     <button class="bs" id="gu-toggle" style="margin-bottom:8px;width:100%">
       <i class="ti ti-${perf.disabled?'user-check':'user-off'}"></i> ${perf.disabled?'Reativar usuário':'Desativar usuário'}
     </button>
+    <button class="bg_" id="gu-close-body" style="width:100%;padding:11px;border-radius:var(--r1);background:var(--bg2);border:.5px solid var(--bd3);color:var(--tx2)">Fechar</button>
   `;
   document.getElementById('modal-gerenciar-usuario').classList.add('on');
 
+  document.getElementById('gu-close-body')?.addEventListener('click',()=>closeModal('modal-gerenciar-usuario'));
   document.getElementById('gu-reset')?.addEventListener('click',async()=>{
     const r=await resetarSenha(perf.email);
     if(r.success){alert('E-mail de redefinição enviado para '+perf.email+'.');closeModal('modal-gerenciar-usuario');}
@@ -3433,6 +3435,7 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
 
 // Modal Gerenciar Usuário
 document.getElementById('gu-fechar').addEventListener('click',()=>closeModal('modal-gerenciar-usuario'));
+document.getElementById('modal-gerenciar-usuario').addEventListener('click',e=>{if(e.target.id==='modal-gerenciar-usuario')closeModal('modal-gerenciar-usuario');});
 document.getElementById('btn-home-sel-back').addEventListener('click',()=>show('s-home'));
 document.getElementById('fopts-cam').addEventListener('click',()=>{closeModal('modal-foto-opts');triggerCam(pendingCod);});
 document.getElementById('fopts-gal').addEventListener('click',()=>{closeModal('modal-foto-opts');triggerGal(pendingCod);});
