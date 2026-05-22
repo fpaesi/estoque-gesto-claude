@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v39</title>
+<title>Estoque Gesto v40</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -264,7 +264,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v39</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v40</span></span></div>
   </div>
 </div>
 
@@ -348,6 +348,9 @@
       <button id="hist-det-close" class="tbtn"><i class="ti ti-x"></i></button>
     </div>
     <div id="hist-det-body" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="padding:10px 14px 14px;border-top:.5px solid var(--bd3);flex-shrink:0">
+      <button id="hist-det-close-bottom" class="bs" style="width:100%">Fechar</button>
+    </div>
   </div>
 </div>
 
@@ -1117,7 +1120,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v39';
+const APP_VERSION = 'v40';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -2788,6 +2791,7 @@ function editSpec(lid,cod){
 
   box.appendChild(header);box.appendChild(modoDiv);box.appendChild(camposCnt);box.appendChild(camposDec);box.appendChild(btns);
   overlay.appendChild(box);document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
 
   // Event listeners do modal
   document.getElementById('modo-cnt').addEventListener('click',()=>setEditModo('contador',unidade));
@@ -3492,7 +3496,6 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
 
 // Modal Gerenciar Usuário
 document.getElementById('gu-fechar').addEventListener('click',()=>closeModal('modal-gerenciar-usuario'));
-document.getElementById('modal-gerenciar-usuario').addEventListener('click',e=>{if(e.target.id==='modal-gerenciar-usuario')closeModal('modal-gerenciar-usuario');});
 document.getElementById('btn-home-sel-back').addEventListener('click',()=>show('s-home'));
 document.getElementById('fopts-cam').addEventListener('click',()=>{closeModal('modal-foto-opts');triggerCam(pendingCod);});
 document.getElementById('fopts-gal').addEventListener('click',()=>{closeModal('modal-foto-opts');triggerGal(pendingCod);});
@@ -3542,6 +3545,22 @@ document.getElementById('file-input').addEventListener('change',handleFile);
 document.getElementById('gal-input').addEventListener('change',handleFile);
 document.querySelectorAll('.ntab[data-home-tab]').forEach(el=>el.addEventListener('click',()=>homeTab(el.dataset.homeTab)));
 document.getElementById('hist-det-close').addEventListener('click',()=>closeModal('modal-hist-detail'));
+document.getElementById('hist-det-close-bottom').addEventListener('click',()=>closeModal('modal-hist-detail'));
+
+// Fechamento consistente por clique no fundo para modais de consulta/gestão.
+// Modais de decisão (conferência e auditoria) mantêm botões explícitos para evitar avanço acidental.
+['modal-hist-detail','modal-foto','modal-mgr','modal-assign','modal-import','modal-novo-usuario','modal-gerenciar-usuario'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('click',e=>{if(e.target===el)closeModal(id);});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  const spec=document.getElementById('spec-edit-modal');
+  if(spec){spec.remove();return;}
+  const closable=['modal-gerenciar-usuario','modal-novo-usuario','modal-import','modal-assign','modal-mgr','modal-foto','modal-hist-detail'];
+  const top=closable.map(id=>document.getElementById(id)).find(el=>el&&el.classList.contains('on'));
+  if(top)closeModal(top.id);
+});
 
 // ── UX v19: Botão mostrar/ocultar senha ──────────────────────────────────────
 (function(){
