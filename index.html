@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v41</title>
+<title>Estoque Gesto v42</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -264,7 +264,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v41</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v42</span></span></div>
   </div>
 </div>
 
@@ -1120,7 +1120,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v41';
+const APP_VERSION = 'v42';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -2317,7 +2317,7 @@ function checkExtras(slNome,onConfirm){
 }
 
 function getAuditData(lid,slId){
-  const prods=getProdsSublocal(lid,slId),cnt=counts[lid]||{};
+  const prods=slId==='__local__'?getProdsLocal(lid):getProdsSublocal(lid,slId),cnt=counts[lid]||{};
   const res={total:prods.length,contados:0,pendentes:[],zerados:[],semFoto:[],comObs:[],semSpec:[]};
   prods.forEach(p=>{
     const d=cnt[p.cod]||{};
@@ -2339,18 +2339,19 @@ function auditSection(title,items,icon,color,emptyText,limit=8){
   const body=items.length?shown.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:.5px solid var(--bd3)"><span style="font-size:12px;color:var(--tx1)">${p.nome}</span><span style="font-size:10px;color:var(--tx2);white-space:nowrap">COD ${p.cod}</span></div>`).join('')+more:`<div style="font-size:12px;color:var(--tx2);padding-top:4px">${emptyText}</div>`;
   return `<div class="card" style="padding:10px 12px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="ti ${icon}" style="font-size:16px;color:${color}"></i><div style="font-size:13px;font-weight:500;color:var(--tx1);flex:1">${title}</div><div class="bdg" style="background:var(--bg2);color:var(--tx2)">${items.length}</div></div>${body}</div>`;
 }
-function showAuditoria(onConfirm){
+function showAuditoria(onConfirm,scope='sublocal'){
   const l=getLocal(aLocal),sl=getContableSubs(aLocal).find(s=>s.id===aSublocal);
-  const data=getAuditData(aLocal,aSublocal);
+  const isLocal=scope==='local';
+  const data=getAuditData(aLocal,isLocal?'__local__':aSublocal);
   auditCallback=onConfirm;
   const slNome=sl?(sl._parentNome?`${sl._parentNome} › ${sl.nome}`:sl.nome):'';
-  document.getElementById('audit-subtitle').textContent=sl?`${l.nome} › ${slNome}`:l.nome;
+  document.getElementById('audit-subtitle').textContent=isLocal?`${l.nome} · auditoria final`:sl?`${l.nome} › ${slNome}`:l.nome;
   const pct=data.total?Math.round((data.contados/data.total)*100):0;
   let h=`<div class="sgrid"><div class="scard"><div class="slbl">Contados</div><div class="sval">${data.contados}/${data.total}</div></div><div class="scard"><div class="slbl">Progresso</div><div class="sval">${pct}%</div></div></div>`;
   if(data.pendentes.length){
     h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12px;color:#92400E"><strong>${data.pendentes.length} item${data.pendentes.length===1?'':'s'} pendente${data.pendentes.length===1?'':'s'}.</strong> Revise antes de fechar se isto não foi intencional.</div></div>`;
   } else {
-    h+=`<div class="cpv"><i class="ti ti-circle-check"></i> Nenhum item pendente nesta etapa.</div>`;
+    h+=`<div class="cpv"><i class="ti ti-circle-check"></i> Nenhum item pendente ${isLocal?'neste local':'nesta etapa'}.</div>`;
   }
   h+=auditSection('Pendentes',data.pendentes,'ti-clock','#EF9F27','Nenhum item pendente.');
   h+=auditSection('Quantidade zero',data.zerados,'ti-circle-zero','#92400E','Nenhum item zerado.');
@@ -2361,8 +2362,8 @@ function showAuditoria(onConfirm){
   document.getElementById('audit-continue').textContent=data.pendentes.length?'Continuar mesmo assim':'Continuar';
   document.getElementById('modal-auditoria').classList.add('on');
 }
-function runPreFinishAudit(onConfirm){
-  showAuditoria(onConfirm);
+function runPreFinishAudit(onConfirm,scope='sublocal'){
+  showAuditoria(onConfirm,scope);
 }
 
 function renderCountBbar(prods,done){
@@ -2370,16 +2371,16 @@ function renderCountBbar(prods,done){
   const bbar=document.getElementById('count-bbar');
   const allDone=getProdsLocal(aLocal).every(p=>counts[aLocal]?.[p.cod]?.touched);
   const slAtual=subs.find(s=>s.id===aSublocal);
-  const slNomeAtual=slAtual?.nome||(aSublocal==='__todos__'?getLocal(aLocal).nome:aSublocal);
+  const slNomeAtual=slAtual?(slAtual._parentNome?`${slAtual._parentNome} › ${slAtual.nome}`:slAtual.nome):(aSublocal==='__todos__'?getLocal(aLocal).nome:aSublocal);
   if(allDone){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
       <button id="btn-cb-salvar" class="bp"><i class="ti ti-device-floppy"></i> Ver resumo e finalizar</button>`;
-    document.getElementById('btn-cb-salvar').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(goFinish)));
+    document.getElementById('btn-cb-salvar').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(goFinish,'local')));
   } else if(done===prods.length&&prods.length>0&&nextSl){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
       <button id="btn-cb-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${nextSl.nome}</button>
       <button id="btn-cb-plano" class="bg_">Ver plano</button>`;
-    document.getElementById('btn-cb-next').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(()=>mudarSublocal(nextSl.id))));
+    document.getElementById('btn-cb-next').addEventListener('click',()=>checkExtras(slNomeAtual,()=>mudarSublocal(nextSl.id)));
     document.getElementById('btn-cb-plano').addEventListener('click',voltarAoPlano);
   } else {
     const isTodos=aSublocal==='__todos__';
@@ -2387,7 +2388,7 @@ function renderCountBbar(prods,done){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" id="pbar" style="width:0%"></div></div><div class="progp" id="ppct">0%</div></div>
       <button id="btn-cb-fin" class="bp">${finBtnTxt}</button>
       <button id="btn-cb-vp" class="bg_">Ver plano</button>`;
-    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(goFinish)));
+    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,goFinish));
     document.getElementById('btn-cb-vp').addEventListener('click',voltarAoPlano);
     updProg(prods,done);
   }
