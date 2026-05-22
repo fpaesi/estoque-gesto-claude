@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v38</title>
+<title>Estoque Gesto v39</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -264,7 +264,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v38</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v39</span></span></div>
   </div>
 </div>
 
@@ -1117,7 +1117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v38';
+const APP_VERSION = 'v39';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1151,6 +1151,50 @@ function carregarLocal(){
     gestaoSpecLocal=locais[0]?.id||DEFAULT_LOCAIS[0].id;
   }catch(e){locais=[...DEFAULT_LOCAIS];}
   try{historico=JSON.parse(localStorage.getItem(SK_HIST)||'[]');}catch(e){historico=[];}
+}
+
+function resetarEstadoContagemLocal(){
+  Object.values(rascunhoSaveTimers).forEach(t=>clearTimeout(t));
+  rascunhoSaveTimers={};
+  counts={};
+  rascunhos={};
+  dataFimContagem=null;
+  confirmedByName=null;
+  aLocal=null;
+  aSublocal=null;
+  aGrupo='todos';
+  sTerm='';
+}
+
+async function reiniciarContagemZero(){
+  if(!isAdminRole()){
+    alert('Apenas administradores podem reiniciar a contagem.');
+    return;
+  }
+  const ok=confirm('Reiniciar a contagem do zero?\n\nIsso apaga contagens em andamento, locais finalizados e a data de fechamento atual. Cadastros, locais, sublocais, especificações e histórico antigo serão mantidos.');
+  if(!ok)return;
+  const ok2=confirm('Confirme novamente: a nova contagem começará sem nenhum item contado e com nova data de início quando alguém lançar o primeiro item.');
+  if(!ok2)return;
+
+  try{
+    setSyncState('syncing');
+    if(currentUser&&firebaseReady){
+      const snap=await db.collection(RASCUNHO_COL).get();
+      const batch=db.batch();
+      snap.forEach(doc=>batch.delete(doc.ref));
+      await batch.commit();
+    }
+    resetarEstadoContagemLocal();
+    setSyncState('synced');
+    homeTabId='locais';
+    show('s-home');
+    renderHome();
+    alert('Contagem reiniciada. A próxima contagem começará com nova data de início.');
+  }catch(e){
+    console.warn('Erro ao reiniciar contagem:',e);
+    setSyncState('error');
+    mostrarErroBanner('Erro ao reiniciar a contagem. Verifique a conexão e as regras do Firestore.');
+  }
 }
 
 async function carregarNuvem(){
@@ -2582,6 +2626,11 @@ function renderGestao(c){
       <div class="scard"><div class="slbl">Especificações</div><div class="sval">${nSpecs}</div></div>
       <div class="scard"><div class="slbl">Sublocais</div><div class="sval">${nSubs}</div></div>
       <div class="scard"><div class="slbl">Sub-sublocais</div><div class="sval">${nSSubs}</div></div></div>
+      <div class="sec">Contagem atual</div>
+      <button class="bbtn" id="btn-reset-contagem" style="border-color:#ff3b30;background:#fff5f5">
+        <i class="ti ti-rotate" style="font-size:22px;color:#ff3b30;flex-shrink:0"></i>
+        <div><div style="font-size:14px;font-weight:500;color:#ff3b30">Reiniciar contagem do zero</div>
+        <div style="font-size:11px;color:#ff3b30;opacity:.8;margin-top:2px">Apaga contagem ativa e data de fechamento. Mantém cadastros e histórico.</div></div></button>
       <div class="sec">Exportar</div>
       <button class="bbtn" id="btn-exportar" style="border-color:var(--acc);background:#E6F1FB">
         <i class="ti ti-download" style="font-size:22px;color:var(--acc);flex-shrink:0"></i>
@@ -2666,6 +2715,7 @@ function renderGestao(c){
   c.querySelectorAll('.btn-edit-spec').forEach(el=>el.addEventListener('click',()=>editSpec(el.dataset.lid,el.dataset.cod)));
   const btnExpSpecs=c.querySelector('#btn-exportar-specs');if(btnExpSpecs)btnExpSpecs.addEventListener('click',exportarEspecsCSV);
   const btnExp=c.querySelector('#btn-exportar');if(btnExp)btnExp.addEventListener('click',exportarBackup);
+  const btnReset=c.querySelector('#btn-reset-contagem');if(btnReset)btnReset.addEventListener('click',reiniciarContagemZero);
   const btnImpF=c.querySelector('#btn-importar-file');if(btnImpF)btnImpF.addEventListener('click',()=>document.getElementById('backup-file-input').click());
   const btnImpT=c.querySelector('#btn-importar-txt');if(btnImpT)btnImpT.addEventListener('click',()=>document.getElementById('modal-import').classList.add('on'));
 }
