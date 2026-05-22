@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v35</title>
+<title>Estoque Gesto v36</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <style>*{box-sizing:border-box;margin:0;padding:0}:root{--bg1:#fff;--bg2:#f5f5f7;--bg3:#e8e8ed;--tx1:#1c1c1e;--tx2:#6c6c70;--bd3:#d1d1d6;--r1:12px;--r2:8px}@media(prefers-color-scheme:dark){:root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--tx1:#fff;--tx2:#98989d;--bd3:#38383a}}html,body{height:100%;background:var(--bg3);font-family:-apple-system,BlinkMacSystemFont,sans-serif}#app{max-width:430px;margin:0 auto;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;position:relative}.scr{display:none;flex-direction:column;flex:1;min-height:100vh}.scr.on{display:flex}.topbar{background:var(--bg1);border-bottom:.5px solid var(--bd3);padding:13px 16px 11px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}.tt{font-size:17px;font-weight:500;color:var(--tx1)}.ts{font-size:12px;color:var(--tx2);margin-top:1px}.tbtn{background:none;border:none;cursor:pointer;color:var(--tx2);font-size:22px;display:flex;align-items:center;padding:4px}.content{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.bbar{background:var(--bg1);border-top:.5px solid var(--bd3);padding:10px 14px 20px;display:flex;flex-direction:column;gap:7px;flex-shrink:0}.bp{width:100%;padding:13px;border-radius:var(--r1);background:var(--acc);color:#E6F1FB;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}.bp:active{opacity:.85}.bp:disabled{opacity:.4}.bs{width:100%;padding:10px;border-radius:var(--r1);background:var(--bg2);color:var(--tx1);border:.5px solid var(--bd3);font-size:14px;cursor:pointer}.bg_{width:100%;padding:10px;background:none;color:var(--tx2);border:none;font-size:14px;cursor:pointer}.sec{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 2px}.row{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.row:active{background:var(--bg2)}.bdg{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}.bdone{background:#EAF3DE;color:#27500A}.bprog{background:#FAEEDA;color:#633806}.bpend{background:var(--bg2);color:var(--tx2)}.bwarn{background:#FEF3C7;color:#92400E}.ntabs{display:flex;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0}.ntab{flex:1;padding:11px 6px;font-size:12px;font-weight:500;color:var(--tx2);text-align:center;cursor:pointer;border-bottom:2px solid transparent}.ntab.on{color:var(--acc);border-bottom-color:var(--acc)}.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{display:inline-flex;align-items:center;padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx2);white-space:nowrap}.chip.on{background:var(--acc);color:#E6F1FB;border-color:var(--acc)}.srch{width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none}.srch:focus{border-color:var(--acc)}.pcard{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:10px}.pcard.done-card{border-color:#C0DD97}.cntb{display:flex;flex-direction:column;background:var(--bg2);border-radius:var(--r2);overflow:hidden}.cnt-row{display:flex;align-items:center}.cbt{width:52px;height:52px;border:none;background:var(--bg2);color:var(--tx1);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;flex-shrink:0}.cbt:active{background:var(--bg3)}.cctr{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0}.cv{font-size:30px;font-weight:600;color:var(--tx1);line-height:1}.cu{font-size:12px;color:var(--tx2);font-weight:500}.ccv{font-size:13px;color:var(--acc);font-weight:500;text-align:center;padding:7px 12px;border-top:.5px solid var(--bd3);background:var(--bg1)}.decb{background:var(--bg2);border-radius:var(--r2);overflow:hidden}.decl{font-size:11px;font-weight:500;color:var(--tx2);padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.04em}.decr{display:flex;align-items:center}.deci{flex:1;font-size:28px;font-weight:600;color:var(--tx1);padding:6px 12px 10px;background:none;border:none;outline:none;font-family:inherit;min-width:0}.decu{font-size:14px;font-weight:500;color:var(--tx2);padding-right:14px;white-space:nowrap}.sb-cnt{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#F0FDF4;color:#166534;border:.5px solid #BBF7D0;font-weight:500}.sb-dec{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;font-weight:500}.sb-mis{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;font-weight:500}.notei{width:100%;font-size:13px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;height:33px;outline:none}.progr{display:flex;align-items:center;gap:10px}.progt{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}.progf{height:100%;background:var(--acc);border-radius:3px;transition:width .3s}.progp{font-size:12px;color:var(--tx2);white-space:nowrap}.gsep{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd3)}.srow:last-child{border-bottom:none}.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scard{background:var(--bg2);border-radius:var(--r2);padding:11px 12px}.slbl{font-size:11px;color:var(--tx2);margin-bottom:3px}.sval{font-size:20px;font-weight:500;color:var(--tx1)}.card{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px}.syncr{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);justify-content:center}.syncd{width:7px;height:7px;border-radius:50%;background:#639922}.av{width:28px;height:28px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#0C447C}.uc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}.empty{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:10px;color:var(--tx2);font-size:14px;text-align:center}.fthu{width:52px;height:52px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0}.fthp{width:52px;height:52px;border-radius:var(--r2);border:.5px dashed var(--bd3);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--tx2)}.fbtn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:12px;cursor:pointer;font-family:inherit}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center}.modal-bg.on{display:flex}.modal-box{background:var(--bg1);border-radius:var(--r1);padding:16px;width:92%;max-width:380px;display:flex;flex-direction:column;gap:12px;border:.5px solid var(--bd3);max-height:90vh;overflow:hidden}.sl-step{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer}.sl-step.done{border-color:#C0DD97}.sl-step.active{border-color:var(--acc)}.sl-sn{width:32px;height:32px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--tx2);flex-shrink:0}.sl-step.done .sl-sn{background:#EAF3DE;color:#27500A}.sl-step.active .sl-sn{background:var(--acc);color:#E6F1FB}.sl-conn{width:2px;height:12px;background:var(--bd3);margin-left:29px}.sl-conn.done{background:#C0DD97}.slnav{background:var(--bg2);border-bottom:.5px solid var(--bd3);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}.slnav::-webkit-scrollbar{display:none}.slni{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:.5px solid transparent}.slni.cur{background:var(--bg1);border-color:var(--acc);color:var(--acc)}.slni.dn{color:#639922}.slni.pn{color:var(--tx2)}.ms{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden}.msh{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.msb{display:none;flex-direction:column;border-top:.5px solid var(--bd3)}.msb.open{display:flex}.msr{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.msa{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-top:.5px solid var(--bd3)}.ib{width:44px;height:44px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--tx2);flex-shrink:0}.ib.danger{border-color:#ff3b30;background:#fff5f5;color:#ff3b30}.ib.primary{border-color:var(--acc);background:var(--acc-bg);color:var(--acc)}.ii{flex:1;font-size:13px;padding:6px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.ii:focus{border-color:var(--acc)}.tsl{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--acc-bg);color:var(--acc-tx);font-weight:500;white-space:nowrap}.tns{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);font-weight:500}.wb{background:#FEF3C7;border-radius:var(--r1);border:.5px solid #FDE68A;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}.spi{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.spi:last-child{border-bottom:none}.mto{display:flex;background:var(--bg2);border-radius:var(--r2);overflow:hidden;border:.5px solid var(--bd3)}.mo{flex:1;padding:9px 8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;color:var(--tx2);border:none;background:none;font-family:inherit}.mo.on{background:var(--bg1);color:var(--tx1);box-shadow:0 1px 3px rgba(0,0,0,.08)}.fl{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}.fi{width:100%;font-size:14px;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.fi:focus{border-color:var(--acc)}.cpv{background:var(--acc-bg);border-radius:var(--r2);padding:10px 12px;font-size:13px;color:var(--acc-tx);display:flex;align-items:center;gap:6px}.tipb{font-size:11px;color:var(--tx2);background:var(--bg2);padding:8px 10px;border-radius:var(--r2);line-height:1.5}.bbtn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r1);border:.5px solid var(--bd3);background:var(--bg1);cursor:pointer;font-family:inherit;width:100%;text-align:left}.bbtn:active{opacity:.85}.card-extra{display:none;flex-direction:column;gap:8px;border-top:.5px solid var(--bd3);padding-top:8px;margin-top:4px}.pcard.exp .card-extra{display:flex}.zb{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}.zb.zeroed{background:var(--acc-bg);color:var(--acc);border-color:var(--acc-bd)}
 .hist-entry{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}.hist-entry:active{background:var(--bg2)}.hist-date-sep{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;padding:8px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.hist-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;background:#EAF3DE;color:#27500A}.hist-badge-partial{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;background:#FAEEDA;color:#633806}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -265,7 +266,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v35</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v36</span></span></div>
   </div>
 </div>
 
@@ -1107,18 +1108,19 @@ const FIREBASE_CONFIG = {
 };
 
 let firebaseReady = false;
-let auth, db, storage, currentUser = null;
+let auth, db, storage, functionsApi, currentUser = null;
 
 try {
   firebase.initializeApp(FIREBASE_CONFIG);
   auth = firebase.auth();
   db = firebase.firestore();
   storage = firebase.storage();
+  functionsApi = firebase.functions();
   firebaseReady = true;
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v35';
+const APP_VERSION = 'v36';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -3292,6 +3294,21 @@ async function resetarSenha(email){
   catch(e){return {success:false,error:e.message};}
 }
 
+async function definirNovaSenha(uid,password){
+  if(!functionsApi)return {success:false,error:'Firebase Functions não está disponível.'};
+  try{
+    const fn=functionsApi.httpsCallable('resetUserPassword');
+    await fn({uid,password});
+    return {success:true};
+  }catch(e){
+    const msg=e.code==='functions/not-found'?'Função de redefinição ainda não foi implantada no Firebase.'
+      :e.code==='functions/permission-denied'?'Apenas administradores podem redefinir senha.'
+      :e.code==='functions/invalid-argument'?'Informe uma senha com pelo menos 6 caracteres.'
+      :e.message||'Erro ao redefinir senha.';
+    return {success:false,error:msg};
+  }
+}
+
 async function toggleDesativar(uid,disabled){
   try{await db.collection('perfis').doc(uid).update({disabled});return {success:true};}
   catch(e){return {success:false,error:e.message};}
@@ -3356,6 +3373,12 @@ function abrirGerenciarUsuario(perf){
       ${perf.disabled?'<span class="bdg" style="background:#fff0f0;color:#ff3b30">Desativado</span>':''}
     </div>
     ${internal?'<div class="tipb" style="margin-bottom:8px">Conta interna. O link de redefinição por e-mail não se aplica a este usuário.</div>':'<button class="bp" id="gu-reset" style="margin-bottom:8px;width:100%"><i class="ti ti-mail"></i> Enviar redefinição de senha</button>'}
+    <button class="bs" id="gu-open-password" style="margin-bottom:8px;width:100%"><i class="ti ti-key"></i> Definir nova senha</button>
+    <div id="gu-password-box" style="display:none;flex-direction:column;gap:8px;margin-bottom:8px">
+      <input id="gu-new-password" class="fi" type="text" placeholder="Nova senha temporária" autocomplete="off"/>
+      <button class="bp" id="gu-save-password" style="width:100%"><i class="ti ti-device-floppy"></i> Salvar nova senha</button>
+      <div id="gu-password-status" style="font-size:12px;color:#ff3b30;min-height:16px"></div>
+    </div>
     <button class="bs" id="gu-toggle" style="margin-bottom:8px;width:100%">
       <i class="ti ti-${perf.disabled?'user-check':'user-off'}"></i> ${perf.disabled?'Reativar usuário':'Desativar usuário'}
     </button>
@@ -3364,6 +3387,25 @@ function abrirGerenciarUsuario(perf){
   document.getElementById('modal-gerenciar-usuario').classList.add('on');
 
   document.getElementById('gu-close-body')?.addEventListener('click',()=>closeModal('modal-gerenciar-usuario'));
+  document.getElementById('gu-open-password')?.addEventListener('click',()=>{
+    const box=document.getElementById('gu-password-box');
+    if(box)box.style.display=box.style.display==='none'?'flex':'none';
+    setTimeout(()=>document.getElementById('gu-new-password')?.focus(),50);
+  });
+  document.getElementById('gu-save-password')?.addEventListener('click',async()=>{
+    const pwd=document.getElementById('gu-new-password')?.value.trim()||'';
+    const st=document.getElementById('gu-password-status');
+    if(pwd.length<6){if(st)st.textContent='A senha precisa ter pelo menos 6 caracteres.';return;}
+    const btn=document.getElementById('gu-save-password');
+    btn.disabled=true;btn.textContent='Salvando...';
+    const r=await definirNovaSenha(perf.uid,pwd);
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar nova senha';
+    if(r.success){
+      if(st){st.style.color='#27500A';st.textContent='Senha atualizada.';}
+      alert('Senha redefinida para '+(perf.nome||login)+'.');
+      closeModal('modal-gerenciar-usuario');
+    }else{if(st){st.style.color='#ff3b30';st.textContent=r.error;}}
+  });
   document.getElementById('gu-reset')?.addEventListener('click',async()=>{
     const r=await resetarSenha(perf.email);
     if(r.success){alert('E-mail de redefinição enviado para '+perf.email+'.');closeModal('modal-gerenciar-usuario');}
