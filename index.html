@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v40</title>
+<title>Estoque Gesto v41</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -264,7 +264,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v40</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v41</span></span></div>
   </div>
 </div>
 
@@ -1120,7 +1120,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v40';
+const APP_VERSION = 'v41';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1745,6 +1745,21 @@ function getAllSubsFlat(lid){
   });
   return result;
 }
+function getContableSubs(lid){
+  const result=[];
+  getSubs(lid).forEach(sl=>{
+    const filhos=getSubSubs(lid,sl.id);
+    if(filhos.length)filhos.forEach(ssl=>result.push({...ssl,_parentId:sl.id,_parentNome:sl.nome}));
+    else result.push(sl);
+  });
+  return result;
+}
+function isSublocalAgrupador(lid,slId){
+  return getSubSubs(lid,slId).length>0;
+}
+function firstContableSubId(lid){
+  return getContableSubs(lid)[0]?.id||null;
+}
 function getSublocNome(lid,slId){
   const l1=getSubs(lid).find(s=>s.id===slId);
   if(l1)return l1.nome;
@@ -1822,6 +1837,7 @@ function getProdsSublocal(lid,slId){
   const all=getProdsLocal(lid);
   if(!slId||slId==='__todos__')return all;
   if(slId==='__sem__')return all.filter(p=>!getVinculo(lid,p.cod));
+  if(isSublocalAgrupador(lid,slId))return [];
   return all.filter(p=>getVinculo(lid,p.cod)===slId);
 }
 function slStatus(lid,slId){
@@ -1847,7 +1863,7 @@ function homeTab(t){
   document.querySelectorAll('#s-home .ntab').forEach(el=>el.classList.toggle('on',el.dataset.homeTab===t));
   renderHome();
 }
-function goToLocal(lid){aLocal=lid;const subs=getSubs(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
+function goToLocal(lid){aLocal=lid;const subs=getContableSubs(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
 
 function abrirNovoUsuario(){
   document.getElementById('nu-nome').value='';
@@ -2076,7 +2092,7 @@ function renderSel(){
 }
 
 function renderPlano(lid){
-  const l=getLocal(lid);const subs=getAllSubsFlat(lid);const cnt=counts[lid]||{};
+  const l=getLocal(lid);const subs=getContableSubs(lid);const cnt=counts[lid]||{};
   document.getElementById('plano-title').textContent=`${l.icon} ${l.nome}`;
   const totalProds=getProdsLocal(lid).length;
   const totalDone=Object.values(cnt).filter(x=>x.touched).length;
@@ -2116,17 +2132,21 @@ function renderPlano(lid){
     bbar.innerHTML=`<button id="btn-salvar-plano" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button>
       <button id="btn-revisar-plano" class="bs">Revisar</button>`;
     document.getElementById('btn-salvar-plano').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
-    document.getElementById('btn-revisar-plano').addEventListener('click',()=>entrarContagem(lid,'__todos__'));
+    document.getElementById('btn-revisar-plano').addEventListener('click',()=>entrarContagem(lid,firstContableSubId(lid)||null));
   } else {
     const proxSl=subs[proximoIdx]||subs[0];
     bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp"><i class="ti ti-player-play"></i> ${totalDone>0?`Continuar · ${proxSl?.nome||''}`:`Iniciar · ${proxSl?.nome||''}`}</button>
       <button id="btn-pausar-plano" class="bg_">Pausar e sair</button>`;
-    document.getElementById('btn-iniciar-plano').addEventListener('click',()=>entrarContagem(lid,'__todos__'));
+    document.getElementById('btn-iniciar-plano').addEventListener('click',()=>entrarContagem(lid,proxSl?.id||null));
     document.getElementById('btn-pausar-plano').addEventListener('click',()=>{show('s-home');renderHome();});
   }
 }
 
 async function entrarContagem(lid,slId){
+  if(slId&&isSublocalAgrupador(lid,slId)){
+    const prox=firstContableSubId(lid);
+    if(prox)slId=prox;
+  }
   aLocal=lid;aSublocal=slId;aGrupo='todos';sTerm='';
   document.getElementById('srch-inp').value='';
   if(!counts[lid])counts[lid]={};
@@ -2163,16 +2183,11 @@ async function entrarContagem(lid,slId){
 }
 
 function renderSlNav(){
-  const allFlat=getAllSubsFlat(aLocal);
+  const allFlat=getContableSubs(aLocal);
   if(!allFlat.length){document.getElementById('sl-nav').style.display='none';return;}
   document.getElementById('sl-nav').style.display='flex';
   const nav=document.getElementById('sl-nav');
-  const allProds=getProdsLocal(aLocal);
-  const allDoneCount=Object.values(counts[aLocal]||{}).filter(x=>x.touched).length;
-  const todosStatus=allDoneCount>=allProds.length&&allProds.length>0?'done':'pend';
-  const todosCur=aSublocal==='__todos__';
-  const todosEl=`<div class="slni ${todosCur?'cur':todosStatus==='done'?'dn':'pn'}" data-slid="__todos__" data-action="slnav">${todosStatus==='done'&&!todosCur?'<i class="ti ti-check"></i> ':''}Todos</div>`;
-  nav.innerHTML=todosEl+allFlat.map(sl=>{
+  nav.innerHTML=allFlat.map(sl=>{
     const st=slStatus(aLocal,sl.id);const cur=sl.id===aSublocal;
     const label=sl._parentNome?`<span style="opacity:.6;font-size:10px">›</span> ${sl.nome}`:sl.nome;
     return `<div class="slni ${cur?'cur':st==='done'?'dn':'pn'}" data-slid="${sl.id}" data-action="slnav">${st==='done'?'<i class="ti ti-check"></i> ':''}${label}</div>`;
@@ -2181,6 +2196,10 @@ function renderSlNav(){
 }
 
 function mudarSublocal(slId){
+  if(slId&&isSublocalAgrupador(aLocal,slId)){
+    const prox=firstContableSubId(aLocal);
+    if(prox)slId=prox;
+  }
   aSublocal=slId;aGrupo='todos';sTerm='';
   document.getElementById('srch-inp').value='';
   renderSlNav();renderCount();updTopbarProgress();
@@ -2193,7 +2212,7 @@ function renderCount(){
   const contaveis=allProds;
   const semSpec=allProds.filter(p=>!hasSpec(aLocal,p.cod));
   const cnt=counts[aLocal]||{};const done=contaveis.filter(p=>cnt[p.cod]?.touched).length;
-  const subs=getSubs(aLocal);
+  const subs=getContableSubs(aLocal);
   const allFlat=getAllSubsFlat(aLocal);
   const grupos=['todos',...new Set(contaveis.map(p=>p.grupo))];
   const chipsEl=document.getElementById('grupo-chips');
@@ -2209,7 +2228,7 @@ function renderCount(){
   if(!filtrado.length){
     const isSublocEspecifico=aSublocal&&aSublocal!=='__todos__'&&aSublocal!=='__sem__';
     const emptyMsg=isSublocEspecifico?
-      `<div class="empty"><i class="ti ti-map-pin" style="font-size:30px;opacity:.3"></i><span>Nenhum item vinculado aqui</span><span style="font-size:12px;color:var(--tx2);text-align:center;line-height:1.5">Vá para a aba <strong>Todos</strong> e use o botão <strong>Definir</strong> em cada item para vinculá-lo a este sublocal.</span></div>`:
+      `<div class="empty"><i class="ti ti-map-pin" style="font-size:30px;opacity:.3"></i><span>Nenhum item vinculado aqui</span><span style="font-size:12px;color:var(--tx2);text-align:center;line-height:1.5">Use <strong>Gestão › Locais</strong> para conferir a estrutura e vincule itens somente ao menor nível disponível.</span></div>`:
       '<div class="empty"><i class="ti ti-search" style="font-size:30px;opacity:.3"></i><span>Nenhum item</span></div>';
     document.getElementById('count-list').innerHTML=h||emptyMsg;updProg(contaveis,done);renderCountBbar(contaveis,done);return;
   }
@@ -2321,10 +2340,11 @@ function auditSection(title,items,icon,color,emptyText,limit=8){
   return `<div class="card" style="padding:10px 12px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="ti ${icon}" style="font-size:16px;color:${color}"></i><div style="font-size:13px;font-weight:500;color:var(--tx1);flex:1">${title}</div><div class="bdg" style="background:var(--bg2);color:var(--tx2)">${items.length}</div></div>${body}</div>`;
 }
 function showAuditoria(onConfirm){
-  const l=getLocal(aLocal),sl=getSubs(aLocal).find(s=>s.id===aSublocal);
+  const l=getLocal(aLocal),sl=getContableSubs(aLocal).find(s=>s.id===aSublocal);
   const data=getAuditData(aLocal,aSublocal);
   auditCallback=onConfirm;
-  document.getElementById('audit-subtitle').textContent=sl?`${l.nome} › ${sl.nome}`:l.nome;
+  const slNome=sl?(sl._parentNome?`${sl._parentNome} › ${sl.nome}`:sl.nome):'';
+  document.getElementById('audit-subtitle').textContent=sl?`${l.nome} › ${slNome}`:l.nome;
   const pct=data.total?Math.round((data.contados/data.total)*100):0;
   let h=`<div class="sgrid"><div class="scard"><div class="slbl">Contados</div><div class="sval">${data.contados}/${data.total}</div></div><div class="scard"><div class="slbl">Progresso</div><div class="sval">${pct}%</div></div></div>`;
   if(data.pendentes.length){
@@ -2346,10 +2366,10 @@ function runPreFinishAudit(onConfirm){
 }
 
 function renderCountBbar(prods,done){
-  const subs=getSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
+  const subs=getContableSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('count-bbar');
   const allDone=getProdsLocal(aLocal).every(p=>counts[aLocal]?.[p.cod]?.touched);
-  const slAtual=getSubs(aLocal).find(s=>s.id===aSublocal);
+  const slAtual=subs.find(s=>s.id===aSublocal);
   const slNomeAtual=slAtual?.nome||(aSublocal==='__todos__'?getLocal(aLocal).nome:aSublocal);
   if(allDone){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
@@ -2427,7 +2447,7 @@ function openAssign(cod){
   if(!isAdminRole()){alert('Apenas administradores podem definir sublocal.');return;}
   pendingAssignCod=cod;const prod=CATALOGO.find(p=>p.cod===cod);
   document.getElementById('assign-title').textContent=`Onde está "${prod?.nome||cod}"?`;
-  const allFlat=getAllSubsFlat(aLocal);const cur=getVinculo(aLocal,cod);
+  const allFlat=getContableSubs(aLocal);const cur=getVinculo(aLocal,cod);
   const list=document.getElementById('assign-list');
   list.innerHTML=allFlat.map(sl=>{
     const nomeDisplay=sl._parentNome?`<span style="color:var(--tx2);font-size:12px">${sl._parentNome} ›</span> ${sl.nome}`:sl.nome;
@@ -2445,8 +2465,9 @@ function openAssign(cod){
 function doAssign(slId){setVinculo(aLocal,pendingAssignCod,slId);closeModal('modal-assign');renderCount();}
 
 function goFinish(){
-  const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
-  document.getElementById('fin-label').textContent=sl?`${l.icon} ${l.nome} › ${sl.nome}`:`${l.icon} ${l.nome}`;
+  const l=getLocal(aLocal);const sl=getContableSubs(aLocal).find(s=>s.id===aSublocal);
+  const slNome=sl?(sl._parentNome?`${sl._parentNome} › ${sl.nome}`:sl.nome):'';
+  document.getElementById('fin-label').textContent=sl?`${l.icon} ${l.nome} › ${slNome}`:`${l.icon} ${l.nome}`;
   const prods=getProdsSublocal(aLocal,aSublocal),cnt=counts[aLocal]||{};
   const done=prods.filter(p=>cnt[p.cod]?.touched).length;const comFoto=prods.filter(p=>cnt[p.cod]?.foto).length;
   let h=`<div class="sgrid"><div class="scard"><div class="slbl">Contados</div><div class="sval">${done}</div></div>
@@ -2470,7 +2491,7 @@ function goFinish(){
     h+='</div>';
   }
   document.getElementById('fin-cnt').innerHTML=h;
-  const subs=getSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
+  const subs=getContableSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('fin-bbar');
   const allDone=getProdsLocal(aLocal).every(p=>counts[aLocal]?.[p.cod]?.touched);
   if(allDone){
@@ -2836,14 +2857,16 @@ function saveSpec(lid,cod,unid){
 
 function openGerenciarItens(){
   if(!isAdminRole()){alert('Apenas administradores podem gerenciar itens do local.');return;}
-  const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
-  document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+sl.nome:''}`;
+  const l=getLocal(aLocal);const sl=getContableSubs(aLocal).find(s=>s.id===aSublocal);
+  const slNome=sl?(sl._parentNome?`${sl._parentNome} › ${sl.nome}`:sl.nome):'';
+  document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+slNome:''}`;
   mgrTab('remover');document.getElementById('modal-mgr').classList.add('on');
 }
 function openAdicionarItem(){
   if(!isAdminRole()){alert('Apenas administradores podem adicionar itens ao local.');return;}
-  const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
-  document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+sl.nome:''}`;
+  const l=getLocal(aLocal);const sl=getContableSubs(aLocal).find(s=>s.id===aSublocal);
+  const slNome=sl?(sl._parentNome?`${sl._parentNome} › ${sl.nome}`:sl.nome):'';
+  document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+slNome:''}`;
   document.getElementById('modal-mgr').classList.add('on');
   mgrTab('adicionar');
 }
