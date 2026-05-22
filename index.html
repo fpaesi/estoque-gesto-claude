@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v33</title>
+<title>Estoque Gesto v34</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -234,8 +234,8 @@
     </div>
     <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px">
       <div>
-        <div class="fl">E-mail</div>
-        <input id="login-email" class="fi" type="email" placeholder="seu@email.com" autocomplete="email"/>
+        <div class="fl">Usuário ou e-mail</div>
+        <input id="login-email" class="fi" type="text" placeholder="usuario" autocomplete="username"/>
       </div>
       <div>
         <div class="fl">Senha</div>
@@ -265,7 +265,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v33</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v34</span></span></div>
   </div>
 </div>
 
@@ -426,8 +426,12 @@
       <input id="nu-nome" class="fi" type="text" placeholder="Ex: Ana Lima"/>
     </div>
     <div>
-      <div class="fl">E-mail</div>
-      <input id="nu-email" class="fi" type="email" placeholder="ana@empresa.com"/>
+      <div class="fl">Usuário de acesso</div>
+      <input id="nu-email" class="fi" type="text" placeholder="ana" autocomplete="off"/>
+    </div>
+    <div>
+      <div class="fl">Senha temporária</div>
+      <input id="nu-pwd" class="fi" type="text" placeholder="mínimo 6 caracteres" autocomplete="off"/>
     </div>
     <div>
       <div class="fl">Nível de acesso</div>
@@ -438,12 +442,13 @@
     </div>
     <div class="tipb">
       <strong>Administrador:</strong> acesso total, usuários, cadastros, fechamento e exportação<br>
-      <strong>Contador/Conferente:</strong> realiza e confere contagens, sem gestão
+      <strong>Contador/Conferente:</strong> realiza e confere contagens, sem gestão<br>
+      O usuário interno será usado no login. Ex: <strong>ana</strong>.
     </div>
     <div id="nu-status" style="font-size:12px;color:#ff3b30;min-height:16px"></div>
     <div style="display:flex;gap:8px">
       <button id="nu-cancel" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid var(--bd3);font-size:14px;cursor:pointer;color:var(--tx2);font-family:inherit">Cancelar</button>
-      <button id="nu-criar" class="bp" style="flex:2"><i class="ti ti-send"></i> Criar e enviar convite</button>
+      <button id="nu-criar" class="bp" style="flex:2"><i class="ti ti-user-plus"></i> Criar usuário</button>
     </div>
   </div>
 </div>
@@ -1113,7 +1118,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v33';
+const APP_VERSION = 'v34';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1556,19 +1561,39 @@ function setLoginLoading(on){
     btn.innerHTML='Entrar';
   }
 }
+const INTERNAL_EMAIL_DOMAIN='gesto.local';
+function cleanLogin(login){
+  return (login||'').trim().toLowerCase();
+}
+function loginToEmail(login){
+  const v=cleanLogin(login);
+  if(!v)return '';
+  return v.includes('@')?v:`${v}@${INTERNAL_EMAIL_DOMAIN}`;
+}
+function emailToLogin(email){
+  const v=(email||'').trim().toLowerCase();
+  return v.endsWith('@'+INTERNAL_EMAIL_DOMAIN)?v.slice(0,-('@'+INTERNAL_EMAIL_DOMAIN).length):v;
+}
+function isInternalEmail(email){
+  return (email||'').trim().toLowerCase().endsWith('@'+INTERNAL_EMAIL_DOMAIN);
+}
+function validInternalLogin(login){
+  return /^[a-z0-9._-]{3,32}$/.test(cleanLogin(login));
+}
 function signIn(){
   if(!firebaseReady){alert('Configure o Firebase primeiro.');return;}
-  const email=document.getElementById('login-email').value.trim();
+  const login=document.getElementById('login-email').value.trim();
+  const email=loginToEmail(login);
   const pwd=document.getElementById('login-pwd').value;
   const st=document.getElementById('login-status');
-  if(!email||!pwd){if(st)st.textContent='Preencha e-mail e senha.';return;}
+  if(!email||!pwd){if(st)st.textContent='Preencha usuário e senha.';return;}
   if(st)st.textContent='';
   setLoginLoading(true);
   auth.signInWithEmailAndPassword(email,pwd)
     .catch(e=>{
       setLoginLoading(false);
       if(st)st.textContent=(e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'||e.code==='auth/invalid-email')
-        ?'E-mail ou senha incorretos.'
+        ?'Usuário ou senha incorretos.'
         :'Erro: '+e.message;
     });
 }
@@ -1861,6 +1886,7 @@ function renderHome(){
     document.getElementById('btn-novo-usuario').addEventListener('click',()=>{
       document.getElementById('nu-nome').value='';
       document.getElementById('nu-email').value='';
+      document.getElementById('nu-pwd').value='';
       document.getElementById('nu-status').textContent='';
       nuRole='contador_conferente';
       document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
@@ -3237,24 +3263,25 @@ function getSecondaryAuth(){
   return secondaryAuthApp.auth();
 }
 
-async function criarUsuario(nome,email,role){
-  const tempPwd='GestoTmp'+Math.random().toString(36).slice(-8)+'!9A';
+async function criarUsuario(nome,login,tempPwd,role){
+  const loginLimpo=cleanLogin(login);
+  const email=loginToEmail(loginLimpo);
   const secAuth=getSecondaryAuth();
   try{
     const cred=await secAuth.createUserWithEmailAndPassword(email,tempPwd);
     const uid=cred.user.uid;
     await cred.user.updateProfile({displayName:nome});
-    await secAuth.sendPasswordResetEmail(email);
     await secAuth.signOut();
     await db.collection('perfis').doc(uid).set({
-      nome,email,role,disabled:false,
+      nome,email,login:emailToLogin(email),internalLogin:isInternalEmail(email),role,disabled:false,
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
     return {success:true};
   }catch(e){
     try{await secAuth.signOut();}catch(err){}
-    const msg=e.code==='auth/email-already-in-use'?'Este e-mail já está cadastrado.'
-      :e.code==='auth/invalid-email'?'E-mail inválido.'
+    const msg=e.code==='auth/email-already-in-use'?'Este usuário já está cadastrado.'
+      :e.code==='auth/invalid-email'?'Usuário inválido.'
+      :e.code==='auth/weak-password'?'A senha temporária precisa ter pelo menos 6 caracteres.'
       :e.message;
     return {success:false,error:msg};
   }
@@ -3297,7 +3324,7 @@ async function renderUsuarios(c){
           <div style="font-size:14px;font-weight:500;color:var(--tx1);display:flex;align-items:center;gap:6px">
             ${p.nome||''}${isMe?'<span style="font-size:10px;color:var(--tx2)">(você)</span>':''}
           </div>
-          <div style="font-size:12px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.email||''}</div>
+          <div style="font-size:12px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.login||emailToLogin(p.email)||''}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
           <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${ROLE_BG[p.role]||'#E6F1FB'};color:${ROLE_TX[p.role]||'#0C447C'};font-weight:500">${ROLE_LABEL[p.role]||p.role}</span>
@@ -3320,20 +3347,22 @@ function abrirGerenciarUsuario(perf){
   const ROLE_LABEL={admin:'Administrador',contador_conferente:'Contador/Conferente',operador:'Contador/Conferente',visualizador:'Contador/Conferente'};
   document.getElementById('gu-nome').textContent=perf.nome||perf.email;
   const body=document.getElementById('gu-body');
+  const login=perf.login||emailToLogin(perf.email);
+  const internal=perf.internalLogin||isInternalEmail(perf.email);
   body.innerHTML=`
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">${perf.email}</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">Usuário: ${login}</div>
     <div style="margin-bottom:14px;display:flex;align-items:center;gap:6px">
       <span class="bdg" style="background:var(--acc-bg);color:var(--acc-tx)">${ROLE_LABEL[perf.role]||perf.role}</span>
       ${perf.disabled?'<span class="bdg" style="background:#fff0f0;color:#ff3b30">Desativado</span>':''}
     </div>
-    <button class="bp" id="gu-reset" style="margin-bottom:8px;width:100%"><i class="ti ti-mail"></i> Enviar redefinição de senha</button>
+    ${internal?'<div class="tipb" style="margin-bottom:8px">Conta interna. O link de redefinição por e-mail não se aplica a este usuário.</div>':'<button class="bp" id="gu-reset" style="margin-bottom:8px;width:100%"><i class="ti ti-mail"></i> Enviar redefinição de senha</button>'}
     <button class="bs" id="gu-toggle" style="margin-bottom:8px;width:100%">
       <i class="ti ti-${perf.disabled?'user-check':'user-off'}"></i> ${perf.disabled?'Reativar usuário':'Desativar usuário'}
     </button>
   `;
   document.getElementById('modal-gerenciar-usuario').classList.add('on');
 
-  document.getElementById('gu-reset').addEventListener('click',async()=>{
+  document.getElementById('gu-reset')?.addEventListener('click',async()=>{
     const r=await resetarSenha(perf.email);
     if(r.success){alert('E-mail de redefinição enviado para '+perf.email+'.');closeModal('modal-gerenciar-usuario');}
     else alert('Erro: '+r.error);
@@ -3361,8 +3390,10 @@ document.getElementById('btn-login').addEventListener('click',signIn);
 document.getElementById('login-pwd').addEventListener('keydown',e=>{if(e.key==='Enter')signIn();});
 document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pwd').focus();});
 document.getElementById('btn-forgot-pwd').addEventListener('click',async()=>{
-  const email=document.getElementById('login-email').value.trim();
-  if(!email){document.getElementById('login-status').textContent='Digite seu e-mail acima primeiro.';return;}
+  const login=document.getElementById('login-email').value.trim();
+  const email=loginToEmail(login);
+  if(!login){document.getElementById('login-status').textContent='Digite seu usuário ou e-mail acima primeiro.';return;}
+  if(isInternalEmail(email)){document.getElementById('login-status').textContent='Conta interna não recebe redefinição por e-mail. Peça uma nova senha temporária ao administrador.';return;}
   const r=await resetarSenha(email);
   document.getElementById('login-status').textContent=r.success?'E-mail de redefinição enviado!':'Erro: '+r.error;
   if(r.success)document.getElementById('login-status').style.color='#27500A';
@@ -3379,21 +3410,24 @@ document.querySelectorAll('#modal-novo-usuario .mo').forEach(btn=>{
 });
 document.getElementById('nu-criar').addEventListener('click',async()=>{
   const nome=document.getElementById('nu-nome').value.trim();
-  const email=document.getElementById('nu-email').value.trim();
+  const login=document.getElementById('nu-email').value.trim();
+  const tempPwd=document.getElementById('nu-pwd').value.trim();
   const st=document.getElementById('nu-status');
   if(!nome){st.textContent='Informe o nome.';return;}
-  if(!email){st.textContent='Informe o e-mail.';return;}
+  if(!login){st.textContent='Informe o usuário de acesso.';return;}
+  if(!login.includes('@')&&!validInternalLogin(login)){st.textContent='Use 3 a 32 caracteres: letras, números, ponto, hífen ou underline.';return;}
+  if(tempPwd.length<6){st.textContent='Informe uma senha temporária com pelo menos 6 caracteres.';return;}
   const btn=document.getElementById('nu-criar');
   btn.disabled=true;btn.textContent='Criando...';
-  const r=await criarUsuario(nome,email,nuRole);
-  btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Criar e enviar convite';
+  const r=await criarUsuario(nome,login,tempPwd,nuRole);
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Criar usuário';
   if(r.success){
     closeModal('modal-novo-usuario');
-    document.getElementById('nu-nome').value='';document.getElementById('nu-email').value='';
+    document.getElementById('nu-nome').value='';document.getElementById('nu-email').value='';document.getElementById('nu-pwd').value='';
     nuRole='contador_conferente';document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
     st.textContent='';
     homeTab('usuarios');
-    alert('Usuário criado! Um e-mail de convite foi enviado para '+email+'.');
+    alert('Usuário criado. Login: '+emailToLogin(loginToEmail(login))+' | Senha temporária: '+tempPwd);
   }else{st.textContent=r.error;}
 });
 
