@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v23</title>
+<title>Estoque Gesto v33</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <style>*{box-sizing:border-box;margin:0;padding:0}:root{--bg1:#fff;--bg2:#f5f5f7;--bg3:#e8e8ed;--tx1:#1c1c1e;--tx2:#6c6c70;--bd3:#d1d1d6;--r1:12px;--r2:8px}@media(prefers-color-scheme:dark){:root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--tx1:#fff;--tx2:#98989d;--bd3:#38383a}}html,body{height:100%;background:var(--bg3);font-family:-apple-system,BlinkMacSystemFont,sans-serif}#app{max-width:430px;margin:0 auto;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;position:relative}.scr{display:none;flex-direction:column;flex:1;min-height:100vh}.scr.on{display:flex}.topbar{background:var(--bg1);border-bottom:.5px solid var(--bd3);padding:13px 16px 11px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}.tt{font-size:17px;font-weight:500;color:var(--tx1)}.ts{font-size:12px;color:var(--tx2);margin-top:1px}.tbtn{background:none;border:none;cursor:pointer;color:var(--tx2);font-size:22px;display:flex;align-items:center;padding:4px}.content{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.bbar{background:var(--bg1);border-top:.5px solid var(--bd3);padding:10px 14px 20px;display:flex;flex-direction:column;gap:7px;flex-shrink:0}.bp{width:100%;padding:13px;border-radius:var(--r1);background:var(--acc);color:#E6F1FB;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}.bp:active{opacity:.85}.bp:disabled{opacity:.4}.bs{width:100%;padding:10px;border-radius:var(--r1);background:var(--bg2);color:var(--tx1);border:.5px solid var(--bd3);font-size:14px;cursor:pointer}.bg_{width:100%;padding:10px;background:none;color:var(--tx2);border:none;font-size:14px;cursor:pointer}.sec{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 2px}.row{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.row:active{background:var(--bg2)}.bdg{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}.bdone{background:#EAF3DE;color:#27500A}.bprog{background:#FAEEDA;color:#633806}.bpend{background:var(--bg2);color:var(--tx2)}.bwarn{background:#FEF3C7;color:#92400E}.ntabs{display:flex;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0}.ntab{flex:1;padding:11px 6px;font-size:12px;font-weight:500;color:var(--tx2);text-align:center;cursor:pointer;border-bottom:2px solid transparent}.ntab.on{color:var(--acc);border-bottom-color:var(--acc)}.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{display:inline-flex;align-items:center;padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx2);white-space:nowrap}.chip.on{background:var(--acc);color:#E6F1FB;border-color:var(--acc)}.srch{width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none}.srch:focus{border-color:var(--acc)}.pcard{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:10px}.pcard.done-card{border-color:#C0DD97}.cntb{display:flex;flex-direction:column;background:var(--bg2);border-radius:var(--r2);overflow:hidden}.cnt-row{display:flex;align-items:center}.cbt{width:52px;height:52px;border:none;background:var(--bg2);color:var(--tx1);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;flex-shrink:0}.cbt:active{background:var(--bg3)}.cctr{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0}.cv{font-size:30px;font-weight:600;color:var(--tx1);line-height:1}.cu{font-size:12px;color:var(--tx2);font-weight:500}.ccv{font-size:13px;color:var(--acc);font-weight:500;text-align:center;padding:7px 12px;border-top:.5px solid var(--bd3);background:var(--bg1)}.decb{background:var(--bg2);border-radius:var(--r2);overflow:hidden}.decl{font-size:11px;font-weight:500;color:var(--tx2);padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.04em}.decr{display:flex;align-items:center}.deci{flex:1;font-size:28px;font-weight:600;color:var(--tx1);padding:6px 12px 10px;background:none;border:none;outline:none;font-family:inherit;min-width:0}.decu{font-size:14px;font-weight:500;color:var(--tx2);padding-right:14px;white-space:nowrap}.sb-cnt{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#F0FDF4;color:#166534;border:.5px solid #BBF7D0;font-weight:500}.sb-dec{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;font-weight:500}.sb-mis{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;font-weight:500}.notei{width:100%;font-size:13px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;height:33px;outline:none}.progr{display:flex;align-items:center;gap:10px}.progt{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}.progf{height:100%;background:var(--acc);border-radius:3px;transition:width .3s}.progp{font-size:12px;color:var(--tx2);white-space:nowrap}.gsep{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd3)}.srow:last-child{border-bottom:none}.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scard{background:var(--bg2);border-radius:var(--r2);padding:11px 12px}.slbl{font-size:11px;color:var(--tx2);margin-bottom:3px}.sval{font-size:20px;font-weight:500;color:var(--tx1)}.card{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px}.syncr{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);justify-content:center}.syncd{width:7px;height:7px;border-radius:50%;background:#639922}.av{width:28px;height:28px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#0C447C}.uc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}.empty{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:10px;color:var(--tx2);font-size:14px;text-align:center}.fthu{width:52px;height:52px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0}.fthp{width:52px;height:52px;border-radius:var(--r2);border:.5px dashed var(--bd3);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--tx2)}.fbtn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:12px;cursor:pointer;font-family:inherit}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center}.modal-bg.on{display:flex}.modal-box{background:var(--bg1);border-radius:var(--r1);padding:16px;width:92%;max-width:380px;display:flex;flex-direction:column;gap:12px;border:.5px solid var(--bd3);max-height:90vh;overflow:hidden}.sl-step{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer}.sl-step.done{border-color:#C0DD97}.sl-step.active{border-color:var(--acc)}.sl-sn{width:32px;height:32px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--tx2);flex-shrink:0}.sl-step.done .sl-sn{background:#EAF3DE;color:#27500A}.sl-step.active .sl-sn{background:var(--acc);color:#E6F1FB}.sl-conn{width:2px;height:12px;background:var(--bd3);margin-left:29px}.sl-conn.done{background:#C0DD97}.slnav{background:var(--bg2);border-bottom:.5px solid var(--bd3);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}.slnav::-webkit-scrollbar{display:none}.slni{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:.5px solid transparent}.slni.cur{background:var(--bg1);border-color:var(--acc);color:var(--acc)}.slni.dn{color:#639922}.slni.pn{color:var(--tx2)}.ms{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden}.msh{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.msb{display:none;flex-direction:column;border-top:.5px solid var(--bd3)}.msb.open{display:flex}.msr{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.msa{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-top:.5px solid var(--bd3)}.ib{width:44px;height:44px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--tx2);flex-shrink:0}.ib.danger{border-color:#ff3b30;background:#fff5f5;color:#ff3b30}.ib.primary{border-color:var(--acc);background:var(--acc-bg);color:var(--acc)}.ii{flex:1;font-size:13px;padding:6px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.ii:focus{border-color:var(--acc)}.tsl{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--acc-bg);color:var(--acc-tx);font-weight:500;white-space:nowrap}.tns{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);font-weight:500}.wb{background:#FEF3C7;border-radius:var(--r1);border:.5px solid #FDE68A;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}.spi{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.spi:last-child{border-bottom:none}.mto{display:flex;background:var(--bg2);border-radius:var(--r2);overflow:hidden;border:.5px solid var(--bd3)}.mo{flex:1;padding:9px 8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;color:var(--tx2);border:none;background:none;font-family:inherit}.mo.on{background:var(--bg1);color:var(--tx1);box-shadow:0 1px 3px rgba(0,0,0,.08)}.fl{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}.fi{width:100%;font-size:14px;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.fi:focus{border-color:var(--acc)}.cpv{background:var(--acc-bg);border-radius:var(--r2);padding:10px 12px;font-size:13px;color:var(--acc-tx);display:flex;align-items:center;gap:6px}.tipb{font-size:11px;color:var(--tx2);background:var(--bg2);padding:8px 10px;border-radius:var(--r2);line-height:1.5}.bbtn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r1);border:.5px solid var(--bd3);background:var(--bg1);cursor:pointer;font-family:inherit;width:100%;text-align:left}.bbtn:active{opacity:.85}.card-extra{display:none;flex-direction:column;gap:8px;border-top:.5px solid var(--bd3);padding-top:8px;margin-top:4px}.pcard.exp .card-extra{display:flex}.zb{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}.zb.zeroed{background:var(--acc-bg);color:var(--acc);border-color:var(--acc-bd)}
 .hist-entry{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}.hist-entry:active{background:var(--bg2)}.hist-date-sep{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;padding:8px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.hist-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;background:#EAF3DE;color:#27500A}.hist-badge-partial{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;background:#FAEEDA;color:#633806}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -264,7 +265,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v30</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v33</span></span></div>
   </div>
 </div>
 
@@ -431,15 +432,13 @@
     <div>
       <div class="fl">Nível de acesso</div>
       <div class="mto">
-        <button class="mo on" id="nu-role-admin" data-role="admin">Administrador</button>
-        <button class="mo" id="nu-role-operador" data-role="operador">Operador</button>
-        <button class="mo" id="nu-role-visualizador" data-role="visualizador">Visualizador</button>
+        <button class="mo" id="nu-role-admin" data-role="admin">Administrador</button>
+        <button class="mo on" id="nu-role-contador" data-role="contador_conferente">Contador/Conferente</button>
       </div>
     </div>
     <div class="tipb">
-      <strong>Administrador:</strong> acesso total + gestão de usuários<br>
-      <strong>Operador:</strong> realiza contagens, sem gestão<br>
-      <strong>Visualizador:</strong> somente consulta
+      <strong>Administrador:</strong> acesso total, usuários, cadastros, fechamento e exportação<br>
+      <strong>Contador/Conferente:</strong> realiza e confere contagens, sem gestão
     </div>
     <div id="nu-status" style="font-size:12px;color:#ff3b30;min-height:16px"></div>
     <div style="display:flex;gap:8px">
@@ -470,6 +469,23 @@
     <button id="extra-check-yes" style="width:100%;padding:13px;border-radius:var(--r1);background:var(--bg2);border:.5px solid var(--bd3);font-size:14px;font-weight:500;cursor:pointer;color:var(--tx1);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-plus" style="font-size:16px;color:var(--acc)"></i>Sim, quero adicionar um item</button>
     <button id="extra-check-no" class="bp">Não, pode continuar</button>
     <button id="extra-check-cancel" style="background:none;border:none;font-size:13px;color:var(--tx2);cursor:pointer;padding:0;font-family:inherit">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-auditoria">
+  <div class="modal-box" style="gap:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:500">Auditoria antes de continuar</div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:2px" id="audit-subtitle"></div>
+      </div>
+      <button id="audit-close" class="tbtn"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="audit-body" style="display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow:auto"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button id="audit-continue" class="bp">Continuar</button>
+      <button id="audit-review" class="bs">Revisar contagem</button>
+    </div>
   </div>
 </div>
 </div>
@@ -1005,12 +1021,13 @@ const BASE={
 let aLocal=null,aSublocal=null,aGrupo='todos',sTerm='';
 let counts={},homeTabId='locais',pendingCod=null,pendingLocal=null,pendingAssignCod=null;
 let currentUserRole=null,currentUserNome=null;
-let nuRole='operador'; // role selecionado no modal novo usuário
+let nuRole='contador_conferente'; // role selecionado no modal novo usuário
 let secondaryAuthApp=null; // instância secundária do Firebase para criar usuários
 let locais=[...DEFAULT_LOCAIS];
 let sublocais={},subsubs={},vinculos={},ajustes={},specs={};
 let historico=[];
 let extraCheckCallback=null;
+let auditCallback=null;
 let gestaoTabId='locais',gestaoSpecLocal=DEFAULT_LOCAIS[0].id,gestaoSpecSearch='',editSpecModo='contador',gestaoAddLocalOpen=false;
 let editingLocalId=null;
 const SK='app-estoque-gesto-v2';
@@ -1065,6 +1082,15 @@ const FECHAMENTO_DOC='__fechamento__'; // documento especial dentro de contagem_
 //        }
 //      }
 //    }
+// 8. No Firebase Storage → Regras, libere imagens autenticadas:
+//    rules_version = '2';
+//    service firebase.storage {
+//      match /b/{bucket}/o {
+//        match /contagem-fotos/{userId}/{allPaths=**} {
+//          allow read, write: if request.auth != null;
+//        }
+//      }
+//    }
 // ─────────────────────────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyD822o8OEpDiCecXC6P4JgJAUbqRe0R_9k",
@@ -1076,17 +1102,18 @@ const FIREBASE_CONFIG = {
 };
 
 let firebaseReady = false;
-let auth, db, currentUser = null;
+let auth, db, storage, currentUser = null;
 
 try {
   firebase.initializeApp(FIREBASE_CONFIG);
   auth = firebase.auth();
   db = firebase.firestore();
+  storage = firebase.storage();
   firebaseReady = true;
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v30';
+const APP_VERSION = 'v33';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1400,6 +1427,10 @@ async function carregarFechamento(){
 
 // Gestor confirma o fim da contagem
 async function confirmarFimContagem(){
+  if(!isAdminRole()){
+    alert('Apenas administradores podem confirmar o fim da contagem.');
+    return;
+  }
   if(!todosLocaisFinalizados()){
     alert('Ainda há locais pendentes. Todos devem estar finalizados antes de confirmar o fim da contagem.');
     return;
@@ -1561,7 +1592,7 @@ if(firebaseReady){
             setLoginLoading(false);
             return;
           }
-          currentUserRole=perf.role||'operador';
+          currentUserRole=normalizeRole(perf.role);
           currentUserNome=perf.nome||user.email;
         }else{
           // Primeiro acesso — cria perfil admin automaticamente
@@ -1574,7 +1605,7 @@ if(firebaseReady){
         }
       }catch(e){
         console.warn('Erro ao carregar perfil:',e);
-        currentUserRole='operador';
+        currentUserRole='contador_conferente';
         currentUserNome=user.email;
       }
       currentUser=user;
@@ -1598,6 +1629,7 @@ if(firebaseReady){
 }
 
 function exportarBackup(){
+  if(!isAdminRole()){alert('Apenas administradores podem exportar backup.');return;}
   const dados={versao:'2.0',data:new Date().toISOString(),locais,sublocais,subsubs,vinculos,ajustes,specs};
   const blob=new Blob([JSON.stringify(dados,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1612,6 +1644,7 @@ function handleBackupFile(evt){
   r.readAsText(file);evt.target.value='';
 }
 function doImport(){
+  if(!isAdminRole()){alert('Apenas administradores podem restaurar backup.');return;}
   const txt=document.getElementById('import-txt').value.trim();
   const st=document.getElementById('import-status');
   if(!txt){st.textContent='Cole o JSON primeiro.';st.style.color='#92400E';return;}
@@ -1651,12 +1684,61 @@ function getSublocNome(lid,slId){
   return slId||'';
 }
 function getVinculo(lid,cod){return(vinculos[lid]||{})[cod]||null;}
-function setVinculo(lid,cod,slId){if(!vinculos[lid])vinculos[lid]={};if(slId===null)delete vinculos[lid][cod];else vinculos[lid][cod]=slId;salvar();}
+function setVinculo(lid,cod,slId){if(!isAdminRole())return;if(!vinculos[lid])vinculos[lid]={};if(slId===null)delete vinculos[lid][cod];else vinculos[lid][cod]=slId;salvar();}
 function getSpec(lid,cod){return(specs[lid]||{})[cod]||null;}
 function hasSpec(lid,cod){const s=getSpec(lid,cod);return !!(s&&s.modo);}
 function setSpec(lid,cod,spec){if(!specs[lid])specs[lid]={};if(!spec)delete specs[lid][cod];else specs[lid][cod]=spec;salvar();}
 function calcV(lid,cod,qty){const s=getSpec(lid,cod);if(!s)return qty;if(s.modo==='decimal')return parseFloat(qty)||0;return(parseFloat(qty)||0)*(s.fator||1);}
 function fmtNum(n){return parseFloat(n.toFixed(4)).toString();}
+function fotoSrc(foto){return typeof foto==='string'?foto:(foto?.url||'');}
+function fotoIsStoragePath(path){return typeof path==='string'&&path.startsWith('contagem-fotos/');}
+function fotoExt(file){return file.type==='image/png'?'png':'jpg';}
+function dataURLToBlob(dataURL){
+  const parts=dataURL.split(',');
+  const mime=(parts[0].match(/:(.*?);/)||[])[1]||'image/jpeg';
+  const bin=atob(parts[1]||'');
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return new Blob([bytes],{type:mime});
+}
+function compactarImagem(file,maxSize=1280,quality=.78){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const scale=Math.min(1,maxSize/Math.max(img.width,img.height));
+        const w=Math.max(1,Math.round(img.width*scale));
+        const h=Math.max(1,Math.round(img.height*scale));
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const dataURL=canvas.toDataURL(file.type==='image/png'?'image/png':'image/jpeg',quality);
+        resolve({dataURL,blob:dataURLToBlob(dataURL)});
+      };
+      img.onerror=()=>resolve(null);
+      img.src=reader.result;
+    };
+    reader.onerror=()=>resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+async function salvarFotoRepositorio(file,lid,cod){
+  const compactada=await compactarImagem(file);
+  if(!compactada)throw new Error('Não foi possível processar a imagem.');
+  if(!currentUser||!firebaseReady||!storage)return{url:compactada.dataURL,path:null};
+  const safeCod=String(cod).replace(/[^a-zA-Z0-9_-]/g,'_');
+  const ext=fotoExt(file);
+  const path=`contagem-fotos/${currentUser.uid}/${lid}/${safeCod}-${Date.now()}.${ext}`;
+  const ref=storage.ref(path);
+  await ref.put(compactada.blob,{contentType:compactada.blob.type||file.type||'image/jpeg'});
+  const url=await ref.getDownloadURL();
+  return{url,path};
+}
+async function removerFotoRepositorio(path){
+  if(!fotoIsStoragePath(path)||!storage)return;
+  try{await storage.ref(path).delete();}catch(e){console.warn('Não foi possível remover foto do Storage:',e);}
+}
 
 function getProdsLocal(lid){
   const base=BASE[lid]||[];const aj=ajustes[lid]||{extras:[],removidos:[]};
@@ -1677,6 +1759,9 @@ function slStatus(lid,slId){
   if(done===0)return 'pend';if(done<prods.length)return 'prog';return 'done';
 }
 function countSemSpec(lid){return getProdsLocal(lid).filter(p=>!hasSpec(lid,p.cod)).length;}
+function normalizeRole(role){return role==='admin'?'admin':'contador_conferente';}
+function isAdminRole(){return normalizeRole(currentUserRole)==='admin';}
+function isContadorRole(){return normalizeRole(currentUserRole)==='contador_conferente';}
 
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');}
 function closeModal(id){document.getElementById(id).classList.remove('on');}
@@ -1684,7 +1769,12 @@ function goHome(){show('s-home');renderHome();}
 function goSel(){show('s-sel');renderSel();}
 function backCount(){renderCount();show('s-count');}
 function voltarAoPlano(){show('s-plano');renderPlano(aLocal);}
-function homeTab(t){homeTabId=t;document.querySelectorAll('#s-home .ntab').forEach(el=>el.classList.toggle('on',el.dataset.homeTab===t));renderHome();}
+function homeTab(t){
+  if((t==='gestao'||t==='usuarios')&&!isAdminRole())t='locais';
+  homeTabId=t;
+  document.querySelectorAll('#s-home .ntab').forEach(el=>el.classList.toggle('on',el.dataset.homeTab===t));
+  renderHome();
+}
 function goToLocal(lid){aLocal=lid;const subs=getSubs(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
 
 function localBadge(lid){
@@ -1733,12 +1823,20 @@ function renderHome(){
       homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">${faltam} local${faltam!==1?'is':''} ainda não finalizado${faltam!==1?'s':''}</div>${getSyncHTML()}`;
     } else if(!dataFimContagem){
       // Todos finalizados, aguardando confirmação do Gestor
-      homeBbar.innerHTML=`<button id="btn-confirmar-fim" class="bp"><i class="ti ti-circle-check"></i> Confirmar Fim da Contagem</button>${getSyncHTML()}`;
-      document.getElementById('btn-confirmar-fim').addEventListener('click',confirmarFimContagem);
+      if(isAdminRole()){
+        homeBbar.innerHTML=`<button id="btn-confirmar-fim" class="bp"><i class="ti ti-circle-check"></i> Confirmar Fim da Contagem</button>${getSyncHTML()}`;
+        document.getElementById('btn-confirmar-fim').addEventListener('click',confirmarFimContagem);
+      }else{
+        homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">Aguardando fechamento pelo administrador</div>${getSyncHTML()}`;
+      }
     } else {
       // Fechamento confirmado — mostra botão de exportar
-      homeBbar.innerHTML=`<button id="btn-exportar-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>${getSyncHTML()}`;
-      document.getElementById('btn-exportar-csv').addEventListener('click',exportarCSV);
+      if(isAdminRole()){
+        homeBbar.innerHTML=`<button id="btn-exportar-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>${getSyncHTML()}`;
+        document.getElementById('btn-exportar-csv').addEventListener('click',exportarCSV);
+      }else{
+        homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">Contagem fechada pelo administrador</div>${getSyncHTML()}`;
+      }
     }
   } else {
     // Bbar da aba Locais: retomar local do usuário atual se houver em andamento
@@ -1764,8 +1862,8 @@ function renderHome(){
       document.getElementById('nu-nome').value='';
       document.getElementById('nu-email').value='';
       document.getElementById('nu-status').textContent='';
-      nuRole='operador';
-      document.querySelectorAll('#modal-novo-usuario .mo').forEach((b,i)=>b.classList.toggle('on',i===1));
+      nuRole='contador_conferente';
+      document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
       document.getElementById('modal-novo-usuario').classList.add('on');
       setTimeout(()=>document.getElementById('nu-nome').focus(),100);
     });
@@ -1914,7 +2012,7 @@ function renderPlano(lid){
   let h='';
   if(semSpec>0)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
     <div><div style="font-size:13px;font-weight:500;color:#92400E">${semSpec} itens sem especificação</div>
-    <button id="btn-ir-gestao" style="margin-top:6px;font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Ir para Gestão →</button></div></div>`;
+    ${isAdminRole()?'<button id="btn-ir-gestao" style="margin-top:6px;font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Ir para Gestão →</button>':''}</div></div>`;
   h+='<div class="sec">Roteiro de contagem</div>';
   subs.forEach((sl,i)=>{
     const prods=getProdsSublocal(lid,sl.id);
@@ -2015,6 +2113,8 @@ function mudarSublocal(slId){
 }
 
 function renderCount(){
+  const countMgrBtn=document.getElementById('btn-count-mgr');
+  if(countMgrBtn)countMgrBtn.style.display=isAdminRole()?'':'none';
   const allProds=getProdsSublocal(aLocal,aSublocal);
   const contaveis=allProds;
   const semSpec=allProds.filter(p=>!hasSpec(aLocal,p.cod));
@@ -2031,7 +2131,7 @@ function renderCount(){
   if(aGrupo!=='todos')filtrado=filtrado.filter(p=>p.grupo===aGrupo);
   if(sTerm)filtrado=filtrado.filter(p=>p.nome.toLowerCase().includes(sTerm)||p.cod.includes(sTerm));
   let h='';
-  if(semSpec.length)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12px;color:#92400E"><strong>${semSpec.length} ${semSpec.length===1?'item':'itens'} sem especificação</strong> — contados em Unidade Saipos. <button id="btn-gestao-spec" style="font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Cadastrar especificação →</button></div></div>`;
+  if(semSpec.length)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12px;color:#92400E"><strong>${semSpec.length} ${semSpec.length===1?'item':'itens'} sem especificação</strong> — contados em Unidade Saipos.${isAdminRole()?' <button id="btn-gestao-spec" style="font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Cadastrar especificação →</button>':''}</div></div>`;
   if(!filtrado.length){
     const isSublocEspecifico=aSublocal&&aSublocal!=='__todos__'&&aSublocal!=='__sem__';
     const emptyMsg=isSublocEspecifico?
@@ -2039,7 +2139,7 @@ function renderCount(){
       '<div class="empty"><i class="ti ti-search" style="font-size:30px;opacity:.3"></i><span>Nenhum item</span></div>';
     document.getElementById('count-list').innerHTML=h||emptyMsg;updProg(contaveis,done);renderCountBbar(contaveis,done);return;
   }
-  h+=`<div style="padding:8px 12px 4px"><button id="btn-add-item-top" style="width:100%;padding:10px 14px;border-radius:var(--r1);background:none;border:.5px dashed var(--acc-bd);font-size:13px;font-weight:500;color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit"><i class="ti ti-plus"></i> Adicionar item ao local</button></div>`;
+  if(isAdminRole())h+=`<div style="padding:8px 12px 4px"><button id="btn-add-item-top" style="width:100%;padding:10px 14px;border-radius:var(--r1);background:none;border:.5px dashed var(--acc-bd);font-size:13px;font-weight:500;color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit"><i class="ti ti-plus"></i> Adicionar item ao local</button></div>`;
   let lastG=null;
   filtrado.forEach(p=>{
     if(p.grupo!==lastG){h+=`<div class="gsep">${p.grupo}</div>`;lastG=p.grupo;}
@@ -2049,13 +2149,14 @@ function renderCount(){
     const slId=getVinculo(aLocal,p.cod);const slInfo=allFlat.find(s=>s.id===slId);
     const slNomeDisplay=slInfo?(slInfo._parentNome?`${slInfo._parentNome} › ${slInfo.nome}`:slInfo.nome):null;
     const slTag=allFlat.length?(slInfo?`<span class="tsl">📍 ${slNomeDisplay}</span>`:'<span class="tns">Sem sublocal</span>'):'';
-    const slBtn=allFlat.length?`<button class="btn-assign" data-cod="${p.cod}" style="font-size:11px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">${slInfo?'Trocar':'Definir'}</button>`:'';
+    const slBtn=allFlat.length&&isAdminRole()?`<button class="btn-assign" data-cod="${p.cod}" style="font-size:11px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">${slInfo?'Trocar':'Definir'}</button>`:'';
     const specBadge=!spec?`<span class="sb-dec" style="background:#FEF3C7;color:#92400E;border-color:#FCD34D"><i class="ti ti-alert-triangle" style="font-size:10px"></i>Unidade Saipos · ${p.unidade}</span>`:spec.modo==='contador'?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${spec.embalagem} · ×${spec.fator} ${p.unidade}</span>`:`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${p.unidade}</span>`;
     const isZeroed=d.touched&&(!spec||spec.modo==='decimal'?(d.qtyDec!==''&&parseFloat(d.qtyDec)===0):(d.qty||0)===0);
     const zbCls=isZeroed?'zeroed':'';const zbTxt=isZeroed?'Zero ✓':'Zero';
     const hasObs=!!(d.note&&d.note.trim());
     const obsTxt=hasObs?'Obs. ✓':'+ Obs.';
-    const fotoBtn=d.foto?`<img class="fthu btn-foto" data-cod="${p.cod}" src="${d.foto}" style="width:32px;height:32px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0" alt="Foto"/>`:
+    const fotoURL=fotoSrc(d.foto);
+    const fotoBtn=fotoURL?`<img class="fthu btn-foto" data-cod="${p.cod}" src="${fotoURL}" style="width:32px;height:32px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0" alt="Foto"/>`:
       `<button class="ib btn-foto-opts" data-cod="${p.cod}" title="Foto" style="flex-shrink:0"><i class="ti ti-camera"></i></button>`;
     let ei='';
     if(spec&&spec.modo==='contador'){
@@ -2077,7 +2178,7 @@ function renderCount(){
         <div style="flex:1"><div style="font-size:14px;font-weight:500">${p.nome}</div>
         <div style="font-size:11px;color:var(--tx2);margin-top:1px">COD ${p.cod}</div>
         <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${specBadge}${subs.length?slTag+slBtn:''}</div></div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${checkIco}<button class="btn-rem-inline" data-cod="${p.cod}" data-nome="${p.nome.replace(/"/g,'&quot;')}" style="background:none;border:none;padding:2px 4px;cursor:pointer;color:var(--tx2);font-size:20px;line-height:1;opacity:0.4" title="Remover do local">×</button></div></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${checkIco}${isAdminRole()?`<button class="btn-rem-inline" data-cod="${p.cod}" data-nome="${p.nome.replace(/"/g,'&quot;')}" style="background:none;border:none;padding:2px 4px;cursor:pointer;color:var(--tx2);font-size:20px;line-height:1;opacity:0.4" title="Remover do local">×</button>`:''}</div></div>
       ${ei}
       <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
         <button class="zb ${zbCls} btn-zero" data-cod="${p.cod}">${zbTxt}</button>
@@ -2122,6 +2223,54 @@ function checkExtras(slNome,onConfirm){
   document.getElementById('modal-extra-check').classList.add('on');
 }
 
+function getAuditData(lid,slId){
+  const prods=getProdsSublocal(lid,slId),cnt=counts[lid]||{};
+  const res={total:prods.length,contados:0,pendentes:[],zerados:[],semFoto:[],comObs:[],semSpec:[]};
+  prods.forEach(p=>{
+    const d=cnt[p.cod]||{};
+    const spec=getSpec(lid,p.cod);
+    if(!spec)res.semSpec.push(p);
+    if(!d.touched){res.pendentes.push(p);return;}
+    res.contados++;
+    const isDecimal=!spec||spec.modo==='decimal';
+    const valor=isDecimal?parseFloat(d.qtyDec||0):(d.qty||0);
+    if(valor===0)res.zerados.push(p);
+    if(!fotoSrc(d.foto))res.semFoto.push(p);
+    if(d.note&&d.note.trim())res.comObs.push(p);
+  });
+  return res;
+}
+function auditSection(title,items,icon,color,emptyText,limit=8){
+  const shown=items.slice(0,limit);
+  const more=items.length>limit?`<div style="font-size:11px;color:var(--tx2);padding-top:4px">+${items.length-limit} outros itens</div>`:'';
+  const body=items.length?shown.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:.5px solid var(--bd3)"><span style="font-size:12px;color:var(--tx1)">${p.nome}</span><span style="font-size:10px;color:var(--tx2);white-space:nowrap">COD ${p.cod}</span></div>`).join('')+more:`<div style="font-size:12px;color:var(--tx2);padding-top:4px">${emptyText}</div>`;
+  return `<div class="card" style="padding:10px 12px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="ti ${icon}" style="font-size:16px;color:${color}"></i><div style="font-size:13px;font-weight:500;color:var(--tx1);flex:1">${title}</div><div class="bdg" style="background:var(--bg2);color:var(--tx2)">${items.length}</div></div>${body}</div>`;
+}
+function showAuditoria(onConfirm){
+  const l=getLocal(aLocal),sl=getSubs(aLocal).find(s=>s.id===aSublocal);
+  const data=getAuditData(aLocal,aSublocal);
+  auditCallback=onConfirm;
+  document.getElementById('audit-subtitle').textContent=sl?`${l.nome} › ${sl.nome}`:l.nome;
+  const pct=data.total?Math.round((data.contados/data.total)*100):0;
+  let h=`<div class="sgrid"><div class="scard"><div class="slbl">Contados</div><div class="sval">${data.contados}/${data.total}</div></div><div class="scard"><div class="slbl">Progresso</div><div class="sval">${pct}%</div></div></div>`;
+  if(data.pendentes.length){
+    h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12px;color:#92400E"><strong>${data.pendentes.length} item${data.pendentes.length===1?'':'s'} pendente${data.pendentes.length===1?'':'s'}.</strong> Revise antes de fechar se isto não foi intencional.</div></div>`;
+  } else {
+    h+=`<div class="cpv"><i class="ti ti-circle-check"></i> Nenhum item pendente nesta etapa.</div>`;
+  }
+  h+=auditSection('Pendentes',data.pendentes,'ti-clock','#EF9F27','Nenhum item pendente.');
+  h+=auditSection('Quantidade zero',data.zerados,'ti-circle-zero','#92400E','Nenhum item zerado.');
+  h+=auditSection('Sem foto',data.semFoto,'ti-photo-off','var(--tx2)','Todos os itens contados têm foto.');
+  h+=auditSection('Com observação',data.comObs,'ti-message-circle','var(--acc)','Nenhuma observação registrada.');
+  h+=auditSection('Sem especificação',data.semSpec,'ti-alert-circle','#D97706','Todas as especificações estão cadastradas.');
+  document.getElementById('audit-body').innerHTML=h;
+  document.getElementById('audit-continue').textContent=data.pendentes.length?'Continuar mesmo assim':'Continuar';
+  document.getElementById('modal-auditoria').classList.add('on');
+}
+function runPreFinishAudit(onConfirm){
+  showAuditoria(onConfirm);
+}
+
 function renderCountBbar(prods,done){
   const subs=getSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('count-bbar');
@@ -2131,12 +2280,12 @@ function renderCountBbar(prods,done){
   if(allDone){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
       <button id="btn-cb-salvar" class="bp"><i class="ti ti-device-floppy"></i> Ver resumo e finalizar</button>`;
-    document.getElementById('btn-cb-salvar').addEventListener('click',()=>checkExtras(slNomeAtual,voltarAoPlano));
+    document.getElementById('btn-cb-salvar').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(goFinish)));
   } else if(done===prods.length&&prods.length>0&&nextSl){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
       <button id="btn-cb-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${nextSl.nome}</button>
       <button id="btn-cb-plano" class="bg_">Ver plano</button>`;
-    document.getElementById('btn-cb-next').addEventListener('click',()=>checkExtras(slNomeAtual,()=>mudarSublocal(nextSl.id)));
+    document.getElementById('btn-cb-next').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(()=>mudarSublocal(nextSl.id))));
     document.getElementById('btn-cb-plano').addEventListener('click',voltarAoPlano);
   } else {
     const isTodos=aSublocal==='__todos__';
@@ -2144,7 +2293,7 @@ function renderCountBbar(prods,done){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" id="pbar" style="width:0%"></div></div><div class="progp" id="ppct">0%</div></div>
       <button id="btn-cb-fin" class="bp">${finBtnTxt}</button>
       <button id="btn-cb-vp" class="bg_">Ver plano</button>`;
-    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,goFinish));
+    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(goFinish)));
     document.getElementById('btn-cb-vp').addEventListener('click',voltarAoPlano);
     updProg(prods,done);
   }
@@ -2201,6 +2350,7 @@ function updProg(prods,done){
 }
 
 function openAssign(cod){
+  if(!isAdminRole()){alert('Apenas administradores podem definir sublocal.');return;}
   pendingAssignCod=cod;const prod=CATALOGO.find(p=>p.cod===cod);
   document.getElementById('assign-title').textContent=`Onde está "${prod?.nome||cod}"?`;
   const allFlat=getAllSubsFlat(aLocal);const cur=getVinculo(aLocal,cod);
@@ -2234,7 +2384,8 @@ function goFinish(){
     const d=cnt[p.cod];const spec=getSpec(aLocal,p.cod);
     const qtdTxt=spec?.modo==='contador'?`${d.qty||0} ${spec.unidContagem||'un'}`:`${d.qtyDec||0} ${p.unidade}`;
     const convV=spec?.modo==='contador'&&spec.fator!==1?fmtNum(calcV(aLocal,p.cod,d.qty||0)):null;
-    const fi=d.foto?`<img src="${d.foto}" style="width:28px;height:28px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'<i class="ti ti-photo-off" style="color:var(--tx2);font-size:14px;opacity:.4"></i>';
+    const fotoURL=fotoSrc(d.foto);
+    const fi=fotoURL?`<img src="${fotoURL}" style="width:28px;height:28px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'<i class="ti ti-photo-off" style="color:var(--tx2);font-size:14px;opacity:.4"></i>';
     h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fi}<span style="font-size:13px;color:var(--tx2)">${p.nome}</span></div>
       <div style="text-align:right"><div style="font-weight:500">${qtdTxt}</div>${convV?`<div style="font-size:11px;color:var(--acc)">= ${convV} ${p.unidade}</div>`:''}</div></div>`;
   });
@@ -2275,6 +2426,7 @@ function renderSaved(){
 }
 
 function renderGestao(c){
+  if(!isAdminRole()){homeTab('locais');return;}
   const tabs=['locais','specs','backup'];
   let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden">
     ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1">${t==='locais'?'Locais':t==='specs'?'Especificações':'Backup'}</div>`).join('')}</div>`;
@@ -2579,6 +2731,7 @@ function updatePreview(unidade){
   if(prev)prev.textContent=`1 ${unit} = ${fator} ${unidade||''}`;
 }
 function saveSpec(lid,cod,unid){
+  if(!isAdminRole()){alert('Apenas administradores podem editar especificações.');return;}
   if(editSpecModo==='contador'){
     const emb=(document.getElementById('spec-emb')?.value||'').trim();
     const uc=(document.getElementById('spec-unit')?.value||'').trim();
@@ -2594,11 +2747,13 @@ function saveSpec(lid,cod,unid){
 }
 
 function openGerenciarItens(){
+  if(!isAdminRole()){alert('Apenas administradores podem gerenciar itens do local.');return;}
   const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
   document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+sl.nome:''}`;
   mgrTab('remover');document.getElementById('modal-mgr').classList.add('on');
 }
 function openAdicionarItem(){
+  if(!isAdminRole()){alert('Apenas administradores podem adicionar itens ao local.');return;}
   const l=getLocal(aLocal);const sl=getSubs(aLocal).find(s=>s.id===aSublocal);
   document.getElementById('mgr-title').textContent=`${l.icon} ${l.nome}${sl?' › '+sl.nome:''}`;
   document.getElementById('modal-mgr').classList.add('on');
@@ -2644,6 +2799,7 @@ function renderMgrAdicionar(q){
   list.querySelectorAll('.btn-add-item').forEach(e=>e.addEventListener('click',()=>adicionarItem(e.dataset.cod)));
 }
 function removerItem(cod){
+  if(!isAdminRole()){alert('Apenas administradores podem remover itens do local.');return;}
   if(!ajustes[aLocal])ajustes[aLocal]={extras:[],removidos:[]};
   const extIdx=(ajustes[aLocal].extras||[]).indexOf(cod);
   if(extIdx>=0)ajustes[aLocal].extras.splice(extIdx,1);
@@ -2651,6 +2807,7 @@ function removerItem(cod){
   salvar();renderMgrRemover();renderCount();
 }
 function adicionarItem(cod){
+  if(!isAdminRole()){alert('Apenas administradores podem adicionar itens ao local.');return;}
   if(!ajustes[aLocal])ajustes[aLocal]={extras:[],removidos:[]};
   const remIdx=(ajustes[aLocal].removidos||[]).indexOf(cod);
   if(remIdx>=0)ajustes[aLocal].removidos.splice(remIdx,1);
@@ -2659,6 +2816,7 @@ function adicionarItem(cod){
   salvar();renderMgrAdicionar(document.getElementById('mgr-srch').value);renderCount();
 }
 function adicionarSub(lid){
+  if(!isAdminRole()){alert('Apenas administradores podem editar locais.');return;}
   const inp=document.getElementById(`new-sl-${lid}`);
   const nome=(inp?.value||'').trim();if(!nome)return;
   if(!sublocais[lid])sublocais[lid]=[];
@@ -2666,8 +2824,9 @@ function adicionarSub(lid){
   inp.value='';salvar();
   if(homeTabId==='gestao')renderGestao(document.getElementById('home-cnt'));
 }
-function renomearSub(lid,slId,nome){const sl=(sublocais[lid]||[]).find(s=>s.id===slId);if(sl){sl.nome=nome;salvar();}}
+function renomearSub(lid,slId,nome){if(!isAdminRole())return;const sl=(sublocais[lid]||[]).find(s=>s.id===slId);if(sl){sl.nome=nome;salvar();}}
 function removerSub(lid,slId){
+  if(!isAdminRole()){alert('Apenas administradores podem editar locais.');return;}
   if(!sublocais[lid])return;
   // v20: confirmação antes de remover sublocal (melhoria 2)
   const sl=sublocais[lid].find(s=>s.id===slId);
@@ -2688,6 +2847,7 @@ function removerSub(lid,slId){
 
 // ── CRUD de Locais ────────────────────────────────────────────────────────────
 function adicionarLocal(){
+  if(!isAdminRole()){alert('Apenas administradores podem editar locais.');return;}
   const iconEl=document.getElementById('new-local-icon');
   const nomeEl=document.getElementById('new-local-nome');
   const nome=(nomeEl?.value||'').trim();
@@ -2700,11 +2860,13 @@ function adicionarLocal(){
   salvar();renderGestao(document.getElementById('home-cnt'));
 }
 function renomearLocal(lid,nome,icon){
+  if(!isAdminRole())return;
   if(!nome)return;
   const l=locais.find(x=>x.id===lid);
   if(l){l.nome=nome;l.icon=icon||l.icon;salvar();}
 }
 function removerLocal(lid){
+  if(!isAdminRole()){alert('Apenas administradores podem editar locais.');return;}
   if(!confirm(`Remover "${getLocal(lid).nome}"? Isso apagará todos os sublocais e vínculos deste local.`))return;
   locais=locais.filter(l=>l.id!==lid);
   delete sublocais[lid];delete subsubs[lid];delete vinculos[lid];delete specs[lid];delete ajustes[lid];
@@ -2713,6 +2875,7 @@ function removerLocal(lid){
 
 // ── CRUD de Sub-Sublocais ─────────────────────────────────────────────────────
 function adicionarSubSub(lid,slId){
+  if(!isAdminRole()){alert('Apenas administradores podem editar locais.');return;}
   const inp=document.getElementById(`new-ssl-${slId}`);
   const nome=(inp?.value||'').trim();if(!nome)return;
   if(!subsubs[lid])subsubs[lid]={};
@@ -2722,10 +2885,12 @@ function adicionarSubSub(lid,slId){
   salvar();if(homeTabId==='gestao')renderGestao(document.getElementById('home-cnt'));
 }
 function renomearSubSub(lid,slId,sslId,nome){
+  if(!isAdminRole())return;
   const ssl=(getSubSubs(lid,slId)).find(s=>s.id===sslId);
   if(ssl){ssl.nome=nome;salvar();}
 }
 function removerSubSub(lid,slId,sslId){
+  if(!isAdminRole()){alert('Apenas administradores podem editar locais.');return;}
   if(!subsubs[lid]||!subsubs[lid][slId])return;
   // v20: confirmação antes de remover sub-sublocal (melhoria 2)
   const ssl=subsubs[lid][slId].find(s=>s.id===sslId);
@@ -2738,28 +2903,39 @@ function removerSubSub(lid,slId,sslId){
 
 function triggerCam(cod){pendingCod=cod;pendingLocal=aLocal;document.getElementById('file-input').click();}
 function triggerGal(cod){pendingCod=cod;pendingLocal=aLocal;document.getElementById('gal-input').click();}
-function handleFile(evt){
+async function handleFile(evt){
   const file=evt.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const url=e.target.result;
-    if(!counts[pendingLocal])counts[pendingLocal]={};
-    if(!counts[pendingLocal][pendingCod])counts[pendingLocal][pendingCod]={qty:0,qtyDec:'',note:'',touched:false,foto:null};
-    counts[pendingLocal][pendingCod].foto=url;counts[pendingLocal][pendingCod].touched=true;
-    evt.target.value='';if(pendingLocal===aLocal)renderCount();
-    agendarSalvarRascunho(pendingLocal);
-  };reader.readAsDataURL(file);
+  const lid=pendingLocal,cod=pendingCod;
+  evt.target.value='';
+  try{
+    const antiga=counts[lid]?.[cod]?.fotoPath;
+    const foto=await salvarFotoRepositorio(file,lid,cod);
+    if(!counts[lid])counts[lid]={};
+    if(!counts[lid][cod])counts[lid][cod]={qty:0,qtyDec:'',note:'',touched:false,foto:null};
+    counts[lid][cod].foto=foto.url;
+    counts[lid][cod].fotoPath=foto.path;
+    counts[lid][cod].touched=true;
+    if(antiga)removerFotoRepositorio(antiga);
+    if(lid===aLocal)renderCount();
+    agendarSalvarRascunho(lid);
+  }catch(e){
+    console.warn('Erro ao salvar foto:',e);
+    mostrarErroBanner('Não foi possível salvar a foto. Tente novamente.');
+  }
 }
 function openFotoModal(cod){
-  const foto=counts[aLocal]?.[cod]?.foto;if(!foto)return;
+  const foto=fotoSrc(counts[aLocal]?.[cod]?.foto);if(!foto)return;
   document.getElementById('modal-img-el').src=foto;
   document.getElementById('modal-foto').setAttribute('data-cod',cod);
   document.getElementById('modal-foto').classList.add('on');
 }
 function delFoto(){
   const cod=document.getElementById('modal-foto').getAttribute('data-cod');
-  if(counts[aLocal]?.[cod])counts[aLocal][cod].foto=null;
+  const path=counts[aLocal]?.[cod]?.fotoPath;
+  if(counts[aLocal]?.[cod]){counts[aLocal][cod].foto=null;counts[aLocal][cod].fotoPath=null;}
+  removerFotoRepositorio(path);
   closeModal('modal-foto');renderCount();
+  agendarSalvarRascunho(aLocal);
 }
 
 function renderConsolidado(c){
@@ -2828,13 +3004,14 @@ function renderConsolidado(c){
     const lbl=spec?.modo==='contador'?`${d.qty||0} ${spec.unidContagem||'un'}`:`${d.qtyDec||0} ${prod.unidade}`;
     if(!totais[prod.nome])totais[prod.nome]={unidade:prod.unidade,total:0,locais:[],foto:null};
     totais[prod.nome].total+=v;totais[prod.nome].locais.push(`${lid}: ${lbl}`);
-    if(d.foto)totais[prod.nome].foto=d.foto;
+    if(d.foto)totais[prod.nome].foto=fotoSrc(d.foto);
   });});
   const entries=Object.entries(totais);
   if(!entries.length){c.innerHTML=hHeader+'<div class="empty"><i class="ti ti-package" style="font-size:36px;opacity:.3"></i><span>Nenhum item contado ainda</span></div>';return;}
   let h=hHeader+`<div class="sec">${entries.length} itens contados</div><div class="card">`;
   entries.forEach(([nome,d])=>{
-    const fEl=d.foto?`<img src="${d.foto}" style="width:36px;height:36px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'';
+    const fotoURL=fotoSrc(d.foto);
+    const fEl=fotoURL?`<img src="${fotoURL}" style="width:36px;height:36px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'';
     h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fEl}
       <div><div style="font-size:13px;font-weight:500">${nome}</div>
       <div style="font-size:11px;color:var(--tx2)">${d.locais.join(' · ')}</div></div></div>
@@ -3045,12 +3222,11 @@ function abrirDetalheHistorico(entry){
 function ajustarTabsPorRole(){
   const tabGestao=document.getElementById('tab-gestao');
   const tabUsuarios=document.getElementById('tab-usuarios');
-  const isAdmin=currentUserRole==='admin';
-  const isOperador=currentUserRole==='operador';
+  currentUserRole=normalizeRole(currentUserRole);
+  const isAdmin=isAdminRole();
   if(tabGestao)tabGestao.style.display=isAdmin?'':'none';
   if(tabUsuarios)tabUsuarios.style.display=isAdmin?'':'none';
-  // Visualizador: começa no consolidado
-  if(!isAdmin&&!isOperador&&homeTabId==='locais')homeTabId='consolidado';
+  if(!isAdmin&&(homeTabId==='gestao'||homeTabId==='usuarios'))homeTabId='locais';
 }
 
 // ── Gestão de Usuários ────────────────────────────────────────────────────────
@@ -3096,16 +3272,17 @@ async function toggleDesativar(uid,disabled){
 
 // ── Renderização da aba Usuários ──────────────────────────────────────────────
 async function renderUsuarios(c){
-  const ROLE_LABEL={admin:'Administrador',operador:'Operador',visualizador:'Visualizador'};
-  const ROLE_BG={admin:'#E6F1FB',operador:'#EAF3DE',visualizador:'#FAEEDA'};
-  const ROLE_TX={admin:'#0C447C',operador:'#27500A',visualizador:'#633806'};
+  if(!isAdminRole()){homeTab('locais');return;}
+  const ROLE_LABEL={admin:'Administrador',contador_conferente:'Contador/Conferente',operador:'Contador/Conferente',visualizador:'Contador/Conferente'};
+  const ROLE_BG={admin:'#E6F1FB',contador_conferente:'#EAF3DE',operador:'#EAF3DE',visualizador:'#EAF3DE'};
+  const ROLE_TX={admin:'#0C447C',contador_conferente:'#27500A',operador:'#27500A',visualizador:'#27500A'};
 
   c.innerHTML='<div class="empty"><i class="ti ti-loader" style="font-size:30px;animation:pulse 1s infinite"></i><span>Carregando usuários...</span></div>';
   try{
     const snap=await db.collection('perfis').get();
-    const perfis=snap.docs.map(d=>({uid:d.id,...d.data()}));
+    const perfis=snap.docs.map(d=>({uid:d.id,...d.data(),role:normalizeRole(d.data().role)}));
     perfis.sort((a,b)=>{
-      const order={admin:0,operador:1,visualizador:2};
+      const order={admin:0,contador_conferente:1};
       if(order[a.role]!==order[b.role])return (order[a.role]||9)-(order[b.role]||9);
       return(a.nome||'').localeCompare(b.nome||'');
     });
@@ -3140,7 +3317,7 @@ async function renderUsuarios(c){
 }
 
 function abrirGerenciarUsuario(perf){
-  const ROLE_LABEL={admin:'Administrador',operador:'Operador',visualizador:'Visualizador'};
+  const ROLE_LABEL={admin:'Administrador',contador_conferente:'Contador/Conferente',operador:'Contador/Conferente',visualizador:'Contador/Conferente'};
   document.getElementById('gu-nome').textContent=perf.nome||perf.email;
   const body=document.getElementById('gu-body');
   body.innerHTML=`
@@ -3213,7 +3390,7 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
   if(r.success){
     closeModal('modal-novo-usuario');
     document.getElementById('nu-nome').value='';document.getElementById('nu-email').value='';
-    nuRole='operador';document.querySelectorAll('#modal-novo-usuario .mo').forEach((b,i)=>b.classList.toggle('on',i===1));
+    nuRole='contador_conferente';document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
     st.textContent='';
     homeTab('usuarios');
     alert('Usuário criado! Um e-mail de convite foi enviado para '+email+'.');
@@ -3248,6 +3425,19 @@ document.getElementById('extra-check-yes').addEventListener('click',()=>{
 document.getElementById('extra-check-cancel').addEventListener('click',()=>{
   closeModal('modal-extra-check');
   extraCheckCallback=null;
+});
+document.getElementById('audit-continue').addEventListener('click',()=>{
+  closeModal('modal-auditoria');
+  if(auditCallback){auditCallback();auditCallback=null;}
+});
+document.getElementById('audit-review').addEventListener('click',()=>{
+  closeModal('modal-auditoria');
+  auditCallback=null;
+  backCount();
+});
+document.getElementById('audit-close').addEventListener('click',()=>{
+  closeModal('modal-auditoria');
+  auditCallback=null;
 });
 document.getElementById('foto-remove').addEventListener('click',delFoto);
 document.getElementById('foto-close').addEventListener('click',()=>closeModal('modal-foto'));
