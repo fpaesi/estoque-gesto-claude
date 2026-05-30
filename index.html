@@ -416,6 +416,44 @@
   </div>
 </div>
 
+<!-- Modal: Atualizar base pelo Saipos -->
+<div class="modal-bg" id="modal-atualizar-base">
+  <div class="modal-box" style="gap:12px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:15px;font-weight:500">Atualizar base pelo Saipos</div>
+    <div style="font-size:12px;color:var(--tx1);background:var(--bg2);border:.5px solid var(--bd3);border-radius:var(--r2);padding:10px;line-height:1.6">
+      <div style="font-weight:500;margin-bottom:4px">Passo único de configuração (no computador):</div>
+      Arraste o botão azul abaixo para a sua <strong>barra de favoritos</strong> do navegador. Faz isso só uma vez.
+    </div>
+    <a id="ab-bookmarklet" href="#" draggable="true" title="Arraste-me para a barra de favoritos" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:var(--r2);background:var(--acc);color:#E6F1FB;font-size:14px;font-weight:500;text-decoration:none;cursor:grab;user-select:none">
+      <i class="ti ti-download"></i> Extrair base do Saipos
+    </a>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6">
+      <strong>Para atualizar (sempre que quiser):</strong> abra a lista de <strong>Ingredientes</strong> no Saipos, clique no botão <em>Extrair base do Saipos</em> nos favoritos e aguarde. Quando terminar, toque em <em>Copiar</em> e cole aqui embaixo.
+    </div>
+    <textarea id="ab-json" placeholder="Cole aqui o resultado copiado do Saipos..." style="width:100%;height:90px;font-size:12px;font-family:monospace;padding:10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;outline:none"></textarea>
+    <div id="ab-status" style="font-size:12px;min-height:16px;color:var(--tx2)"></div>
+    <div id="ab-report"></div>
+    <div style="display:flex;gap:8px">
+      <button id="ab-cancel" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid var(--bd3);font-size:14px;cursor:pointer;color:var(--tx2)">Fechar</button>
+      <button id="ab-analisar" style="flex:2;padding:10px;border-radius:var(--r2);background:var(--acc);border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB">Analisar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Vincular item a local/sublocal -->
+<div class="modal-bg" id="modal-vincular">
+  <div class="modal-box" style="gap:12px">
+    <div id="vinc-title" style="font-size:15px;font-weight:500">Vincular item</div>
+    <div id="vinc-item" style="font-size:12px;color:var(--tx2)"></div>
+    <div><div class="fl">Local</div><select id="vinc-local" class="fi" style="width:100%"></select></div>
+    <div><div class="fl">Sublocal (opcional)</div><select id="vinc-sub" class="fi" style="width:100%"></select></div>
+    <div style="display:flex;gap:8px">
+      <button id="vinc-cancel" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid var(--bd3);font-size:14px;cursor:pointer;color:var(--tx2)">Cancelar</button>
+      <button id="vinc-save" style="flex:2;padding:10px;border-radius:var(--r2);background:var(--acc);border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB">Vincular</button>
+    </div>
+  </div>
+</div>
+
 <!-- Bottom sheet foto (v19 UX improvement) -->
 <div class="bs-modal-bg" id="modal-foto-opts">
   <div class="bs-sheet">
@@ -518,7 +556,7 @@ const DEFAULT_LOCAIS=[
   {id:"Tempra",nome:"Tempra",icon:"🧂"},{id:"Kombi",nome:"Kombi",icon:"🚐"},
   {id:"Nova Kombi",nome:"Nova Kombi",icon:"🚐"},{id:"Salão",nome:"Salão",icon:"🍽️"}
 ];
-const CATALOGO=[
+let CATALOGO=[
 {cod:"5265051",nome:"ACETO BALSAMICO HARMONIZACAO 2L",grupo:"Armazém",unidade:"L"},
 {cod:"5265052",nome:"AÇUCAR CRISTAL OU DEMERARA 1kg",grupo:"Armazém",unidade:"KG"},
 {cod:"5265053",nome:"AÇUCAR IMPALPÁVEL 1kg",grupo:"Armazém",unidade:"KG"},
@@ -722,13 +760,11 @@ const CATALOGO=[
 {cod:"5265423",nome:"SELADORA A VACUO",grupo:"Equipamentos",unidade:"UN"},
 {cod:"5265431",nome:"TABLET SAMSUNG A9+",grupo:"Equipamentos",unidade:"UN"},
 {cod:"5265456",nome:"TERMOMETRO CULINARIO DIGITAL ESPETO",grupo:"Equipamentos",unidade:"UN"},
-{cod:"5386450",nome:"ARTEVIVA BRUT",grupo:"Espumantes",unidade:"UN"},
 {cod:"5265085",nome:"ARTEVIVA BRUT ROSE",grupo:"Espumantes",unidade:"UN"},
 {cod:"5265088",nome:"ARTEVIVA MOSCATEL",grupo:"Espumantes",unidade:"UN"},
 {cod:"5265222",nome:"ESPUMANTE PROSECCO DRINKS 750ml",grupo:"Espumantes",unidade:"L"},
 {cod:"5389417",nome:"GRAHAM BECK EXTRA BRUT BLANC DE BLANCS",grupo:"Espumantes",unidade:"UN"},
 {cod:"5389414",nome:"GRAHAM BECK EXTRA BRUT ROSE",grupo:"Espumantes",unidade:"UN"},
-{cod:"5265305",nome:"MARZAROTTO ESPUMANTE BRUT",grupo:"Espumantes",unidade:"UN"},
 {cod:"5265306",nome:"MARZAROTTO MOSCATEL",grupo:"Espumantes",unidade:"UN"},
 {cod:"5265479",nome:"VITA ETERNA BRUT",grupo:"Espumantes",unidade:"UN"},
 {cod:"5265480",nome:"VITA ETERNA BRUT ROSE",grupo:"Espumantes",unidade:"UN"},
@@ -962,7 +998,6 @@ const CATALOGO=[
 {cod:"5265166",nome:"CHARLY NICOLLE CHABLIS PER ASPERA VM",grupo:"Vinhos Brancos",unidade:"UN"},
 {cod:"5265211",nome:"DOUDET NAUDIN CHARDONNAY VM",grupo:"Vinhos Brancos",unidade:"UN"},
 {cod:"5265307",nome:"MARZAROTTO PLENO PEVERELLA",grupo:"Vinhos Brancos",unidade:"UN"},
-{cod:"5265386",nome:"RAR COLLEZIONE GEWURZTRAMINER",grupo:"Vinhos Brancos",unidade:"UN"},
 {cod:"5265428",nome:"STELLENBOSCH VINEYARDS ARNISTON BAY SAUVIGNON BLANC VM",grupo:"Vinhos Brancos",unidade:"UN"},
 {cod:"5265429",nome:"STELLENBOSCH VINEYARDS CHENIN CHARDONNAY VM",grupo:"Vinhos Brancos",unidade:"UN"},
 {cod:"5265465",nome:"TROVATI PINOT GRIGIO VM",grupo:"Vinhos Brancos",unidade:"UN"},
@@ -979,31 +1014,26 @@ const CATALOGO=[
 {cod:"5265087",nome:"ARTEVIVA MARSELAN SINONIMOS",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265089",nome:"ARTEVIVA SINGULAR TINTO",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265091",nome:"ARTEVIVA SINONIMOS BLEND TINTO",grupo:"Vinhos Tintos",unidade:"UN"},
-{cod:"5265106",nome:"BARON DE LAJOYOSA GRAN RESERVA DOP 1,5L MAGNUM WL",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265107",nome:"BARON DE LAJOYOSA GRAN RESERVA DOP 3L DOUBLE MAGNUM WL",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265108",nome:"BARON DE LAJOYOSA GRAN RESERVA DOP 5L IMPERIAL WL",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265109",nome:"BARON DE LAJOYOSA GRAN RESERVA DOP 750ML WL",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265110",nome:"BARON DE LAJOYOSA GRAN RESERVA DOP 9L IMPERIAL WL",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265111",nome:"BARTALI LEDA PUCCI CHIANTI VM",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265125",nome:"BODEGA CAELUM CABERNET SAUVIGNON RESERVA VM",grupo:"Vinhos Tintos",unidade:"UN"},
-{cod:"5265126",nome:"BODEGA CAELUM MALBEC RESERVA VM",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265127",nome:"BODEGA DEL FIN DEL MUNDO PATAGONIA SPECIAL BLEND",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265128",nome:"BODEGA TORREDEROS RIBERA DEL DUERO ROBLE VM",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265155",nome:"CASA VENTURINI GALLO ROSSO CABERNET SAUVIGNON 3L",grupo:"Vinhos Tintos",unidade:"L"},
 {cod:"5265156",nome:"CASA VENTURINI RESERVA CABERNET SAUVIGNON",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265375",nome:"CONTE DI CAMPIANO PRIMITIVO DI MANDURIA DOC IW",grupo:"Vinhos Tintos",unidade:"UN"},
-{cod:"5265048",nome:"CONTESSA CAROLA NEGROAMARO PRIMITIVO",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265419",nome:"CONTESSA CAROLA SANGIOVESE RUBICONE IGT IW",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265205",nome:"DAI TERRA ROSSA PRIMITIVO DI MANDURIA",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265212",nome:"DOUDET NAUDIN PINOT NOIR VM",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265259",nome:"GUERRIERI COLLI PESARESI SANGIOVESI IW",grupo:"Vinhos Tintos",unidade:"UN"},
-{cod:"5265376",nome:"LA PASSIONE SEGRETA DONNA ELENA PRIMITIVO IW",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265270",nome:"LAS FLECHAS CAMINANTE MALBEC",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265291",nome:"LOGODAJ WINERY MELNIK 55 WL",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265311",nome:"MASI RAR TOSCANA ROSSO",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265312",nome:"MASI RAR TREVENEZIE ROSSO",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265319",nome:"MONTEPULCIANO DABRUZZO DOC NOBILE DELLE ROCCHE IW",grupo:"Vinhos Tintos",unidade:"UN"},
-{cod:"5265323",nome:"NAXOS ROSSO TERRE SICILIANE IGT IW",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265324",nome:"NEGROAMARO PUGLIA IGT LA PASSIONE SEGRETA IW",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265373",nome:"PRECISION GEARBOX PINOT NOIR VM",grupo:"Vinhos Tintos",unidade:"UN"},
 {cod:"5265377",nome:"PRIMITIVO SINISCALCO IGP WL",grupo:"Vinhos Tintos",unidade:"UN"},
@@ -1022,7 +1052,20 @@ const CATALOGO=[
 {cod:"5265097",nome:"AZEITE TRUFADO 500ml",grupo:"Óleos & Gorduras",unidade:"L"},
 {cod:"5265105",nome:"BANHA",grupo:"Óleos & Gorduras",unidade:"KG"},
 {cod:"5265328",nome:"OLEO DE ALGODÃO 4,250 fritadeira",grupo:"Óleos & Gorduras",unidade:"L"},
-{cod:"5265329",nome:"OLEO DE SOJA 900ml",grupo:"Óleos & Gorduras",unidade:"L"}
+{cod:"5265329",nome:"OLEO DE SOJA 900ml",grupo:"Óleos & Gorduras",unidade:"L"},
+ {cod:"5265080",nome:"APERITIVO AMARO RAMAZZOTTI 700ml",grupo:"Bebidas Alcoólicas",unidade:"L"},
+ {cod:"5368383",nome:"ÁGUA FILTRADA",grupo:"Bebidas Não Alcoólicas",unidade:"L"},
+ {cod:"5513578",nome:"LICOR LIMONCELLO DA GESTO",grupo:"Processados Bar",unidade:"L"},
+ {cod:"5947018",nome:"VINHAS DO TEMPO CHARDONNAY",grupo:"Vinhos Brancos",unidade:"UN"},
+ {cod:"5970694",nome:"TRAVESSA OVAL TRAMONTINA 40X29 CM MARIA AUGUSTA",grupo:"Louça",unidade:"UN"},
+ {cod:"5970697",nome:"PRATO RASO TRAMONTINA 28CM ELENA GESTO",grupo:"Louça",unidade:"UN"},
+ {cod:"5970699",nome:"PRATO PASTA TRAMONTINA 27CM PAOLA HS",grupo:"Louça",unidade:"UN"},
+ {cod:"5970700",nome:"PRATO FUNDO TRAMONTINA AL 23CM ELENA HS GESTO",grupo:"Louça",unidade:"UN"},
+ {cod:"5970705",nome:"PAPEL A4 MARFIM CARDÁPIO 1PCT 500UN",grupo:"Material de Escritório",unidade:"Pacote"},
+ {cod:"5970712",nome:"SOUSPLAT COURO",grupo:"Louça",unidade:"UN"},
+ {cod:"5970716",nome:"SOUSPLAT PALHA VERDE",grupo:"Louça",unidade:"UN"},
+ {cod:"5970735",nome:"TIGELA EMPILHAVEL BRANCA TRAMONTINA 8CM PAOLA",grupo:"Louça",unidade:"UN"},
+ {cod:"5970736",nome:"MIXING GLASS",grupo:"Louça",unidade:"UN"},
 ];
 const BASE={
 "Bar":["5265054", "5265104", "5352691", "5265141", "5362183", "5265313", "5265076", "5265081", "5265082", "5265083", "5265129", "5265135", "5265136", "5265137", "5265138", "5265139", "5265150", "5265170", "5265171", "5265237", "5265251", "5265253", "5265254", "5265261", "5265262", "5265264", "5265275", "5265276", "5265277", "5375544", "5265278", "5265279", "5265280", "5265281", "5265304", "5265331", "5265347", "5265361", "5265395", "5265396", "5265397", "5265398", "5265426", "5265427", "5265454", "5265455", "5265467", "5265468", "5265469", "5265470", "5265489", "5265490", "5265491", "5727126", "5265492", "5265493", "5265494", "5265495", "5265496", "5265175", "5265176", "5265203", "5265256", "5265257", "5265425", "5265430", "5265460", "5265461", "5265061", "5265063", "5265066", "5265163", "5265172", "5265162", "5265152", "5265364", "5265271", "5265222", "5265268", "5265284", "5265317", "5265174", "5265185", "5265187", "5265188", "5265189", "5265190", "5265191", "5265192", "5265194", "5265195", "5265196", "5265197", "5265198", "5265358", "5265360", "5265400", "5265451", "5265438", "5265439", "5265444", "5265445", "5265446", "5265497", "5602089", "5602092", "5463591", "5513567", "5463601", "5463602", "5463603", "5463605", "5463606", "5463626", "5576773", "5463625", "5463629", "5463627", "5463628", "5463630", "5265067", "5265217", "5265229", "5265161", "5265155"],
@@ -1051,6 +1094,35 @@ let gestaoTabId='locais',gestaoSpecLocal=DEFAULT_LOCAIS[0].id,gestaoSpecSearch='
 let editingLocalId=null;
 const SK='app-estoque-gesto-v2';
 const SK_HIST='app-estoque-gesto-v2-hist';
+// ── Catálogo atualizável (sincronizado com a lista de Ingredientes do Saipos) ──
+const SK_CAT='app-estoque-gesto-catalogo-v1';
+const CATALOGO_DOC='cfg_catalogo'; // catálogo global: admin atualiza pelo Saipos, todos leem
+const CATALOGO_BASE=CATALOGO.map(x=>({...x})); // snapshot original embutido (fallback)
+let catalogoMeta=(()=>{const n=["5265080","5368383","5513578","5947018","5970694","5970697","5970699","5970700","5970705","5970712","5970716","5970735","5970736"],t=Date.now(),m={};n.forEach(c=>m[c]={addedAt:t});return m;})(); // { cod: { addedAt } } — marca itens novos para o selo
+let catalogoUpdatedAt=new Date(2026,4,30).getTime();  // timestamp da última atualização pelo Saipos (carga inicial 30/05/2026)
+function aplicarCatalogo(arr,meta,updatedAt){
+  if(Array.isArray(arr)&&arr.length){
+    CATALOGO=arr.map(x=>({cod:String(x.cod),nome:x.nome||'',grupo:x.grupo||'',unidade:x.unidade||''}));
+  }
+  catalogoMeta=meta||{};
+  if(updatedAt)catalogoUpdatedAt=updatedAt;
+}
+function carregarCatalogoLocal(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SK_CAT)||'null');
+    if(d&&Array.isArray(d.catalogo)&&d.catalogo.length)aplicarCatalogo(d.catalogo,d.catalogoMeta,d.updatedAt);
+  }catch(e){}
+}
+function persistirCatalogoLocal(){
+  try{localStorage.setItem(SK_CAT,JSON.stringify({catalogo:CATALOGO,catalogoMeta,updatedAt:catalogoUpdatedAt}));}catch(e){}
+}
+async function salvarCatalogoNuvem(){
+  persistirCatalogoLocal();
+  if(currentUser&&firebaseReady&&isAdminRole()){
+    try{await db.collection(RASCUNHO_COL).doc(CATALOGO_DOC).set({catalogo:CATALOGO,catalogoMeta,updatedAt:catalogoUpdatedAt||Date.now()});}
+    catch(e){console.warn('Erro ao salvar catálogo na nuvem:',e);}
+  }
+}
 
 // ── Helpers de data/hora ─────────────────────────────────────────────────────
 function fmtDT(date){
@@ -1278,6 +1350,14 @@ async function carregarNuvem(){
           await db.collection(RASCUNHO_COL).doc(CONFIG_DOC).set({locais,sublocais,subsubs,vinculos,ajustes,qtdsPadrao});
         }
       }catch(e){console.warn('Erro ao carregar configuração compartilhada:',e);}
+      // Catálogo compartilhado: admin atualiza pelo Saipos, todos os usuários leem
+      try{
+        const catDoc=await db.collection(RASCUNHO_COL).doc(CATALOGO_DOC).get();
+        if(catDoc.exists){
+          const cd=catDoc.data();
+          if(cd.catalogo&&cd.catalogo.length){aplicarCatalogo(cd.catalogo,cd.catalogoMeta,cd.updatedAt);persistirCatalogoLocal();}
+        }
+      }catch(e){console.warn('Erro ao carregar catálogo compartilhado:',e);}
       try{localStorage.setItem(SK,JSON.stringify({locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao}));}catch(e){}
       renderHome();
     } else {
@@ -2697,9 +2777,9 @@ function renderSaved(){
 
 function renderGestao(c){
   if(!isAdminRole()){homeTab('locais');return;}
-  const tabs=['locais','specs','usuarios','backup'];
+  const tabs=['locais','specs','base','usuarios','backup'];
   let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden">
-    ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1">${t==='locais'?'Locais':t==='specs'?'Especificações':t==='usuarios'?'Usuários':'Backup'}</div>`).join('')}</div>`;
+    ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1">${t==='locais'?'Locais':t==='specs'?'Specs':t==='base'?'Base':t==='usuarios'?'Usuários':'Backup'}</div>`).join('')}</div>`;
 
   if(gestaoTabId==='locais'){
     h+='<div class="sec">Locais e sublocais</div>';
@@ -2814,6 +2894,37 @@ function renderGestao(c){
     });
     if(filtrado.length>40)h+=`<div style="padding:10px 14px;font-size:12px;color:var(--tx2)">+ ${filtrado.length-40} itens — refine a busca</div>`;
     h+=`</div></div>`;
+  } else if(gestaoTabId==='base'){
+    const semV=itensSemVinculo();
+    const nNovos=semV.filter(p=>catalogoMeta[p.cod]).length;
+    const ultAtt=catalogoUpdatedAt?fmtDT(catalogoUpdatedAt):'—';
+    h+=`<div class="sec">Catálogo</div>
+      <div class="sgrid"><div class="scard"><div class="slbl">Itens no catálogo</div><div class="sval">${CATALOGO.length}</div></div>
+      <div class="scard"><div class="slbl">Sem vínculo</div><div class="sval" style="color:${semV.length?'#92400E':'#166534'}">${semV.length}</div></div></div>
+      <div style="font-size:11px;color:var(--tx2);margin:-4px 0 8px">Última atualização pelo Saipos: ${ultAtt}</div>
+      <button class="bbtn" id="btn-atualizar-base" style="border-color:var(--acc);background:var(--acc-bg)">
+        <i class="ti ti-refresh" style="font-size:22px;color:var(--acc);flex-shrink:0"></i>
+        <div><div style="font-size:14px;font-weight:500;color:var(--acc)">Atualizar pelo Saipos</div>
+        <div style="font-size:11px;color:var(--acc);opacity:.8;margin-top:2px">Importa a lista de ingredientes e sincroniza o catálogo</div></div></button>
+      <div class="sec">Sem vínculo${semV.length?` · ${semV.length}`:''}</div>`;
+    if(!semV.length){
+      h+=`<div class="empty" style="padding:24px 0"><span>Todos os itens estão vinculados a um local 🎉</span></div>`;
+    } else {
+      const byGrupo={};
+      semV.forEach(p=>{const g=p.grupo||'Sem grupo';(byGrupo[g]=byGrupo[g]||[]).push(p);});
+      h+=`<div class="ms"><div style="padding:4px 0">`;
+      Object.keys(byGrupo).sort().forEach(g=>{
+        h+=`<div style="padding:6px 14px;font-size:11px;font-weight:500;color:var(--tx2);background:var(--bg2)">${g} · ${byGrupo[g].length}</div>`;
+        byGrupo[g].forEach(p=>{
+          const novo=catalogoMeta[p.cod]?'<span style="font-size:9px;font-weight:600;background:#E6F1FB;color:var(--acc);padding:1px 5px;border-radius:6px;margin-left:4px">NOVO</span>':'';
+          h+=`<div class="spi">
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}${novo}</div>
+            <div style="font-size:11px;color:var(--tx2)">Saipos: ${p.cod} · ${p.unidade||'—'}</div></div>
+            <button class="ib primary btn-vincular" data-cod="${p.cod}"><i class="ti ti-link"></i></button></div>`;
+        });
+      });
+      h+=`</div></div>`;
+    }
   } else if(gestaoTabId==='usuarios'){
     h+='<div id="gestao-usuarios-list"></div>';
   } else {
@@ -2917,6 +3028,9 @@ function renderGestao(c){
   const btnReset=c.querySelector('#btn-reset-contagem');if(btnReset)btnReset.addEventListener('click',reiniciarContagemZero);
   const btnImpF=c.querySelector('#btn-importar-file');if(btnImpF)btnImpF.addEventListener('click',()=>document.getElementById('backup-file-input').click());
   const btnImpT=c.querySelector('#btn-importar-txt');if(btnImpT)btnImpT.addEventListener('click',()=>document.getElementById('modal-import').classList.add('on'));
+  // Base / Saipos
+  const btnAttBase=c.querySelector('#btn-atualizar-base');if(btnAttBase)btnAttBase.addEventListener('click',abrirAtualizarBase);
+  c.querySelectorAll('.btn-vincular').forEach(el=>el.addEventListener('click',()=>abrirVincular(el.dataset.cod)));
 }
 
 function renderSpecList(lid,term){
@@ -3099,6 +3213,116 @@ function adicionarItem(cod){
   if(!(ajustes[aLocal].extras||[]).includes(cod))ajustes[aLocal].extras.push(cod);
   if(aSublocal&&aSublocal!=='__sem__')setVinculo(aLocal,cod,aSublocal);
   salvar();renderMgrAdicionar(document.getElementById('mgr-srch').value);renderCount();
+}
+
+// ── Base / Catálogo Saipos ────────────────────────────────────────────────────
+const SAIPOS_SNIPPET=`(async()=>{var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};var a=document.querySelector('a[href*="ingredient-record/edit"]');if(!a){alert("Abra a lista de Ingredientes do Saipos antes de clicar.");return;}var node=angular.element(a.closest("tr")).scope(),vm=null,d=0;while(!vm&&node&&d<15){if(node.vm)vm=node.vm;node=node.$parent;d++;}if(!vm){alert("Lista de ingredientes nao encontrada nesta tela.");return;}var umap={};(vm.unit_measures||[]).forEach(function(u){umap[u.id_unit_measure]=u.short_desc_unit_measure||u.desc_unit_measure});var acc={};var merge=function(){(vm.data||[]).forEach(function(it){acc[it.id_store_ingredient]={cod:String(it.id_store_ingredient),nome:it.desc_store_ingredient,grupo:it.desc_store_group_ingredient||"",unidade:umap[it.id_unit_measure]||String(it.id_unit_measure)}})};vm.pagination.rowsPerPage=100;var total=parseInt(vm.pagination.totalRows,10)||0;var pages=Math.max(1,Math.ceil(total/100));var ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:sans-serif";var box=document.createElement("div");box.style.cssText="background:#fff;border-radius:12px;padding:20px;width:90%;max-width:540px;color:#111;box-shadow:0 8px 40px rgba(0,0,0,.3)";ov.appendChild(box);document.body.appendChild(ov);box.innerHTML='<div id="gxm" style="font-size:15px;font-weight:600">Gesto: extraindo a base... aguarde</div>';for(var p=1;p<=pages;p++){vm.selectPage(p);await sleep(1600);merge();var gm=box.querySelector("#gxm");if(gm)gm.textContent="Gesto: extraindo... pagina "+p+" de "+pages;}var arr=Object.values(acc);var json=JSON.stringify(arr);box.innerHTML='<div style="font-size:15px;font-weight:600;margin-bottom:6px">Gesto: '+arr.length+' itens prontos</div><div style="font-size:12px;color:#555;margin-bottom:8px">Toque em Copiar e cole no app, na tela Atualizar base.</div><textarea id="gxt" readonly style="width:100%;height:90px;font-size:11px;font-family:monospace;border:1px solid #ccc;border-radius:8px;padding:8px;box-sizing:border-box"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button id="gxc" style="flex:2;padding:11px;border:none;border-radius:8px;background:#0C447C;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Copiar</button><button id="gxx" style="flex:1;padding:11px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">Fechar</button></div>';var ta=box.querySelector("#gxt");ta.value=json;box.querySelector("#gxc").onclick=function(){ta.focus();ta.select();var ok=false;try{document.execCommand("copy");ok=true;}catch(e){}try{navigator.clipboard.writeText(json);ok=true;}catch(e){}this.textContent=ok?"Copiado!":"Selecione tudo e Ctrl+C";};box.querySelector("#gxx").onclick=function(){ov.remove();};})();`;
+
+function codsVinculados(){
+  const s=new Set();
+  locais.forEach(l=>getProdsLocal(l.id).forEach(p=>s.add(p.cod)));
+  return s;
+}
+function itensSemVinculo(){
+  const v=codsVinculados();
+  return CATALOGO.filter(it=>!v.has(it.cod)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+}
+
+let _basePreview=null;
+function abrirAtualizarBase(){
+  if(!isAdminRole()){alert('Apenas administradores podem atualizar a base.');return;}
+  _basePreview=null;
+  const bm=document.getElementById('ab-bookmarklet');
+  if(bm){
+    bm.href='javascript:'+encodeURIComponent(SAIPOS_SNIPPET);
+    bm.onclick=function(e){e.preventDefault();alert('Este botão não deve ser clicado aqui.\n\nArraste-o para a barra de favoritos do navegador (uma vez). Depois, estando na tela de Ingredientes do Saipos, clique nele a partir dos favoritos.');return false;};
+  }
+  document.getElementById('ab-json').value='';
+  document.getElementById('ab-status').textContent='';
+  document.getElementById('ab-report').innerHTML='';
+  document.getElementById('modal-atualizar-base').classList.add('on');
+}
+function analisarBaseSaipos(){
+  const st=document.getElementById('ab-status'),rep=document.getElementById('ab-report');
+  rep.innerHTML='';_basePreview=null;
+  let arr;
+  try{arr=JSON.parse(document.getElementById('ab-json').value.trim());}
+  catch(e){st.style.color='#ff3b30';st.textContent='JSON inválido: '+e.message;return;}
+  if(!Array.isArray(arr)||!arr.length){st.style.color='#ff3b30';st.textContent='Cole um JSON de lista (array) válido.';return;}
+  const norm=arr.map(x=>({cod:String(x.cod),nome:(x.nome||'').trim(),grupo:(x.grupo||'').trim(),unidade:(x.unidade||'').trim()})).filter(x=>x.cod&&x.cod!=='undefined');
+  const isDesc=g=>/^descontinuad/i.test(g||'');
+  const ativos=norm.filter(x=>!isDesc(x.grupo));
+  const descSet=new Set(norm.filter(x=>isDesc(x.grupo)).map(x=>x.cod));
+  const ativosSet=new Set(ativos.map(x=>x.cod));
+  const atualMap=new Map(CATALOGO.map(x=>[x.cod,x]));
+  const novos=ativos.filter(x=>!atualMap.has(x.cod));
+  const removidosDesc=CATALOGO.filter(x=>descSet.has(x.cod));
+  const sumidos=CATALOGO.filter(x=>!ativosSet.has(x.cod)&&!descSet.has(x.cod));
+  const alterados=[];
+  ativos.forEach(x=>{const a=atualMap.get(x.cod);if(a&&(a.grupo!==x.grupo||a.unidade!==x.unidade||a.nome!==x.nome))alterados.push({cod:x.cod,nome:x.nome});});
+  const semGrupo=ativos.filter(x=>!x.grupo);
+  _basePreview={ativos,novos,removidosDesc,sumidos,alterados,semGrupo};
+  st.style.color='var(--tx2)';st.textContent=`Lidos ${norm.length} itens (${ativos.length} ativos, ${descSet.size} descontinuados).`;
+  const li=(a,max=15)=>a.slice(0,max).map(p=>`<div style="font-size:11px;color:var(--tx2);padding:1px 0">${p.cod} · ${p.nome}</div>`).join('')+(a.length>max?`<div style="font-size:11px;color:var(--tx2);opacity:.7">+${a.length-max} mais</div>`:'');
+  let r=`<div class="sgrid" style="margin-top:4px">
+    <div class="scard"><div class="slbl">Novos</div><div class="sval" style="color:var(--acc)">${novos.length}</div></div>
+    <div class="scard"><div class="slbl">Remover</div><div class="sval" style="color:#ff3b30">${removidosDesc.length+sumidos.length}</div></div>
+    <div class="scard"><div class="slbl">Atualizados</div><div class="sval">${alterados.length}</div></div>
+    <div class="scard"><div class="slbl">Catálogo final</div><div class="sval">${ativos.length}</div></div></div>`;
+  if(semGrupo.length)r+=`<div style="font-size:11px;color:#92400E;background:#FEF3C7;border-radius:8px;padding:8px;margin-top:6px"><strong>${semGrupo.length} item(ns) sem grupo</strong> no Saipos — recomendado corrigir lá antes de aplicar.</div>`;
+  if(novos.length)r+=`<div style="margin-top:8px"><div style="font-size:12px;font-weight:500;color:var(--acc)">Novos (${novos.length}) → fila Sem vínculo</div>${li(novos)}</div>`;
+  if(removidosDesc.length)r+=`<div style="margin-top:8px"><div style="font-size:12px;font-weight:500;color:#ff3b30">Descontinuados a remover (${removidosDesc.length})</div>${li(removidosDesc)}</div>`;
+  if(sumidos.length)r+=`<div style="margin-top:8px"><div style="font-size:12px;font-weight:500;color:#ff3b30">Sumidos do Saipos (${sumidos.length})</div>${li(sumidos)}</div>`;
+  r+=`<button id="ab-aplicar" style="width:100%;margin-top:12px;padding:11px;border-radius:var(--r2);background:#166534;border:none;font-size:14px;font-weight:500;cursor:pointer;color:#fff">Aplicar atualização</button>`;
+  rep.innerHTML=r;
+  const btn=document.getElementById('ab-aplicar');if(btn)btn.addEventListener('click',aplicarBaseSaipos);
+}
+async function aplicarBaseSaipos(){
+  if(!_basePreview||!isAdminRole())return;
+  const dp=_basePreview;
+  if(!confirm(`Aplicar?\n\n${dp.novos.length} novos · ${dp.removidosDesc.length+dp.sumidos.length} removidos · ${dp.alterados.length} atualizados.\nCatálogo final: ${dp.ativos.length} itens.`))return;
+  const now=Date.now();
+  const novoCat=dp.ativos.map(x=>({cod:x.cod,nome:x.nome,grupo:x.grupo,unidade:x.unidade}));
+  const meta={...catalogoMeta};
+  dp.novos.forEach(x=>{meta[x.cod]={addedAt:now};});
+  const ativoSet=new Set(novoCat.map(x=>x.cod));
+  Object.keys(meta).forEach(c=>{if(!ativoSet.has(c))delete meta[c];});
+  CATALOGO=novoCat;catalogoMeta=meta;catalogoUpdatedAt=now;
+  await salvarCatalogoNuvem();
+  closeModal('modal-atualizar-base');
+  alert(`Base atualizada: ${novoCat.length} itens. ${dp.novos.length} novos na fila "Sem vínculo".`);
+  renderHome();
+}
+
+let _vincCod=null;
+function abrirVincular(cod){
+  if(!isAdminRole()){alert('Apenas administradores podem vincular itens.');return;}
+  const prod=CATALOGO.find(p=>p.cod===cod);if(!prod)return;
+  _vincCod=cod;
+  document.getElementById('vinc-item').textContent=`${prod.nome} · ${prod.grupo||'sem grupo'} · ${prod.unidade||''}`;
+  const selL=document.getElementById('vinc-local');
+  selL.innerHTML=locais.map(l=>`<option value="${l.id}">${l.icon} ${l.nome}</option>`).join('');
+  preencherVincSubs(locais[0]?.id);
+  selL.onchange=()=>preencherVincSubs(selL.value);
+  document.getElementById('modal-vincular').classList.add('on');
+}
+function preencherVincSubs(lid){
+  const sel=document.getElementById('vinc-sub');
+  const subs=getContableSubs(lid)||[];
+  sel.innerHTML=`<option value="">— Sem sublocal —</option>`+subs.map(s=>`<option value="${s.id}">${s._parentNome?s._parentNome+' › ':''}${s.nome}</option>`).join('');
+}
+function vincularItem(){
+  if(!_vincCod||!isAdminRole())return;
+  const lid=document.getElementById('vinc-local').value;
+  const slId=document.getElementById('vinc-sub').value||null;
+  if(!lid)return;
+  if(!ajustes[lid])ajustes[lid]={extras:[],removidos:[]};
+  const remIdx=(ajustes[lid].removidos||[]).indexOf(_vincCod);
+  if(remIdx>=0)ajustes[lid].removidos.splice(remIdx,1);
+  if(!(ajustes[lid].extras||[]).includes(_vincCod))ajustes[lid].extras.push(_vincCod);
+  if(slId)setVinculo(lid,_vincCod,slId);else salvar();
+  closeModal('modal-vincular');_vincCod=null;
+  renderHome();
 }
 function adicionarSub(lid){
   if(!isAdminRole()){alert('Apenas administradores podem editar locais.');return;}
@@ -3773,7 +3997,7 @@ function abrirGerenciarUsuario(perf){
 }
 
 // Init
-carregarLocal();
+carregarLocal();carregarCatalogoLocal();
 document.getElementById('home-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
 // Se Firebase não estiver configurado, mostra home diretamente (modo offline)
 if(!firebaseReady){show('s-home');renderHome();}
@@ -3879,10 +4103,15 @@ document.getElementById('gal-input').addEventListener('change',handleFile);
 document.querySelectorAll('.ntab[data-home-tab]').forEach(el=>el.addEventListener('click',()=>homeTab(el.dataset.homeTab)));
 document.getElementById('hist-det-close').addEventListener('click',()=>closeModal('modal-hist-detail'));
 document.getElementById('hist-det-close-bottom').addEventListener('click',()=>closeModal('modal-hist-detail'));
+// Base / Saipos
+document.getElementById('ab-analisar').addEventListener('click',analisarBaseSaipos);
+document.getElementById('ab-cancel').addEventListener('click',()=>closeModal('modal-atualizar-base'));
+document.getElementById('vinc-cancel').addEventListener('click',()=>closeModal('modal-vincular'));
+document.getElementById('vinc-save').addEventListener('click',vincularItem);
 
 // Fechamento consistente por clique no fundo para modais de consulta/gestão.
 // Modais de decisão (conferência e auditoria) mantêm botões explícitos para evitar avanço acidental.
-['modal-hist-detail','modal-foto','modal-mgr','modal-assign','modal-import','modal-novo-usuario','modal-gerenciar-usuario'].forEach(id=>{
+['modal-hist-detail','modal-foto','modal-mgr','modal-assign','modal-import','modal-novo-usuario','modal-gerenciar-usuario','modal-atualizar-base','modal-vincular'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('click',e=>{if(e.target===el)closeModal(id);});
 });
@@ -3890,7 +4119,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const spec=document.getElementById('spec-edit-modal');
   if(spec){spec.remove();return;}
-  const closable=['modal-gerenciar-usuario','modal-novo-usuario','modal-import','modal-assign','modal-mgr','modal-foto','modal-hist-detail'];
+  const closable=['modal-vincular','modal-atualizar-base','modal-gerenciar-usuario','modal-novo-usuario','modal-import','modal-assign','modal-mgr','modal-foto','modal-hist-detail'];
   const top=closable.map(id=>document.getElementById(id)).find(el=>el&&el.classList.contains('on'));
   if(top)closeModal(top.id);
 });
