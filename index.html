@@ -1074,6 +1074,7 @@ let dataFimContagem=null;
 let confirmedByName=null;
 const FECHAMENTO_DOC='__fechamento__'; // documento especial dentro de contagem_ativa
 const SPECS_DOC='__specs__'; // documento compartilhado de especificações (admin escreve, todos leem)
+const CONFIG_DOC='__config__'; // configuração global: locais, sublocais, vínculos, itens removidos/extras (admin escreve, todos leem)
 
 // ── Firebase config ──────────────────────────────────────────────────────────
 // INSTRUÇÕES: Cole aqui as configurações do seu projeto Firebase.
@@ -1133,7 +1134,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v53';
+const APP_VERSION = 'v54';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1198,7 +1199,9 @@ async function reiniciarContagemZero(){
     if(currentUser&&firebaseReady){
       const snap=await db.collection(RASCUNHO_COL).get();
       const batch=db.batch();
-      snap.forEach(doc=>batch.delete(doc.ref));
+      // Preserva configuração compartilhada (specs e config de locais/itens): reiniciar a contagem
+      // mantém cadastros, locais, sublocais e itens removidos/adicionados.
+      snap.forEach(doc=>{if(doc.id===SPECS_DOC||doc.id===CONFIG_DOC)return;batch.delete(doc.ref);});
       await batch.commit();
     }
     resetarEstadoContagemLocal();
@@ -1256,6 +1259,25 @@ async function carregarNuvem(){
           specs=merged;
         }
       }catch(e){console.warn('Erro ao carregar specs compartilhadas:',e);}
+      // Carrega configuração global compartilhada (locais, sublocais, vínculos, itens removidos/extras).
+      // Admin é a fonte de verdade: prevalece sobre a config local do usuário, garantindo que
+      // exclusões/adições de itens e mudanças de local apareçam para TODOS os usuários.
+      try{
+        const cfgDoc=await db.collection(RASCUNHO_COL).doc(CONFIG_DOC).get();
+        if(cfgDoc.exists){
+          const c=cfgDoc.data();
+          if(c.locais&&c.locais.length)locais=c.locais;
+          if(c.sublocais)sublocais=c.sublocais;
+          if(c.subsubs)subsubs=c.subsubs;
+          if(c.vinculos)vinculos=c.vinculos;
+          if(c.ajustes)ajustes=c.ajustes;
+          if(c.qtdsPadrao)qtdsPadrao=c.qtdsPadrao;
+        } else if(isAdminRole()){
+          // Primeira vez: admin semeia a configuração global a partir da sua própria config,
+          // propagando exclusões/adições já existentes para todos os usuários.
+          await db.collection(RASCUNHO_COL).doc(CONFIG_DOC).set({locais,sublocais,subsubs,vinculos,ajustes,qtdsPadrao});
+        }
+      }catch(e){console.warn('Erro ao carregar configuração compartilhada:',e);}
       try{localStorage.setItem(SK,JSON.stringify({locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao}));}catch(e){}
       renderHome();
     } else {
@@ -1291,6 +1313,8 @@ async function salvarNuvem(){
     // Specs são configuração global: admin sincroniza para doc compartilhado acessível a todos usuários
     if(isAdminRole()){
       await db.collection(RASCUNHO_COL).doc(SPECS_DOC).set({specs});
+      // Configuração de locais/itens também é global (admin é a fonte de verdade)
+      await db.collection(RASCUNHO_COL).doc(CONFIG_DOC).set({locais,sublocais,subsubs,vinculos,ajustes,qtdsPadrao});
     }
     setSyncState('synced');
   }catch(e){console.warn('Erro ao salvar na nuvem:',e);setSyncState('error');}
@@ -1300,6 +1324,11 @@ function salvar(){
   try{localStorage.setItem(SK,JSON.stringify({locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao}));}catch(e){}
   if(currentUser&&firebaseReady){
     setSyncState('syncing');
+    // Admin é a fonte de verdade da configuração: replica locais/itens (incl. exclusões) para todos
+    if(isAdminRole()){
+      db.collection(RASCUNHO_COL).doc(CONFIG_DOC).set({locais,sublocais,subsubs,vinculos,ajustes,qtdsPadrao})
+        .catch(e=>console.warn('Erro ao salvar config compartilhada:',e));
+    }
     const payload={locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao};
     const tentarSalvar=(tentativa)=>{
       db.collection('usuarios').doc(currentUser.uid).set(payload)
@@ -1440,6 +1469,21 @@ function iniciarListenerContagemAtiva(){
       const d=change.doc.data();
       // Documentos especiais: ignorar no listener de rascunhos
       if(lid===SPECS_DOC)return;
+      // Configuração global mudou (admin alterou locais/itens): aplica para todos em tempo real
+      if(lid===CONFIG_DOC){
+        if(change.type!=='removed'){
+          const c=d;
+          if(c.locais&&c.locais.length)locais=c.locais;
+          if(c.sublocais)sublocais=c.sublocais;
+          if(c.subsubs)subsubs=c.subsubs;
+          if(c.vinculos)vinculos=c.vinculos;
+          if(c.ajustes)ajustes=c.ajustes;
+          if(c.qtdsPadrao)qtdsPadrao=c.qtdsPadrao;
+          try{localStorage.setItem(SK,JSON.stringify({locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao}));}catch(e){}
+          needsCountRerender=true;
+        }
+        return;
+      }
       // Documento especial de fechamento
       if(lid===FECHAMENTO_DOC){
         if(change.type!=='removed'&&d.dataFim){
