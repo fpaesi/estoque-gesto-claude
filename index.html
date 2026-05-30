@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v53</title>
+<title>Estoque Gesto v55</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1072,9 +1072,9 @@ let contagemAtivaListener=null; // unsubscribe do listener em tempo real
 // null enquanto não confirmado; Date quando o Gestor confirma o fim
 let dataFimContagem=null;
 let confirmedByName=null;
-const FECHAMENTO_DOC='__fechamento__'; // documento especial dentro de contagem_ativa
-const SPECS_DOC='__specs__'; // documento compartilhado de especificações (admin escreve, todos leem)
-const CONFIG_DOC='__config__'; // configuração global: locais, sublocais, vínculos, itens removidos/extras (admin escreve, todos leem)
+const FECHAMENTO_DOC='cfg_fechamento'; // documento especial dentro de contagem_ativa
+const SPECS_DOC='cfg_specs'; // documento compartilhado de especificações (admin escreve, todos leem)
+const CONFIG_DOC='cfg_config'; // configuração global: locais, sublocais, vínculos, itens removidos/extras (admin escreve, todos leem)
 
 // ── Firebase config ──────────────────────────────────────────────────────────
 // INSTRUÇÕES: Cole aqui as configurações do seu projeto Firebase.
@@ -1444,6 +1444,8 @@ async function carregarTodosRascunhos(){
     snap.forEach(doc=>{
       const d=doc.data();
       const lid=doc.id;
+      // Documentos especiais (config/specs/fechamento) não são rascunhos de local
+      if(lid===SPECS_DOC||lid===CONFIG_DOC||lid===FECHAMENTO_DOC)return;
       counts[lid]=d.counts||{};
       rascunhos[lid]={
         userId:d.userId,
