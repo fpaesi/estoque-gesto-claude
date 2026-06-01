@@ -1963,6 +1963,8 @@ function getVinculo(lid,cod){return(vinculos[lid]||{})[cod]||null;}
 function setVinculo(lid,cod,slId){if(!isAdminRole())return;if(!vinculos[lid])vinculos[lid]={};if(slId===null)delete vinculos[lid][cod];else vinculos[lid][cod]=slId;salvar();}
 function getSpec(lid,cod){return(specs[lid]||{})[cod]||null;}
 function hasSpec(lid,cod){const s=getSpec(lid,cod);return !!(s&&s.modo);}
+// Item resolvido para fins de finalização: foi contado (touched) OU já possui especificação (não preenchido = zero).
+function itemResolvido(lid,cod){return !!(counts[lid]?.[cod]?.touched)||hasSpec(lid,cod);}
 function setSpec(lid,cod,spec){if(!specs[lid])specs[lid]={};if(!spec)delete specs[lid][cod];else specs[lid][cod]=spec;salvar();}
 function calcV(lid,cod,qty){const s=getSpec(lid,cod);if(!s)return qty;if(s.modo==='decimal')return parseFloat(qty)||0;return(parseFloat(qty)||0)*(s.fator||1);}
 function fmtNum(n){return parseFloat(n.toFixed(4)).toString();}
@@ -2317,7 +2319,7 @@ function renderPlano(lid){
   const btnGestao=document.getElementById('btn-ir-gestao');
   if(btnGestao)btnGestao.addEventListener('click',()=>{homeTab('gestao');show('s-home');});
   const bbar=document.getElementById('plano-bbar');
-  const allDone=getProdsLocal(lid).every(p=>counts[lid]?.[p.cod]?.touched);
+  const allDone=getProdsLocal(lid).every(p=>itemResolvido(lid,p.cod));
   if(allDone&&totalProds>0){
     bbar.innerHTML=`<button id="btn-salvar-plano" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button>
       <button id="btn-revisar-plano" class="bs">Revisar</button>`;
@@ -2589,7 +2591,7 @@ function runPreFinishAudit(onConfirm,scope='sublocal'){
 function renderCountBbar(prods,done){
   const subs=getContableSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('count-bbar');
-  const allDone=getProdsLocal(aLocal).every(p=>counts[aLocal]?.[p.cod]?.touched);
+  const allDone=getProdsLocal(aLocal).every(p=>itemResolvido(aLocal,p.cod));
   const slAtual=subs.find(s=>s.id===aSublocal);
   const slNomeAtual=slAtual?(slAtual._parentNome?`${slAtual._parentNome} › ${slAtual.nome}`:slAtual.nome):(aSublocal==='__todos__'?getLocal(aLocal).nome:aSublocal);
   if(allDone){
@@ -2760,7 +2762,7 @@ function goFinish(){
   document.getElementById('fin-cnt').innerHTML=h;
   const subs=getContableSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('fin-bbar');
-  const allDone=getProdsLocal(aLocal).every(p=>counts[aLocal]?.[p.cod]?.touched);
+  const allDone=getProdsLocal(aLocal).every(p=>itemResolvido(aLocal,p.cod));
   if(allDone){
     bbar.innerHTML='<button id="btn-fin-salvar" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button><button id="btn-fin-rev" class="bs">Revisar</button>';
     document.getElementById('btn-fin-salvar').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
@@ -3559,18 +3561,19 @@ function renderConsolidado(c){
   const totalLocais=locais.length;
   const locaisContados=locais.filter(l=>{
     const prods=getProdsLocal(l.id);
-    return prods.length>0&&prods.every(p=>counts[l.id]?.[p.cod]?.touched);
+    return prods.length>0&&prods.every(p=>itemResolvido(l.id,p.cod));
   });
   const locaisEmAndamento=locais.filter(l=>{
     const prods=getProdsLocal(l.id);
     if(!prods.length)return false;
     const done=prods.filter(p=>counts[l.id]?.[p.cod]?.touched).length;
-    return done>0&&done<prods.length;
+    const completo=prods.every(p=>itemResolvido(l.id,p.cod));
+    return done>0&&!completo;
   });
   const locaisPendentes=locais.filter(l=>{
     const prods=getProdsLocal(l.id);
     if(!prods.length)return false;
-    return !prods.every(p=>counts[l.id]?.[p.cod]?.touched)&&!locaisEmAndamento.find(x=>x.id===l.id);
+    return !prods.every(p=>itemResolvido(l.id,p.cod))&&!locaisEmAndamento.find(x=>x.id===l.id);
   });
   const nContados=locaisContados.length;
   const pct=Math.round(nContados/totalLocais*100);
