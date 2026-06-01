@@ -3620,21 +3620,20 @@ function copiarListaDescontinuar(){
 function renderConsolidado(c){
   // ── Progresso por local ──────────────────────────────────────────────────
   const totalLocais=locais.length;
-  const locaisContados=locais.filter(l=>{
-    const prods=getProdsLocal(l.id);
-    return prods.length>0&&prods.every(p=>itemResolvido(l.id,p.cod));
-  });
+  // Classificação alinhada à aba Locais: a fonte de verdade é o status do rascunho
+  // (status==='concluido' = local finalizado pelo usuário), e não a resolução item a item.
+  // Assim um local finalizado não volta a aparecer como "Em andamento" só porque
+  // algum item ficou sem contagem/especificação.
+  const locaisContados=locais.filter(l=>rascunhos[l.id]?.status==='concluido');
   const locaisEmAndamento=locais.filter(l=>{
-    const prods=getProdsLocal(l.id);
-    if(!prods.length)return false;
-    const done=prods.filter(p=>counts[l.id]?.[p.cod]?.touched).length;
-    const completo=prods.every(p=>itemResolvido(l.id,p.cod));
-    return done>0&&!completo;
+    if(rascunhos[l.id]?.status==='concluido')return false;
+    const done=Object.values(counts[l.id]||{}).filter(x=>x.touched).length;
+    return done>0;
   });
   const locaisPendentes=locais.filter(l=>{
-    const prods=getProdsLocal(l.id);
-    if(!prods.length)return false;
-    return !prods.every(p=>itemResolvido(l.id,p.cod))&&!locaisEmAndamento.find(x=>x.id===l.id);
+    if(rascunhos[l.id]?.status==='concluido')return false;
+    const done=Object.values(counts[l.id]||{}).filter(x=>x.touched).length;
+    return done===0;
   });
   const nContados=locaisContados.length;
   const pct=Math.round(nContados/totalLocais*100);
