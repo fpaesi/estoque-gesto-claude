@@ -1932,10 +1932,18 @@ function getContableSubs(lid){
   });
   return result;
 }
+// Item "sem sublocal efetivo": sem vínculo OU com vínculo órfão (aponta para
+// sublocal inexistente/apagado ou para um agrupador, que não é folha do roteiro).
+// Sem isso, esses itens ficam inalcançáveis no roteiro e a contagem nunca finaliza.
+function isItemSemSublocalEfetivo(lid,cod){
+  const v=getVinculo(lid,cod);
+  if(!v)return true;
+  return !getContableSubs(lid).some(s=>s.id===v);
+}
 function temItensSemSublocal(lid){
   // Só faz sentido em locais que possuem sublocais contáveis
   if(!getContableSubs(lid).length)return false;
-  return getProdsLocal(lid).some(p=>!getVinculo(lid,p.cod));
+  return getProdsLocal(lid).some(p=>isItemSemSublocalEfetivo(lid,p.cod));
 }
 function getRoteiroSteps(lid){
   // Roteiro = sublocais contáveis + passo "Sem sublocal" quando houver itens não vinculados
@@ -2028,7 +2036,7 @@ function getProdsLocal(lid){
 function getProdsSublocal(lid,slId){
   const all=getProdsLocal(lid);
   if(!slId||slId==='__todos__')return all;
-  if(slId==='__sem__')return all.filter(p=>!getVinculo(lid,p.cod));
+  if(slId==='__sem__')return all.filter(p=>isItemSemSublocalEfetivo(lid,p.cod));
   if(isSublocalAgrupador(lid,slId))return [];
   return all.filter(p=>getVinculo(lid,p.cod)===slId);
 }
