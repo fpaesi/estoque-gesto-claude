@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v58</title>
+<title>Estoque Gesto v59</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -276,7 +276,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v58</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v59</span></span></div>
   </div>
 </div>
 
@@ -1206,7 +1206,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v58';
+const APP_VERSION = 'v59';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1932,7 +1932,19 @@ function getContableSubs(lid){
   });
   return result;
 }
+function temItensSemSublocal(lid){
+  // Só faz sentido em locais que possuem sublocais contáveis
+  if(!getContableSubs(lid).length)return false;
+  return getProdsLocal(lid).some(p=>!getVinculo(lid,p.cod));
+}
+function getRoteiroSteps(lid){
+  // Roteiro = sublocais contáveis + passo "Sem sublocal" quando houver itens não vinculados
+  const steps=getContableSubs(lid);
+  if(temItensSemSublocal(lid))steps.push({id:'__sem__',nome:'Sem sublocal',_sem:true});
+  return steps;
+}
 function isSublocalAgrupador(lid,slId){
+  if(slId==='__sem__')return false;
   return getSubSubs(lid,slId).length>0;
 }
 function firstContableSubId(lid){
@@ -2270,7 +2282,7 @@ function renderSel(){
 }
 
 function renderPlano(lid){
-  const l=getLocal(lid);const subs=getContableSubs(lid);const cnt=counts[lid]||{};
+  const l=getLocal(lid);const subs=getRoteiroSteps(lid);const cnt=counts[lid]||{};
   document.getElementById('plano-title').textContent=`${l.icon} ${l.nome}`;
   const totalProds=getProdsLocal(lid).length;
   const totalDone=Object.values(cnt).filter(x=>x.touched).length;
@@ -2376,7 +2388,7 @@ async function entrarContagem(lid,slId){
 }
 
 function renderSlNav(){
-  const allFlat=getContableSubs(aLocal);
+  const allFlat=getRoteiroSteps(aLocal);
   if(!allFlat.length){document.getElementById('sl-nav').style.display='none';return;}
   document.getElementById('sl-nav').style.display='flex';
   const nav=document.getElementById('sl-nav');
