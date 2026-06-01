@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v62</title>
+<title>Estoque Gesto v63</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -276,7 +276,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v62</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v63</span></span></div>
   </div>
 </div>
 
@@ -1206,7 +1206,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v62';
+const APP_VERSION = 'v63';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -2613,11 +2613,11 @@ function renderCountBbar(prods,done){
     document.getElementById('btn-cb-plano').addEventListener('click',voltarAoPlano);
   } else {
     const isTodos=aSublocal==='__todos__';
-    const finBtnTxt=isTodos?'Finalizar':'Finalizar este sublocal';
+    const finBtnTxt=(isTodos||!nextSl)?'Finalizar contagem':'Finalizar este sublocal';
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" id="pbar" style="width:0%"></div></div><div class="progp" id="ppct">0%</div></div>
       <button id="btn-cb-fin" class="bp">${finBtnTxt}</button>
       <button id="btn-cb-vp" class="bg_">Ver plano</button>`;
-    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,()=>nextSl?mudarSublocal(nextSl.id):voltarAoPlano()));
+    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,()=>nextSl?mudarSublocal(nextSl.id):runPreFinishAudit(goFinish,'local')));
     document.getElementById('btn-cb-vp').addEventListener('click',voltarAoPlano);
     updProg(prods,done);
   }
@@ -2781,8 +2781,8 @@ function goFinish(){
     document.getElementById('btn-fin-cont').addEventListener('click',backCount);
     document.getElementById('btn-fin-plano').addEventListener('click',voltarAoPlano);
   } else {
-    bbar.innerHTML='<button id="btn-fin-vp" class="bp">Ver plano</button><button id="btn-fin-cont2" class="bs">Continuar aqui</button>';
-    document.getElementById('btn-fin-vp').addEventListener('click',voltarAoPlano);
+    bbar.innerHTML='<button id="btn-fin-salvar2" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button><button id="btn-fin-cont2" class="bs">Continuar aqui</button>';
+    document.getElementById('btn-fin-salvar2').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
     document.getElementById('btn-fin-cont2').addEventListener('click',backCount);
   }
   show('s-finish');
