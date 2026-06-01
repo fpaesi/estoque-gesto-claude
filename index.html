@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v63</title>
+<title>Estoque Gesto v64</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -276,7 +276,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v63</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v64</span></span></div>
   </div>
 </div>
 
@@ -1206,7 +1206,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v63';
+const APP_VERSION = 'v64';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -3178,18 +3178,72 @@ function updatePreview(unidade){
   const prev=document.getElementById('spec-prev-txt');
   if(prev)prev.textContent=`1 ${unit} = ${fator} ${unidade||''}`;
 }
-function saveSpec(lid,cod,unid){
+// Lê o valor já contado de um item no rascunho (local + nuvem), interpretando pelo modo ANTIGO
+async function valorContadoExistente(lid,cod,oldIsDecimal){
+  let valor=0,fonte=null;
+  const lerVal=o=>oldIsDecimal?(parseFloat(o.qtyDec)||0):(Number(o.qty)||0);
+  const lc=counts[lid]&&counts[lid][cod];
+  if(lc&&lc.touched){const v=lerVal(lc);if(v>0){valor=v;fonte='local';}}
+  if(firebaseReady&&currentUser){
+    try{
+      const snap=await db.collection(RASCUNHO_COL).doc(lid).get();
+      if(snap.exists){const cc=(snap.data().counts)||{};const rc=cc[cod];if(rc&&rc.touched){const v=lerVal(rc);if(v>valor){valor=v;fonte=snap.data().userName||'nuvem';}}}
+    }catch(e){console.warn('valorContadoExistente:',e);}
+  }
+  return {temValor:valor>0,valor,fonte};
+}
+
+// Migra o valor contado entre qty<->qtyDec ao trocar o modo (local + nuvem), sem perder o número contado
+async function migrarValorPorModo(lid,cod,novoIsDecimal){
+  const mig=o=>{
+    if(!o)return;
+    if(novoIsDecimal){ // contador -> decimal: número vai para qtyDec
+      const v=Number(o.qty)||0;
+      if(v>0)o.qtyDec=String(v);
+      o.qty=0;
+    } else { // decimal -> contador: número vai para qty
+      const v=parseFloat(o.qtyDec);
+      o.qty=isNaN(v)?0:v;
+      o.qtyDec='';
+    }
+  };
+  if(counts[lid]&&counts[lid][cod])mig(counts[lid][cod]);
+  if(firebaseReady&&currentUser){
+    try{
+      const ref=db.collection(RASCUNHO_COL).doc(lid);
+      const snap=await ref.get();
+      if(snap.exists){const data=snap.data();const cc=data.counts||{};if(cc[cod]){mig(cc[cod]);await ref.update({counts:cc,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});}}
+    }catch(e){console.warn('migrarValorPorModo:',e);}
+  }
+}
+
+async function saveSpec(lid,cod,unid){
   if(!isAdminRole()){alert('Apenas administradores podem editar especificações.');return;}
+  const cur=getSpec(lid,cod);
+  const oldIsDecimal=!cur||cur.modo==='decimal';
+  const newIsDecimal=editSpecModo!=='contador';
+  const modoMudou=oldIsDecimal!==newIsDecimal;
+  let novoSpec;
   if(editSpecModo==='contador'){
     const emb=(document.getElementById('spec-emb')?.value||'').trim();
     const uc=(document.getElementById('spec-unit')?.value||'').trim();
     const f=parseFloat(document.getElementById('spec-fator')?.value)||1;
     if(!emb){alert('Preencha a embalagem.');return;}
-    setSpec(lid,cod,{modo:'contador',embalagem:emb,unidContagem:uc||emb.split(' ')[0].toLowerCase(),fator:f});
+    novoSpec={modo:'contador',embalagem:emb,unidContagem:uc||emb.split(' ')[0].toLowerCase(),fator:f};
   } else {
     const desc=(document.getElementById('spec-desc')?.value||'').trim();
-    setSpec(lid,cod,{modo:'decimal',embalagem:'',unidContagem:'',fator:1,descricao:desc});
+    novoSpec={modo:'decimal',embalagem:'',unidContagem:'',fator:1,descricao:desc};
   }
+  // Proteção: trocar o modo com contagem já feita preserva o valor (evita itens "zerados")
+  if(modoMudou){
+    const info=await valorContadoExistente(lid,cod,oldIsDecimal);
+    if(info.temValor){
+      const ok=confirm(`Este item já tem contagem em rascunho (valor contado: ${info.valor}${info.fonte&&info.fonte!=='local'?' — por '+info.fonte:''}).\n\nAo trocar o modo de contagem, o valor já contado será PRESERVADO automaticamente (movido para o campo correto). Deseja continuar?`);
+      if(!ok)return;
+    }
+  }
+  setSpec(lid,cod,novoSpec);
+  if(modoMudou)await migrarValorPorModo(lid,cod,newIsDecimal);
   document.getElementById('spec-edit-modal')?.remove();
   renderGestao(document.getElementById('home-cnt'));
 }
