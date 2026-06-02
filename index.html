@@ -1736,8 +1736,7 @@ function salvarContagemFinal(nome,quando){
       if(!d.touched)return;
       const spec=getSpec(lid,cod);
       let v=0;
-      if(!spec)v=d.qty||0;
-      else if(spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
+      if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
       else v=parseFloat(d.qtyDec)||0;
       totais[cod]=(totais[cod]||0)+v;
     });
@@ -1834,8 +1833,7 @@ function exportarCSV(){
       const prod=CATALOGO.find(p=>p.cod===cod);if(!prod)return;
       const spec=getSpec(lid,cod);
       let v=0;
-      if(!spec)v=d.qty||0;
-      else if(spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
+      if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
       else v=parseFloat(d.qtyDec)||0;
       if(!totais[cod])totais[cod]={nome:prod.nome,unidade:prod.unidade,total:0};
       totais[cod].total+=v;
@@ -3789,7 +3787,7 @@ function renderConsolidado(c){
   Object.entries(counts).forEach(([lid,ps])=>{Object.entries(ps).forEach(([cod,d])=>{
     if(!d.touched)return;const prod=CATALOGO.find(p=>p.cod===cod);if(!prod)return;
     const spec=getSpec(lid,cod);let v=0;
-    if(!spec)v=d.qty||0;else if(spec.modo==='contador')v=calcV(lid,cod,d.qty||0);else v=parseFloat(d.qtyDec)||0;
+    if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);else v=parseFloat(d.qtyDec)||0;
     const lbl=spec?.modo==='contador'?`${d.qty||0} ${spec.unidContagem||'un'}`:`${d.qtyDec||0} ${prod.unidade}`;
     if(!totais[prod.nome])totais[prod.nome]={unidade:prod.unidade,total:0,locais:[],foto:null};
     totais[prod.nome].total+=v;totais[prod.nome].locais.push(`${lid}: ${lbl}`);
