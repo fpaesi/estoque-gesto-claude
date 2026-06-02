@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v67</title>
+<title>Estoque Gesto v69</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -276,7 +276,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v67</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v69</span></span></div>
   </div>
 </div>
 
@@ -1227,7 +1227,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v67';
+const APP_VERSION = 'v69';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1730,10 +1730,11 @@ async function executarFechamento(){
 // (uma linha por produto do catálogo; não contados constam com quantidade 0)
 function salvarContagemFinal(nome,quando){
   const agora=quando||new Date();
-  const totais={};
+  const totais={},tocados={};
   Object.entries(counts).forEach(([lid,ps])=>{
     Object.entries(ps).forEach(([cod,d])=>{
       if(!d.touched)return;
+      tocados[cod]=true;
       const spec=getSpec(lid,cod);
       let v=0;
       if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
@@ -1741,10 +1742,14 @@ function salvarContagemFinal(nome,quando){
       totais[cod]=(totais[cod]||0)+v;
     });
   });
+  // Cada item guarda o flag `t` (foi tocado/contado), para o Histórico
+  // distinguir "sem estoque" (contado=0) de "não contado".
   const itensFinal=CATALOGO
-    .map(p=>({cod:String(p.cod),nome:p.nome||'',unidade:p.unidade||'',total:+(totais[p.cod]||0).toFixed(4)}))
+    .map(p=>({cod:String(p.cod),nome:p.nome||'',unidade:p.unidade||'',total:+(totais[p.cod]||0).toFixed(4),t:!!tocados[String(p.cod)]}))
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  const contados=itensFinal.filter(i=>i.total>0).length;
+  const contados=itensFinal.filter(i=>i.total>0).length;          // com estoque
+  const totalTocados=itensFinal.filter(i=>i.t).length;            // efetivamente contados
+  const totalZerados=itensFinal.filter(i=>i.t&&!(i.total>0)).length; // contados sem estoque
   // Snapshots da lista de compras e dos itens a descontinuar (Sets → arrays)
   const listaCompras=getListaCompras().map(({prod,motivos})=>({
     cod:String(prod.cod),nome:prod.nome||'',unidade:prod.unidade||'',motivos:[...motivos]
@@ -1762,6 +1767,8 @@ function salvarContagemFinal(nome,quando){
     confirmedByName:confirmedByName,
     totalItens:itensFinal.length,
     totalContados:contados,
+    totalTocados:totalTocados,
+    totalZerados:totalZerados,
     itensFinal:itensFinal,
     listaCompras:listaCompras,
     listaDescontinuar:listaDescontinuar
@@ -1825,12 +1832,15 @@ function exportarCSV(){
   if(!dataFimContagem)return;
   const dataFimStr=dataFimContagem.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
 
-  // Consolida totais por produto (mesma lógica do renderConsolidado)
-  const totais={};
+  // Consolida totais por produto (mesma lógica do renderConsolidado).
+  // Também registra quais itens foram efetivamente tocados (contados),
+  // para distinguir "sem estoque" (contado=0) de "não contado".
+  const totais={},tocados={};
   Object.entries(counts).forEach(([lid,ps])=>{
     Object.entries(ps).forEach(([cod,d])=>{
       if(!d.touched)return;
       const prod=CATALOGO.find(p=>p.cod===cod);if(!prod)return;
+      tocados[cod]=true;
       const spec=getSpec(lid,cod);
       let v=0;
       if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
@@ -1840,11 +1850,20 @@ function exportarCSV(){
     });
   });
 
-  // Monta linhas do CSV ordenadas por nome do produto
-  const cabecalho=['Data de Fim da Contagem','COD_SAIPOS','Item','Quantidade','Unidade'];
-  const linhas=Object.entries(totais)
-    .sort((a,b)=>a[1].nome.localeCompare(b[1].nome,'pt-BR'))
-    .map(([cod,d])=>[dataFimStr, cod, d.nome, fmtNum(d.total).replace('.',','), d.unidade]);
+  // Monta linhas do CSV com TODOS os itens do catálogo (não contados entram com
+  // quantidade 0), ordenadas por nome do produto. Coluna "Situação" diferencia
+  // os três casos. As 5 primeiras colunas mantêm o formato esperado pelo Saipos.
+  const cabecalho=['Data de Fim da Contagem','COD_SAIPOS','Item','Quantidade','Unidade','Situação'];
+  const linhas=CATALOGO
+    .map(p=>{
+      const cod=String(p.cod);
+      const tot=totais[cod]?totais[cod].total:0;
+      const foiTocado=!!tocados[cod];
+      const situacao=tot>0?'Com estoque':(foiTocado?'Sem estoque (contado)':'Não contado');
+      return {cod,nome:p.nome||'',unidade:p.unidade||'',total:tot,situacao};
+    })
+    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'))
+    .map(d=>[dataFimStr, d.cod, d.nome, fmtNum(d.total).replace('.',','), d.unidade, d.situacao]);
 
   // Gera e faz download do arquivo CSV (UTF-8 com BOM para compatibilidade com Excel)
   const csv=[cabecalho,...linhas]
@@ -1865,8 +1884,11 @@ function exportarContagemFinalCSV(entry){
   if(!itens.length){alert('Nenhum item para exportar.');return;}
   const dt=new Date(entry.ts);
   const dataStr=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const cabecalho=['Contagem','Data de Fim','COD_SAIPOS','Item','Quantidade','Unidade'];
-  const linhas=itens.map(i=>[entry.nome||'Contagem final',dataStr,i.cod,i.nome,fmtNum(i.total).replace('.',','),i.unidade]);
+  const cabecalho=['Contagem','Data de Fim','COD_SAIPOS','Item','Quantidade','Unidade','Situação'];
+  const linhas=itens.map(i=>{
+    const sit=i.total>0?'Com estoque':(('t' in i)?(i.t?'Sem estoque (contado)':'Não contado'):'Zerado / não contado');
+    return [entry.nome||'Contagem final',dataStr,i.cod,i.nome,fmtNum(i.total).replace('.',','),i.unidade,sit];
+  });
   const csv=[cabecalho,...linhas]
     .map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';'))
     .join('\r\n');
@@ -2237,10 +2259,15 @@ function renderHome(){
         homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">Aguardando fechamento pelo administrador</div>${getSyncHTML()}`;
       }
     } else {
-      // Fechamento confirmado — mostra botão de exportar
+      // Fechamento confirmado — exportar, refazer o fechamento (recalcula com os
+      // dados atuais) ou iniciar uma nova contagem do zero.
       if(isAdminRole()){
-        homeBbar.innerHTML=`<button id="btn-exportar-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>${getSyncHTML()}`;
+        homeBbar.innerHTML=`<button id="btn-exportar-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>
+          <button id="btn-refazer-fechamento" class="bs"><i class="ti ti-rotate"></i> Refazer fechamento</button>
+          <button id="btn-nova-contagem" class="bs" style="color:#ff3b30;border-color:#ffb3ad"><i class="ti ti-refresh"></i> Iniciar nova contagem (zerar)</button>${getSyncHTML()}`;
         document.getElementById('btn-exportar-csv').addEventListener('click',exportarCSV);
+        document.getElementById('btn-refazer-fechamento').addEventListener('click',confirmarFimContagem);
+        document.getElementById('btn-nova-contagem').addEventListener('click',reiniciarContagemZero);
       }else{
         homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">Contagem fechada pelo administrador</div>${getSyncHTML()}`;
       }
@@ -3993,6 +4020,34 @@ function salvarHistorico(){
   }
 }
 
+// Recalcula os números de uma contagem final a partir dos itens salvos no
+// próprio registro (fonte da verdade), com fallback para entradas antigas.
+// Evita exibir um total "congelado" que diverge da lista de itens.
+function statsContagemFinal(e){
+  const itens=e.itensFinal||[];
+  const temFlag=itens.some(i=>'t' in i);
+  const total=itens.length||e.totalItens||0;
+  const comEstoque=itens.length?itens.filter(i=>i.total>0).length:(e.totalContados||0);
+  let tocados=null,zerados=null,naoContados=null;
+  if(temFlag){
+    tocados=itens.filter(i=>i.t).length;
+    zerados=itens.filter(i=>i.t&&!(i.total>0)).length;
+    naoContados=itens.filter(i=>!i.t).length;
+  }else if(typeof e.totalTocados==='number'){
+    tocados=e.totalTocados;
+    zerados=(typeof e.totalZerados==='number')?e.totalZerados:null;
+    naoContados=total-tocados;
+  }
+  return {
+    total,comEstoque,tocados,zerados,naoContados,
+    temTocados:tocados!=null,temFlag,
+    itensComEstoque:itens.filter(i=>i.total>0),
+    itensZerados:temFlag?itens.filter(i=>i.t&&!(i.total>0)):[],
+    itensNaoContados:temFlag?itens.filter(i=>!i.t):[],
+    itensSemEstoqueLegacy:itens.filter(i=>!(i.total>0)) // antigos: zerados+não contados juntos
+  };
+}
+
 function renderHistorico(c){
   if(!historico.length){
     c.innerHTML=`<div class="empty-v2">
@@ -4017,11 +4072,15 @@ function renderHistorico(c){
     entries.forEach(e=>{
       const hora=new Date(e.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       if(e.tipo==='final'){
+        const st=statsContagemFinal(e);
+        const linhaSub=st.temTocados
+          ? `${hora} · ${st.comEstoque} com estoque · ${st.tocados} contados de ${st.total}`
+          : `${hora} · Contagem final · ${st.comEstoque} de ${st.total} itens`;
         h+=`<div class="hist-entry" data-hist-id="${e.id}" style="background:#F0F7E8;border:.5px solid #C0DD97">
           <div style="font-size:24px;width:36px;text-align:center">🏁</div>
           <div style="flex:1">
             <div style="font-size:15px;font-weight:600;color:#27500A">${e.nome||'Contagem final'}</div>
-            <div style="font-size:12px;color:#3B6D11;margin-top:2px">${hora} · Contagem final · ${e.totalContados} de ${e.totalItens} itens</div>
+            <div style="font-size:12px;color:#3B6D11;margin-top:2px">${linhaSub}</div>
           </div>
           <span class="hist-badge">Final</span><i class="ti ti-chevron-right" style="color:var(--tx2);font-size:16px"></i></div>`;
         return;
@@ -4107,32 +4166,39 @@ function abrirDetalheContagemFinal(entry){
   const hora=dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('hist-det-title').textContent=`🏁 ${entry.nome||'Contagem final'}`;
   document.getElementById('hist-det-sub').textContent=`${dtStr.charAt(0).toUpperCase()+dtStr.slice(1)} às ${hora}`;
-  const itens=entry.itensFinal||[];
-  const contados=itens.filter(i=>i.total>0);
-  const zerados=itens.filter(i=>!(i.total>0));
-  let h=`<div class="sgrid">
-    <div class="scard"><div class="slbl">Itens contados</div><div class="sval">${entry.totalContados}</div></div>
-    <div class="scard"><div class="slbl">Total de itens</div><div class="sval">${entry.totalItens}</div></div>
-  </div>
-  <button id="hist-final-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>`;
+  const st=statsContagemFinal(entry);
+  const contados=st.itensComEstoque;
+  const sgrid=st.temTocados
+    ? `<div class="sgrid">
+        <div class="scard"><div class="slbl">Com estoque</div><div class="sval">${st.comEstoque}</div></div>
+        <div class="scard"><div class="slbl">Contados</div><div class="sval">${st.tocados}</div></div>
+        <div class="scard"><div class="slbl">Catálogo</div><div class="sval">${st.total}</div></div>
+      </div>`
+    : `<div class="sgrid">
+        <div class="scard"><div class="slbl">Com estoque</div><div class="sval">${st.comEstoque}</div></div>
+        <div class="scard"><div class="slbl">Catálogo</div><div class="sval">${st.total}</div></div>
+      </div>`;
+  let h=sgrid+`<button id="hist-final-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>`;
   if(entry.confirmedByName){
     h+=`<div class="card" style="gap:0"><div class="srow" style="border:none"><span style="color:var(--tx2);font-size:13px">Confirmada por</span><span style="font-weight:500;font-size:13px">${entry.confirmedByName}</span></div></div>`;
   }
-  if(contados.length){
-    h+=`<div class="sec">Itens contados · ${contados.length}</div><div class="card">`;
-    contados.forEach(i=>{
-      h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${i.nome}</span>
-        <span style="font-size:13px;font-weight:500;white-space:nowrap">${fmtNum(i.total)} ${i.unidade}</span></div>`;
+  const blocoItens=(titulo,arr,cor)=>{
+    if(!arr.length)return '';
+    let b=`<div class="sec">${titulo} · ${arr.length}</div><div class="card">`;
+    arr.forEach(i=>{
+      b+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${i.nome}</span>
+        <span style="font-size:13px;font-weight:500;${cor||''}white-space:nowrap">${fmtNum(i.total)} ${i.unidade}</span></div>`;
     });
-    h+='</div>';
-  }
-  if(zerados.length){
-    h+=`<div class="sec">Zerados / não contados · ${zerados.length}</div><div class="card">`;
-    zerados.forEach(i=>{
-      h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${i.nome}</span>
-        <span style="font-size:13px;font-weight:500;color:var(--tx2);white-space:nowrap">0 ${i.unidade}</span></div>`;
-    });
-    h+='</div>';
+    return b+'</div>';
+  };
+  h+=blocoItens('Com estoque',contados,'');
+  if(st.temFlag){
+    // Registro novo: separa "sem estoque (contado)" de "não contado"
+    h+=blocoItens('Sem estoque (contados)',st.itensZerados,'color:var(--tx2);');
+    h+=blocoItens('Não contados',st.itensNaoContados,'color:var(--tx2);');
+  }else{
+    // Registro antigo: sem o flag de tocado, mantém o agrupamento único
+    h+=blocoItens('Zerados / não contados',st.itensSemEstoqueLegacy,'color:var(--tx2);');
   }
   // ── Lista de compras (snapshot) ───────────────────────────────────────────
   const compras=entry.listaCompras||[];
