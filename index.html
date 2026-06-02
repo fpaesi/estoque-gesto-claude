@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v70</title>
+<title>Estoque Gesto v71</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1230,7 +1230,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v70';
+const APP_VERSION = 'v71';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -3704,21 +3704,29 @@ function delFoto(){
 }
 
 function getListaCompras(){
-  const listaMap={};
+  // "Zerado" agora e avaliado pelo TOTAL consolidado do item em todos os locais
+  // (mesma logica do Resumo/exportacao): um item com estoque num local nao deve
+  // aparecer como zerado so porque foi tocado com 0 em outro local.
+  const totais={},tocados={},comprar={},prodByCod={};
   Object.entries(counts).forEach(([lid,ps])=>{
     Object.entries(ps).forEach(([cod,d])=>{
       if(!d.touched)return;
       const prod=CATALOGO.find(p=>p.cod===cod);if(!prod)return;
+      prodByCod[cod]=prod;tocados[cod]=true;
       const spec=getSpec(lid,cod);
-      const isDecimal=!spec||spec.modo==='decimal';
-      const valor=isDecimal?parseFloat(d.qtyDec||0):(d.qty||0);
-      const isZerado=valor===0;
-      const isComprar=!!d.reposicao;
-      if(!isZerado&&!isComprar)return;
-      if(!listaMap[cod])listaMap[cod]={prod,motivos:new Set()};
-      if(isComprar)listaMap[cod].motivos.add('comprar');
-      if(isZerado)listaMap[cod].motivos.add('zerado');
+      const v=(spec&&spec.modo==='contador')?calcV(lid,cod,d.qty||0):(parseFloat(d.qtyDec)||0);
+      totais[cod]=(totais[cod]||0)+v;
+      if(d.reposicao)comprar[cod]=true;
     });
+  });
+  const listaMap={};
+  Object.keys(prodByCod).forEach(cod=>{
+    const isZerado=!!tocados[cod]&&(totais[cod]||0)===0;
+    const isComprar=!!comprar[cod];
+    if(!isZerado&&!isComprar)return;
+    listaMap[cod]={prod:prodByCod[cod],motivos:new Set()};
+    if(isComprar)listaMap[cod].motivos.add('comprar');
+    if(isZerado)listaMap[cod].motivos.add('zerado');
   });
   return Object.values(listaMap).sort((a,b)=>a.prod.nome.localeCompare(b.prod.nome,'pt-BR'));
 }
