@@ -366,6 +366,27 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modal-fechar-contagem">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:16px;font-weight:600">Finalizar contagem</div>
+      <button id="fechar-cont-x" class="tbtn"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="wb">
+      <i class="ti ti-alert-triangle" style="color:#92400E;font-size:18px;flex-shrink:0"></i>
+      <div style="font-size:12px;color:#633806;line-height:1.5">Isso registra a Data de Fim, salva a contagem no histórico e libera a exportação do CSV. Itens não contados entram com quantidade <strong>0</strong>.</div>
+    </div>
+    <div>
+      <div class="fl">Nome desta contagem</div>
+      <input id="fechar-cont-nome" class="fi" type="text" placeholder="Ex.: Contagem 01/06/2026" maxlength="80"/>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="fechar-cont-cancel" class="bs" style="flex:1">Cancelar</button>
+      <button id="fechar-cont-ok" class="bp" style="flex:1;background:#27500A">Finalizar e salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-foto">
   <div class="modal-box">
     <img style="width:100%;border-radius:var(--r2);max-height:240px;object-fit:cover" id="modal-img-el" src="" alt="Foto"/>
@@ -1653,8 +1674,8 @@ async function carregarFechamento(){
   }catch(e){console.warn('Erro ao carregar fechamento:',e);}
 }
 
-// Gestor confirma o fim da contagem
-async function confirmarFimContagem(){
+// Gestor confirma o fim da contagem — abre modal para nomear a contagem final
+function confirmarFimContagem(){
   if(!isAdminRole()){
     alert('Apenas administradores podem confirmar o fim da contagem.');
     return;
@@ -1663,7 +1684,22 @@ async function confirmarFimContagem(){
     alert('Ainda há locais pendentes. Todos devem estar finalizados antes de confirmar o fim da contagem.');
     return;
   }
-  if(!confirm('Confirmar o fim da contagem de todos os locais?\n\nIsso registrará a Data de Fim e liberará a exportação do CSV.'))return;
+  const hoje=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const inp=document.getElementById('fechar-cont-nome');
+  if(inp)inp.value=`Contagem ${hoje}`;
+  document.getElementById('modal-fechar-contagem').classList.add('on');
+  setTimeout(()=>{if(inp){inp.focus();inp.select();}},60);
+}
+
+// Executa o fechamento após o gestor nomear a contagem
+async function executarFechamento(){
+  if(!isAdminRole())return;
+  if(!todosLocaisFinalizados()){
+    alert('Ainda há locais pendentes. Todos devem estar finalizados antes de confirmar o fim da contagem.');
+    return;
+  }
+  const inp=document.getElementById('fechar-cont-nome');
+  const nome=(inp?.value||'').trim()||`Contagem ${new Date().toLocaleDateString('pt-BR')}`;
   const agora=new Date();
   dataFimContagem=agora;
   confirmedByName=currentUserNome||currentUser?.displayName||'Gestor';
@@ -1680,10 +1716,53 @@ async function confirmarFimContagem(){
       mostrarErroBanner('Erro ao salvar confirmação. Verifique as Regras do Firestore.');
     }
   }
+  // Salva a contagem final consolidada (com itens zerados) no histórico
+  salvarContagemFinal(nome,agora);
+  closeModal('modal-fechar-contagem');
   // Re-renderiza home para mostrar botão de exportar
   renderHome();
   if(homeTabId==='consolidado'){
     renderConsolidado(document.getElementById('home-cnt'));
+  }
+}
+
+// Monta e salva a contagem final consolidada no histórico
+// (uma linha por produto do catálogo; não contados constam com quantidade 0)
+function salvarContagemFinal(nome,quando){
+  const agora=quando||new Date();
+  const totais={};
+  Object.entries(counts).forEach(([lid,ps])=>{
+    Object.entries(ps).forEach(([cod,d])=>{
+      if(!d.touched)return;
+      const spec=getSpec(lid,cod);
+      let v=0;
+      if(!spec)v=d.qty||0;
+      else if(spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
+      else v=parseFloat(d.qtyDec)||0;
+      totais[cod]=(totais[cod]||0)+v;
+    });
+  });
+  const itensFinal=CATALOGO
+    .map(p=>({cod:String(p.cod),nome:p.nome||'',unidade:p.unidade||'',total:+(totais[p.cod]||0).toFixed(4)}))
+    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const contados=itensFinal.filter(i=>i.total>0).length;
+  const entry={
+    id:'final-'+Date.now().toString(),
+    tipo:'final',
+    nome:nome,
+    ts:agora.toISOString(),
+    finishedAt:agora.toISOString(),
+    confirmedByName:confirmedByName,
+    totalItens:itensFinal.length,
+    totalContados:contados,
+    itensFinal:itensFinal
+  };
+  historico.unshift(entry);
+  if(historico.length>100)historico=historico.slice(0,100);
+  try{localStorage.setItem(SK_HIST,JSON.stringify(historico));}catch(e){}
+  if(currentUser&&firebaseReady){
+    db.collection('usuarios').doc(currentUser.uid).collection('historico').doc(entry.id).set(entry)
+      .catch(e=>console.warn('Erro ao salvar contagem final na nuvem:',e));
   }
 }
 
@@ -1768,6 +1847,27 @@ function exportarCSV(){
   const a=document.createElement('a');
   a.href=url;
   a.download=`contagem-estoque-${dataFimContagem.toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Exporta o CSV de uma contagem final do histórico (inclui itens zerados)
+function exportarContagemFinalCSV(entry){
+  const itens=entry.itensFinal||[];
+  if(!itens.length){alert('Nenhum item para exportar.');return;}
+  const dt=new Date(entry.ts);
+  const dataStr=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const cabecalho=['Contagem','Data de Fim','COD_SAIPOS','Item','Quantidade','Unidade'];
+  const linhas=itens.map(i=>[entry.nome||'Contagem final',dataStr,i.cod,i.nome,fmtNum(i.total).replace('.',','),i.unidade]);
+  const csv=[cabecalho,...linhas]
+    .map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';'))
+    .join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const slug=(entry.nome||'contagem-final').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+  a.download=`${slug||'contagem-final'}-${dt.toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
@@ -3908,6 +4008,16 @@ function renderHistorico(c){
     h+=`<div class="hist-date-sep">${data.charAt(0).toUpperCase()+data.slice(1)}</div>`;
     entries.forEach(e=>{
       const hora=new Date(e.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      if(e.tipo==='final'){
+        h+=`<div class="hist-entry" data-hist-id="${e.id}" style="background:#F0F7E8;border:.5px solid #C0DD97">
+          <div style="font-size:24px;width:36px;text-align:center">🏁</div>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:600;color:#27500A">${e.nome||'Contagem final'}</div>
+            <div style="font-size:12px;color:#3B6D11;margin-top:2px">${hora} · Contagem final · ${e.totalContados} de ${e.totalItens} itens</div>
+          </div>
+          <span class="hist-badge">Final</span><i class="ti ti-chevron-right" style="color:var(--tx2);font-size:16px"></i></div>`;
+        return;
+      }
       const completo=e.totalContados>=e.totalItens;
       const badge=completo?`<span class="hist-badge">✓ Completo</span>`:`<span class="hist-badge-partial">${e.totalContados}/${e.totalItens}</span>`;
       h+=`<div class="hist-entry" data-hist-id="${e.id}">
@@ -3927,6 +4037,7 @@ function renderHistorico(c){
 }
 
 function abrirDetalheHistorico(entry){
+  if(entry.tipo==='final'){return abrirDetalheContagemFinal(entry);}
   const l=getLocal(entry.local);
   const dt=new Date(entry.ts);
   const dtStr=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
@@ -3979,6 +4090,46 @@ function abrirDetalheHistorico(entry){
   }
   body.innerHTML=h;
   document.getElementById('modal-hist-detail').classList.add('on');
+}
+
+// Detalhe de uma contagem final (consolidada, com itens zerados) + exportar CSV
+function abrirDetalheContagemFinal(entry){
+  const dt=new Date(entry.ts);
+  const dtStr=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const hora=dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('hist-det-title').textContent=`🏁 ${entry.nome||'Contagem final'}`;
+  document.getElementById('hist-det-sub').textContent=`${dtStr.charAt(0).toUpperCase()+dtStr.slice(1)} às ${hora}`;
+  const itens=entry.itensFinal||[];
+  const contados=itens.filter(i=>i.total>0);
+  const zerados=itens.filter(i=>!(i.total>0));
+  let h=`<div class="sgrid">
+    <div class="scard"><div class="slbl">Itens contados</div><div class="sval">${entry.totalContados}</div></div>
+    <div class="scard"><div class="slbl">Total de itens</div><div class="sval">${entry.totalItens}</div></div>
+  </div>
+  <button id="hist-final-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>`;
+  if(entry.confirmedByName){
+    h+=`<div class="card" style="gap:0"><div class="srow" style="border:none"><span style="color:var(--tx2);font-size:13px">Confirmada por</span><span style="font-weight:500;font-size:13px">${entry.confirmedByName}</span></div></div>`;
+  }
+  if(contados.length){
+    h+=`<div class="sec">Itens contados · ${contados.length}</div><div class="card">`;
+    contados.forEach(i=>{
+      h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${i.nome}</span>
+        <span style="font-size:13px;font-weight:500;white-space:nowrap">${fmtNum(i.total)} ${i.unidade}</span></div>`;
+    });
+    h+='</div>';
+  }
+  if(zerados.length){
+    h+=`<div class="sec">Zerados / não contados · ${zerados.length}</div><div class="card">`;
+    zerados.forEach(i=>{
+      h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${i.nome}</span>
+        <span style="font-size:13px;font-weight:500;color:var(--tx2);white-space:nowrap">0 ${i.unidade}</span></div>`;
+    });
+    h+='</div>';
+  }
+  document.getElementById('hist-det-body').innerHTML=h;
+  document.getElementById('modal-hist-detail').classList.add('on');
+  const btn=document.getElementById('hist-final-csv');
+  if(btn)btn.addEventListener('click',()=>exportarContagemFinalCSV(entry));
 }
 
 // ── Controle de acesso por nível ─────────────────────────────────────────────
@@ -4221,6 +4372,11 @@ document.getElementById('gal-input').addEventListener('change',handleFile);
 document.querySelectorAll('.ntab[data-home-tab]').forEach(el=>el.addEventListener('click',()=>homeTab(el.dataset.homeTab)));
 document.getElementById('hist-det-close').addEventListener('click',()=>closeModal('modal-hist-detail'));
 document.getElementById('hist-det-close-bottom').addEventListener('click',()=>closeModal('modal-hist-detail'));
+// Fechar contagem (nomear contagem final)
+document.getElementById('fechar-cont-x').addEventListener('click',()=>closeModal('modal-fechar-contagem'));
+document.getElementById('fechar-cont-cancel').addEventListener('click',()=>closeModal('modal-fechar-contagem'));
+document.getElementById('fechar-cont-ok').addEventListener('click',executarFechamento);
+document.getElementById('fechar-cont-nome').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();executarFechamento();}});
 // Base / Saipos
 document.getElementById('ab-analisar').addEventListener('click',analisarBaseSaipos);
 document.getElementById('ab-cancel').addEventListener('click',()=>closeModal('modal-atualizar-base'));
@@ -4229,7 +4385,7 @@ document.getElementById('vinc-save').addEventListener('click',vincularItem);
 
 // Fechamento consistente por clique no fundo para modais de consulta/gestão.
 // Modais de decisão (conferência e auditoria) mantêm botões explícitos para evitar avanço acidental.
-['modal-hist-detail','modal-foto','modal-mgr','modal-assign','modal-import','modal-novo-usuario','modal-gerenciar-usuario','modal-atualizar-base','modal-vincular'].forEach(id=>{
+['modal-hist-detail','modal-fechar-contagem','modal-foto','modal-mgr','modal-assign','modal-import','modal-novo-usuario','modal-gerenciar-usuario','modal-atualizar-base','modal-vincular'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('click',e=>{if(e.target===el)closeModal(id);});
 });
@@ -4237,7 +4393,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const spec=document.getElementById('spec-edit-modal');
   if(spec){spec.remove();return;}
-  const closable=['modal-vincular','modal-atualizar-base','modal-gerenciar-usuario','modal-novo-usuario','modal-import','modal-assign','modal-mgr','modal-foto','modal-hist-detail'];
+  const closable=['modal-vincular','modal-atualizar-base','modal-gerenciar-usuario','modal-novo-usuario','modal-import','modal-assign','modal-mgr','modal-foto','modal-fechar-contagem','modal-hist-detail'];
   const top=closable.map(id=>document.getElementById(id)).find(el=>el&&el.classList.contains('on'));
   if(top)closeModal(top.id);
 });
