@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Estoque Gesto v66</title>
+<title>Estoque Gesto v67</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -276,7 +276,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v66</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v67</span></span></div>
   </div>
 </div>
 
@@ -1227,7 +1227,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v66';
+const APP_VERSION = 'v67';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1746,6 +1746,14 @@ function salvarContagemFinal(nome,quando){
     .map(p=>({cod:String(p.cod),nome:p.nome||'',unidade:p.unidade||'',total:+(totais[p.cod]||0).toFixed(4)}))
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const contados=itensFinal.filter(i=>i.total>0).length;
+  // Snapshots da lista de compras e dos itens a descontinuar (Sets → arrays)
+  const listaCompras=getListaCompras().map(({prod,motivos})=>({
+    cod:String(prod.cod),nome:prod.nome||'',unidade:prod.unidade||'',motivos:[...motivos]
+  }));
+  const listaDescontinuar=getListaDescontinuar().map(({prod,locais})=>({
+    cod:String(prod.cod),nome:prod.nome||'',unidade:prod.unidade||'',
+    locais:[...locais].map(lid=>{const l=getLocal(lid);return l?l.nome:lid;})
+  }));
   const entry={
     id:'final-'+Date.now().toString(),
     tipo:'final',
@@ -1755,7 +1763,9 @@ function salvarContagemFinal(nome,quando){
     confirmedByName:confirmedByName,
     totalItens:itensFinal.length,
     totalContados:contados,
-    itensFinal:itensFinal
+    itensFinal:itensFinal,
+    listaCompras:listaCompras,
+    listaDescontinuar:listaDescontinuar
   };
   historico.unshift(entry);
   if(historico.length>100)historico=historico.slice(0,100);
@@ -4126,10 +4136,62 @@ function abrirDetalheContagemFinal(entry){
     });
     h+='</div>';
   }
+  // ── Lista de compras (snapshot) ───────────────────────────────────────────
+  const compras=entry.listaCompras||[];
+  if(compras.length){
+    h+=`<div class="sec">🛒 Lista de compras · ${compras.length}</div><div class="card" style="padding:0;overflow:hidden">`;
+    compras.forEach(i=>{
+      const tags=[];
+      if((i.motivos||[]).includes('comprar'))tags.push('<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#FEF3C7;color:#92400E;border:.5px solid #FCD34D;font-weight:500">🛒 Comprar</span>');
+      if((i.motivos||[]).includes('zerado'))tags.push('<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);border:.5px solid var(--bd3);font-weight:500">Zero</span>');
+      h+=`<div class="srow" style="padding:10px 14px;border-bottom:.5px solid var(--bd3)">
+        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${i.nome}</div>
+        <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">${tags.join('')}</div></div>
+        <div style="font-size:11px;color:var(--tx2);padding-left:8px;flex-shrink:0">${i.unidade}</div></div>`;
+    });
+    h+=`</div><button id="hist-final-copy-compras" class="bs" style="display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-clipboard-copy"></i> Copiar lista de compras</button>`;
+  }
+  // ── Itens a descontinuar (snapshot) ───────────────────────────────────────
+  const descont=entry.listaDescontinuar||[];
+  if(descont.length){
+    h+=`<div class="sec" style="color:#991B1B">✕ Itens a descontinuar · ${descont.length}</div><div class="card" style="padding:0;overflow:hidden">`;
+    descont.forEach(i=>{
+      h+=`<div class="srow" style="padding:10px 14px;border-bottom:.5px solid var(--bd3)">
+        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${i.nome}</div>
+        ${(i.locais&&i.locais.length)?`<div style="font-size:11px;color:var(--tx2);margin-top:2px">${i.locais.join(', ')}</div>`:''}</div>
+        <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#FEE2E2;color:#991B1B;border:.5px solid #FCA5A5;font-weight:500;flex-shrink:0">✕ Descontinuar</span></div>`;
+    });
+    h+=`</div><button id="hist-final-copy-desc" class="bs" style="display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-clipboard-copy"></i> Copiar lista</button>`;
+  }
   document.getElementById('hist-det-body').innerHTML=h;
   document.getElementById('modal-hist-detail').classList.add('on');
   const btn=document.getElementById('hist-final-csv');
   if(btn)btn.addEventListener('click',()=>exportarContagemFinalCSV(entry));
+  const bc=document.getElementById('hist-final-copy-compras');
+  if(bc)bc.addEventListener('click',()=>copiarListaSnapshot('compras',entry,bc));
+  const bd=document.getElementById('hist-final-copy-desc');
+  if(bd)bd.addEventListener('click',()=>copiarListaSnapshot('descontinuar',entry,bd));
+}
+
+// Copia uma das listas (snapshot) de uma contagem final do histórico
+function copiarListaSnapshot(tipo,entry,btn){
+  const dataStr=new Date(entry.ts).toLocaleDateString('pt-BR');
+  let texto='';
+  if(tipo==='compras'){
+    const lista=entry.listaCompras||[];if(!lista.length)return;
+    texto=`🛒 Lista de Compras — ${entry.nome||''} (${dataStr})\n\n`+lista.map(i=>{
+      const tags=[];
+      if((i.motivos||[]).includes('comprar'))tags.push('Comprar');
+      if((i.motivos||[]).includes('zerado'))tags.push('Zerado');
+      return `• ${i.nome}${tags.length?' ['+tags.join(' + ')+']':''}`;
+    }).join('\n');
+  }else{
+    const lista=entry.listaDescontinuar||[];if(!lista.length)return;
+    texto=`✕ Itens a Descontinuar — ${entry.nome||''} (${dataStr})\n\n`+lista.map(i=>`• ${i.nome}${(i.locais&&i.locais.length)?' ['+i.locais.join(', ')+']':''}`).join('\n');
+  }
+  navigator.clipboard.writeText(texto)
+    .then(()=>{if(btn){const old=btn.innerHTML;btn.innerHTML='<i class="ti ti-check"></i> Copiado!';setTimeout(()=>{btn.innerHTML=old;},2000);}})
+    .catch(()=>alert(texto));
 }
 
 // ── Controle de acesso por nível ─────────────────────────────────────────────
