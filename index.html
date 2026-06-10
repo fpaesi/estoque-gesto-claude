@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v72</title>
+<title>Estoque Gesto v73</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -279,7 +279,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v72</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v73</span></span></div>
   </div>
 </div>
 
@@ -1162,7 +1162,9 @@ function toDate(v){if(!v)return null;try{return v.toDate?v.toDate():(v instanceo
 // rascunhos[lid] = { userId, userName, status: 'rascunho'|'concluido', updatedAt }
 let rascunhos={};
 let rascunhoSaveTimers={};   // timers de debounce por local
+let dirtyCods={};            // v73: cods alterados desde o último save, por local (gravação por item)
 let contagemAtivaListener=null; // unsubscribe do listener em tempo real
+function marcarDirty(lid,cod){if(!dirtyCods[lid])dirtyCods[lid]=new Set();dirtyCods[lid].add(String(cod));}
 
 // ── Fechamento da contagem (confirmação do Gestor) ────────────────────────────
 // null enquanto não confirmado; Date quando o Gestor confirma o fim
@@ -1202,6 +1204,9 @@ const CONFIG_DOC='cfg_config'; // configuração global: locais, sublocais, vín
 //            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin'
 //          );
 //        }
+//        match /historico/{id} {
+//          allow read, write: if request.auth != null;
+//        }
 //      }
 //    }
 // 8. No Firebase Storage → Regras, libere imagens autenticadas:
@@ -1235,7 +1240,8 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v72';
+const APP_VERSION = 'v73';
+const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1275,6 +1281,7 @@ function carregarLocal(){
 function resetarEstadoContagemLocal(){
   Object.values(rascunhoSaveTimers).forEach(t=>clearTimeout(t));
   rascunhoSaveTimers={};
+  dirtyCods={};
   counts={};
   rascunhos={};
   dataFimContagem=null;
@@ -1393,11 +1400,21 @@ async function carregarNuvem(){
       // Primeiro acesso: sobe dados locais para a nuvem
       await salvarNuvem();
     }
-    // Carrega histórico da nuvem (últimas 50 contagens)
+    // Carrega histórico da nuvem (últimas 50 contagens) — v73: coleção GLOBAL compartilhada
     try{
-      const histSnap=await db.collection('usuarios').doc(currentUser.uid).collection('historico').orderBy('ts','desc').limit(50).get();
-      if(!histSnap.empty){
-        historico=histSnap.docs.map(d=>d.data());
+      const histSnap=await db.collection(HIST_COL).orderBy('ts','desc').limit(50).get();
+      let cloudHist=histSnap.docs.map(d=>d.data());
+      // Migração v73: entradas antigas da subcoleção do usuário sobem para a coleção global (idempotente)
+      try{
+        const oldSnap=await db.collection('usuarios').doc(currentUser.uid).collection('historico').orderBy('ts','desc').limit(50).get();
+        const idsGlob=new Set(cloudHist.map(e=>e.id));
+        const legados=oldSnap.docs.map(d=>d.data()).filter(e=>e.id&&!idsGlob.has(e.id));
+        legados.forEach(e=>{db.collection(HIST_COL).doc(e.id).set(e).catch(()=>{});});
+        cloudHist=[...cloudHist,...legados];
+      }catch(e){}
+      if(cloudHist.length){
+        cloudHist.sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||'')));
+        historico=cloudHist.slice(0,100);
         try{localStorage.setItem(SK_HIST,JSON.stringify(historico));}catch(e){}
       }
     }catch(e){console.warn('Erro ao carregar histórico da nuvem:',e);}
@@ -1458,6 +1475,7 @@ function salvar(){
 
 // ── Rascunhos multi-usuário ───────────────────────────────────────────────────
 const RASCUNHO_COL = 'contagem_ativa';
+const HIST_COL = 'historico'; // v73: histórico GLOBAL compartilhado — todos os usuários veem as mesmas contagens
 
 // Salva imediatamente o rascunho de um local no Firestore
 async function salvarRascunhoImediato(lid, tentativa=1){
@@ -1466,8 +1484,7 @@ async function salvarRascunhoImediato(lid, tentativa=1){
     const nomeAtual=currentUserNome||currentUser.displayName||'Usuário';
     const avatar=nomeAtual.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
     const startedAt=rascunhos[lid]?.startedAt||new Date();
-    const payload={
-      counts: counts[lid]||{},
+    const meta={
       userId: currentUser.uid,
       userName: nomeAtual,
       userAvatar: avatar,
@@ -1475,7 +1492,23 @@ async function salvarRascunhoImediato(lid, tentativa=1){
       startedAt: startedAt,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-    await db.collection(RASCUNHO_COL).doc(lid).set(payload);
+    const ref=db.collection(RASCUNHO_COL).doc(lid);
+    // v73: gravação POR ITEM — atualiza somente counts.<cod> dos itens alterados,
+    // para dois usuários no mesmo local não sobrescreverem a contagem um do outro.
+    const dirty=[...(dirtyCods[lid]||[])].filter(cod=>counts[lid]?.[cod]);
+    let usedUpdate=false;
+    try{
+      const FP=firebase.firestore.FieldPath;
+      const args=[];
+      Object.entries(meta).forEach(([k,v])=>args.push(new FP(k),v));
+      dirty.forEach(cod=>args.push(new FP('counts',cod),counts[lid][cod]));
+      await ref.update(...args);
+      usedUpdate=true;
+    }catch(err){
+      if(err.code!=='not-found')throw err; // doc ainda não existe → cai no set completo abaixo
+    }
+    if(!usedUpdate)await ref.set({...meta,counts:counts[lid]||{}});
+    if(dirtyCods[lid])dirty.forEach(c=>dirtyCods[lid].delete(c));
     // Se tinha erro antes, limpa o banner
     ocultarErroBanner();
   }catch(e){
@@ -1785,7 +1818,7 @@ function salvarContagemFinal(nome,quando){
   if(historico.length>100)historico=historico.slice(0,100);
   try{localStorage.setItem(SK_HIST,JSON.stringify(historico));}catch(e){}
   if(currentUser&&firebaseReady){
-    db.collection('usuarios').doc(currentUser.uid).collection('historico').doc(entry.id).set(entry)
+    db.collection(HIST_COL).doc(entry.id).set(entry)
       .catch(e=>console.warn('Erro ao salvar contagem final na nuvem:',e));
   }
 }
@@ -2516,8 +2549,10 @@ async function entrarContagem(lid,slId){
         if(def.qtyDec!==undefined)counts[lid][p.cod].qtyDec=def.qtyDec;
         counts[lid][p.cod].touched=true;
         counts[lid][p.cod]._fromPadrao=true;
+        marcarDirty(lid,p.cod);
       }
     });
+    if((dirtyCods[lid]||new Set()).size)agendarSalvarRascunho(lid);
   }
   renderSlNav();renderCount();updTopbarProgress();
   // Cria rascunho inicial se ainda não existir para este local
@@ -2616,8 +2651,8 @@ function renderCount(){
     const padraoBtnHtml=isAdminRole()?`<button class="padb ${padraoSalvo?'active':''} btn-padrao" data-cod="${p.cod}" title="${padraoSalvo?'Clique para remover o padrão':'Salva a quantidade atual como padrão para a próxima contagem'}"><i class="ti ti-bookmark" style="font-size:11px"></i>${padraoSalvo?'Padrão ✓':'Salvar padrão'}</button>`:'';
     const fromPadraoTag=d._fromPadrao?`<span class="padrao-badge"><i class="ti ti-bookmark-filled" style="font-size:10px"></i>Pré-preenchido</span>`:'';
 
-    const fotoURL=fotoSrc(d.foto);
-    const fotoBtn=fotoURL?`<img class="fthu btn-foto" data-cod="${p.cod}" src="${esc(fotoURL)}" style="width:32px;height:32px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0" alt="Foto"/>`:
+    const fotoURL=FOTOS_ENABLED?fotoSrc(d.foto):'';
+    const fotoBtn=!FOTOS_ENABLED?'':fotoURL?`<img class="fthu btn-foto" data-cod="${p.cod}" src="${esc(fotoURL)}" style="width:32px;height:32px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0" alt="Foto"/>`:
       `<button class="ib btn-foto-opts" data-cod="${p.cod}" title="Foto" style="flex-shrink:0"><i class="ti ti-camera"></i></button>`;
     let ei='';
     if(spec&&spec.modo==='contador'){
@@ -2651,10 +2686,10 @@ function renderCount(){
         <button class="btn-obs-toggle" data-cod="${p.cod}" style="font-size:12px;color:var(--tx2);background:none;border:none;cursor:pointer;padding:4px 8px">${obsTxt}</button>
       </div>
       <div class="card-extra">
-        <div style="display:flex;gap:6px">
+        ${FOTOS_ENABLED?`<div style="display:flex;gap:6px">
           <button class="fbtn btn-cam" data-cod="${p.cod}" style="flex:1"><i class="ti ti-camera"></i> Câmera</button>
           <button class="fbtn btn-gal" data-cod="${p.cod}" style="flex:1"><i class="ti ti-photo"></i> Galeria</button>
-        </div>
+        </div>`:''}
         <input class="notei inp-note" data-cod="${p.cod}" placeholder="Observação (opcional)" value="${esc(d.note||'')}"/>
       </div>
     </div>`;
@@ -2729,7 +2764,7 @@ function showAuditoria(onConfirm,scope='sublocal'){
     h+=`<div class="cpv"><i class="ti ti-circle-check"></i> Nenhum item pendente ${isLocal?'neste local':'nesta etapa'}.</div>`;
   }
   h+=auditSection('Quantidade zero',[...data.pendentes,...data.zerados],'ti-circle-zero','#92400E','Nenhum item zerado.');
-  h+=auditSection('Sem foto',data.semFoto,'ti-photo-off','var(--tx2)','Todos os itens contados têm foto.');
+  if(FOTOS_ENABLED)h+=auditSection('Sem foto',data.semFoto,'ti-photo-off','var(--tx2)','Todos os itens contados têm foto.');
   h+=auditSection('Com observação',data.comObs,'ti-message-circle','var(--acc)','Nenhuma observação registrada.');
   h+=auditSection('Sem especificação',data.semSpec,'ti-alert-circle','#D97706','Todas as especificações estão cadastradas.');
   document.getElementById('audit-body').innerHTML=h;
@@ -2783,7 +2818,7 @@ function chgQty(cod,delta){
   if(cEl){const spec=getSpec(aLocal,cod);const prod=CATALOGO.find(p=>p.cod===cod);const v=calcV(aLocal,cod,qty);
     cEl.textContent=spec&&spec.fator!==1?`= ${fmtNum(v)} ${prod?.unidade||''}`:`${fmtNum(v)} ${prod?.unidade||''}`;}
   markTouched(cod);updProg();updTopbarProgress();renderSlNav();checkRowDone(cod);
-  agendarSalvarRascunho(aLocal);
+  marcarDirty(aLocal,cod);agendarSalvarRascunho(aLocal);
 }
 function openQtyInput(cod){
   const cctr=document.querySelector(`.cctr[data-cod="${cod}"]`);
@@ -2815,7 +2850,7 @@ function commitQtyInput(cod,val){
   if(cEl){const prod=CATALOGO.find(p=>p.cod===cod);const v=calcV(aLocal,cod,newQty);
     cEl.textContent=spec&&spec.fator!==1?`= ${fmtNum(v)} ${prod?.unidade||''}`:`${fmtNum(v)} ${prod?.unidade||''}`;}
   markTouched(cod);updProg();updTopbarProgress();renderSlNav();checkRowDone(cod);
-  agendarSalvarRascunho(aLocal);
+  marcarDirty(aLocal,cod);agendarSalvarRascunho(aLocal);
 }
 function chgDec(cod,val){
   val=String(val??'').replace(/[^0-9.,]/g,'');
@@ -2824,6 +2859,7 @@ function chgDec(cod,val){
   counts[aLocal][cod].qtyDec=val;
   delete counts[aLocal][cod]._fromPadrao;
   if(val!==''&&pf(val)>=0){counts[aLocal][cod].touched=true;markTouched(cod);}
+  marcarDirty(aLocal,cod);
   updProg();renderSlNav();
   agendarSalvarRascunho(aLocal);
 }
@@ -2831,6 +2867,7 @@ function chgDecBlur(cod,val){
   if(!counts[aLocal]?.[cod])return;
   if(val===''||isNaN(pf(val)))counts[aLocal][cod].touched=false;
   else{counts[aLocal][cod].touched=true;markTouched(cod);updTopbarProgress();}
+  marcarDirty(aLocal,cod);agendarSalvarRascunho(aLocal);
   const prods=getProdsSublocal(aLocal,aSublocal);
   const cnt=counts[aLocal]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
   renderCountBbar(prods,done);
@@ -2845,7 +2882,7 @@ function checkRowDone(cod){
   const cnt=counts[aLocal]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
   if(done===prods.length)renderCountBbar(prods,done);
 }
-function setNote(cod,val){if(counts[aLocal]?.[cod]){counts[aLocal][cod].note=val;agendarSalvarRascunho(aLocal);}}
+function setNote(cod,val){if(counts[aLocal]?.[cod]){counts[aLocal][cod].note=val;marcarDirty(aLocal,cod);agendarSalvarRascunho(aLocal);}}
 function updProg(prods,done){
   const pbar=document.getElementById('pbar'),ppct=document.getElementById('ppct');
   if(!prods){prods=getProdsSublocal(aLocal,aSublocal);const cnt=counts[aLocal]||{};done=prods.filter(p=>cnt[p.cod]?.touched).length;}
@@ -2881,7 +2918,7 @@ function goFinish(){
   const prods=getProdsSublocal(aLocal,aSublocal),cnt=counts[aLocal]||{};
   const done=prods.filter(p=>cnt[p.cod]?.touched).length;const comFoto=prods.filter(p=>cnt[p.cod]?.foto).length;
   let h=`<div class="sgrid"><div class="scard"><div class="slbl">Contados</div><div class="sval">${done}</div></div>
-    <div class="scard"><div class="slbl">Com foto</div><div class="sval">${comFoto}</div></div></div>
+    <div class="scard"><div class="slbl">${FOTOS_ENABLED?'Com foto':'Pendentes'}</div><div class="sval">${FOTOS_ENABLED?comFoto:prods.length-done}</div></div></div>
     <div class="sec">Itens contados</div><div class="card">`;
   const contados=prods.filter(p=>cnt[p.cod]?.touched);
   if(!contados.length)h+='<div style="padding:12px 0;font-size:14px;color:var(--tx2)">Nenhum item contado</div>';
@@ -2889,8 +2926,8 @@ function goFinish(){
     const d=cnt[p.cod];const spec=getSpec(aLocal,p.cod);
     const qtdTxt=spec?.modo==='contador'?`${d.qty||0} ${esc(spec.unidContagem||'un')}`:`${d.qtyDec||0} ${p.unidade}`;
     const convV=spec?.modo==='contador'&&spec.fator!==1?fmtNum(calcV(aLocal,p.cod,d.qty||0)):null;
-    const fotoURL=fotoSrc(d.foto);
-    const fi=fotoURL?`<img src="${esc(fotoURL)}" style="width:28px;height:28px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'<i class="ti ti-photo-off" style="color:var(--tx2);font-size:14px;opacity:.4"></i>';
+    const fotoURL=FOTOS_ENABLED?fotoSrc(d.foto):'';
+    const fi=!FOTOS_ENABLED?'':fotoURL?`<img src="${esc(fotoURL)}" style="width:28px;height:28px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'<i class="ti ti-photo-off" style="color:var(--tx2);font-size:14px;opacity:.4"></i>';
     h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fi}<span style="font-size:13px;color:var(--tx2)">${esc(p.nome)}</span></div>
       <div style="text-align:right"><div style="font-weight:500">${qtdTxt}</div>${convV?`<div style="font-size:11px;color:var(--acc)">= ${convV} ${p.unidade}</div>`:''}</div></div>`;
   });
@@ -3674,9 +3711,10 @@ function removerSubSub(lid,slId,sslId){
   salvar();if(homeTabId==='gestao')renderGestao(document.getElementById('home-cnt'));
 }
 
-function triggerCam(cod){pendingCod=cod;pendingLocal=aLocal;document.getElementById('file-input').click();}
-function triggerGal(cod){pendingCod=cod;pendingLocal=aLocal;document.getElementById('gal-input').click();}
+function triggerCam(cod){if(!FOTOS_ENABLED)return;pendingCod=cod;pendingLocal=aLocal;document.getElementById('file-input').click();}
+function triggerGal(cod){if(!FOTOS_ENABLED)return;pendingCod=cod;pendingLocal=aLocal;document.getElementById('gal-input').click();}
 async function handleFile(evt){
+  if(!FOTOS_ENABLED){evt.target.value='';return;}
   const file=evt.target.files[0];if(!file)return;
   const lid=pendingLocal,cod=pendingCod;
   evt.target.value='';
@@ -3690,13 +3728,14 @@ async function handleFile(evt){
     counts[lid][cod].touched=true;
     if(antiga)removerFotoRepositorio(antiga);
     if(lid===aLocal)renderCount();
-    agendarSalvarRascunho(lid);
+    marcarDirty(lid,cod);agendarSalvarRascunho(lid);
   }catch(e){
     console.warn('Erro ao salvar foto:',e);
     mostrarErroBanner('Não foi possível salvar a foto. Tente novamente.');
   }
 }
 function openFotoModal(cod){
+  if(!FOTOS_ENABLED)return;
   const foto=fotoSrc(counts[aLocal]?.[cod]?.foto);if(!foto)return;
   document.getElementById('modal-img-el').src=foto;
   document.getElementById('modal-foto').setAttribute('data-cod',cod);
@@ -3707,6 +3746,7 @@ function delFoto(){
   const path=counts[aLocal]?.[cod]?.fotoPath;
   if(counts[aLocal]?.[cod]){counts[aLocal][cod].foto=null;counts[aLocal][cod].fotoPath=null;}
   removerFotoRepositorio(path);
+  marcarDirty(aLocal,cod);
   closeModal('modal-foto');renderCount();
   agendarSalvarRascunho(aLocal);
 }
@@ -3844,7 +3884,7 @@ function renderConsolidado(c){
   let h=hHeader+`<div class="sec">${entries.length} itens contados</div><div class="card">`;
   entries.forEach(([nome,d])=>{
     const fotoURL=fotoSrc(d.foto);
-    const fEl=fotoURL?`<img src="${esc(fotoURL)}" style="width:36px;height:36px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'';
+    const fEl=FOTOS_ENABLED&&fotoURL?`<img src="${esc(fotoURL)}" style="width:36px;height:36px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'';
     h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fEl}
       <div><div style="font-size:13px;font-weight:500">${esc(nome)}</div>
       <div style="font-size:11px;color:var(--tx2)">${esc(d.locais.join(' · '))}</div></div></div>
@@ -3917,7 +3957,7 @@ function toggleReposicao(cod){
   const active=counts[aLocal][cod].reposicao;
   const btn=document.querySelector(`.btn-repo[data-cod="${cod}"]`);
   if(btn){btn.classList.toggle('active',active);btn.textContent=active?'🛒 Comprar ✓':'🛒 Comprar';}
-  agendarSalvarRascunho(aLocal);
+  marcarDirty(aLocal,cod);agendarSalvarRascunho(aLocal);
 }
 function toggleDescontinuar(cod){
   if(!counts[aLocal])counts[aLocal]={};
@@ -3926,7 +3966,7 @@ function toggleDescontinuar(cod){
   const active=counts[aLocal][cod].descontinuar;
   const btn=document.querySelector(`.btn-desc[data-cod="${cod}"]`);
   if(btn){btn.classList.toggle('active',active);btn.textContent=active?'✕ Descontinuar ✓':'✕ Descontinuar';}
-  agendarSalvarRascunho(aLocal);
+  marcarDirty(aLocal,cod);agendarSalvarRascunho(aLocal);
 }
 function toggleQtdPadrao(cod){
   if(!isAdminRole())return;
@@ -3964,9 +4004,10 @@ function zeroItem(cod){
   const zb=document.querySelector(`.btn-zero[data-cod="${cod}"]`);
   if(zb){zb.classList.add('zeroed');zb.textContent='Zero ✓';}
   updProg();updTopbarProgress();renderSlNav();checkRowDone(cod);
-  agendarSalvarRascunho(aLocal);
+  marcarDirty(aLocal,cod);agendarSalvarRascunho(aLocal);
 }
 function openFotoOpts(cod){
+  if(!FOTOS_ENABLED)return;
   pendingCod=cod;pendingLocal=aLocal;
   document.getElementById('modal-foto-opts').classList.add('on');
 }
@@ -4008,7 +4049,7 @@ function salvarHistorico(){
   if(historico.length>100)historico=historico.slice(0,100);
   try{localStorage.setItem(SK_HIST,JSON.stringify(historico));}catch(e){}
   if(currentUser&&firebaseReady){
-    db.collection('usuarios').doc(currentUser.uid).collection('historico').doc(entry.id).set(entry)
+    db.collection(HIST_COL).doc(entry.id).set(entry)
       .catch(e=>console.warn('Erro ao salvar histórico na nuvem:',e));
     // Cancela qualquer save de rascunho pendente para este local
     if(rascunhoSaveTimers[lid]){clearTimeout(rascunhoSaveTimers[lid]);delete rascunhoSaveTimers[lid];}
