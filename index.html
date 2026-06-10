@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v71</title>
+<title>Estoque Gesto v72</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -279,7 +279,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v70</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v72</span></span></div>
   </div>
 </div>
 
@@ -1194,8 +1194,13 @@ const CONFIG_DOC='cfg_config'; // configuração global: locais, sublocais, vín
 //        match /usuarios/{userId} {
 //          allow read, write: if request.auth != null && request.auth.uid == userId;
 //        }
-//        match /contagem_ativa/{localId} {
-//          allow read, write: if request.auth != null;
+//        match /contagem_ativa/{docId} {
+//          allow read: if request.auth != null;
+//          // v72: docs de configuração global só podem ser escritos por admin
+//          allow write: if request.auth != null && (
+//            !(docId in ['cfg_config','cfg_specs','cfg_catalogo','cfg_fechamento']) ||
+//            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin'
+//          );
 //        }
 //      }
 //    }
@@ -1230,7 +1235,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v71';
+const APP_VERSION = 'v72';
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
 function getSyncHTML(){
@@ -1741,7 +1746,7 @@ function salvarContagemFinal(nome,quando){
       const spec=getSpec(lid,cod);
       let v=0;
       if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
-      else v=parseFloat(d.qtyDec)||0;
+      else v=pf(d.qtyDec)||0;
       totais[cod]=(totais[cod]||0)+v;
     });
   });
@@ -1847,7 +1852,7 @@ function exportarCSV(){
       const spec=getSpec(lid,cod);
       let v=0;
       if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);
-      else v=parseFloat(d.qtyDec)||0;
+      else v=pf(d.qtyDec)||0;
       if(!totais[cod])totais[cod]={nome:prod.nome,unidade:prod.unidade,total:0};
       totais[cod].total+=v;
     });
@@ -2107,8 +2112,10 @@ function hasSpec(lid,cod){const s=getSpec(lid,cod);return !!(s&&s.modo);}
 // Item resolvido para fins de finalização: foi contado (touched) OU já possui especificação (não preenchido = zero).
 function itemResolvido(lid,cod){return !!(counts[lid]?.[cod]?.touched)||hasSpec(lid,cod);}
 function setSpec(lid,cod,spec){if(!specs[lid])specs[lid]={};if(!spec)delete specs[lid][cod];else specs[lid][cod]=spec;salvar();}
-function calcV(lid,cod,qty){const s=getSpec(lid,cod);if(!s)return qty;if(s.modo==='decimal')return parseFloat(qty)||0;return(parseFloat(qty)||0)*(s.fator||1);}
+function calcV(lid,cod,qty){const s=getSpec(lid,cod);if(!s)return qty;if(s.modo==='decimal')return pf(qty)||0;return(parseFloat(qty)||0)*(s.fator||1);}
 function fmtNum(n){return parseFloat(n.toFixed(4)).toString();}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function pf(v){return parseFloat(String(v??'').replace(',','.'));}
 function fotoSrc(foto){return typeof foto==='string'?foto:(foto?.url||'');}
 function fotoIsStoragePath(path){return typeof path==='string'&&path.startsWith('contagem-fotos/');}
 function fotoExt(file){return file.type==='image/png'?'png':'jpg';}
@@ -2235,8 +2242,8 @@ function rascunhoInfo(lid){
     else tempoTxt=ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   }
   return `<div style="display:flex;align-items:center;gap:4px;margin-top:3px">
-    <div style="width:16px;height:16px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:var(--acc-tx);flex-shrink:0">${r.userAvatar||'?'}</div>
-    <span style="font-size:11px;color:var(--tx2)">${nomeDisplay} ${statusTxt}${tempoTxt?' · '+tempoTxt:''}</span>
+    <div style="width:16px;height:16px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:var(--acc-tx);flex-shrink:0">${esc(r.userAvatar||'?')}</div>
+    <span style="font-size:11px;color:var(--tx2)">${esc(nomeDisplay)} ${statusTxt}${tempoTxt?' · '+tempoTxt:''}</span>
   </div>`;
 }
 
@@ -2287,7 +2294,7 @@ function renderHome(){
       const cnt=counts[meuLocal.id]||{};
       const done=Object.values(cnt).filter(x=>x.touched).length;
       const total=getProdsLocal(meuLocal.id).length;
-      homeBbar.innerHTML=`<button id="btn-home-retomar" class="bp"><i class="ti ti-player-play"></i> Continuar: ${meuLocal.icon} ${meuLocal.nome} · ${done}/${total}</button>${getSyncHTML()}`;
+      homeBbar.innerHTML=`<button id="btn-home-retomar" class="bp"><i class="ti ti-player-play"></i> Continuar: ${esc(meuLocal.icon)} ${esc(meuLocal.nome)} · ${done}/${total}</button>${getSyncHTML()}`;
       document.getElementById('btn-home-retomar').addEventListener('click',()=>goToLocal(meuLocal.id));
     } else {
       homeBbar.innerHTML=getSyncHTML();
@@ -2347,10 +2354,10 @@ function renderHome(){
           <div style="display:flex;align-items:center;gap:10px">
             <div style="font-size:22px;width:32px;text-align:center">${l.icon}</div>
             <div style="flex:1">
-              <div style="font-size:15px;font-weight:500;color:var(--tx1)">${l.nome}</div>
+              <div style="font-size:15px;font-weight:500;color:var(--tx1)">${esc(l.nome)}</div>
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-                <div style="width:18px;height:18px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#E6F1FB;flex-shrink:0">${avatarUser}</div>
-                <span style="font-size:11px;color:var(--acc)">${nomeUser}${inicioTxt?' · Início: '+inicioTxt:''}</span>
+                <div style="width:18px;height:18px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#E6F1FB;flex-shrink:0">${esc(avatarUser)}</div>
+                <span style="font-size:11px;color:var(--acc)">${esc(nomeUser)}${inicioTxt?' · Início: '+inicioTxt:''}</span>
               </div>
             </div>
             <span class="bdg bprog">${done}/${total}</span>
@@ -2372,7 +2379,7 @@ function renderHome(){
         h+=`<div class="row" data-lid="${l.id}" data-action="local">
           <div style="font-size:22px;width:32px;text-align:center">${l.icon}</div>
           <div style="flex:1">
-            <div style="font-size:15px;font-weight:500">${l.nome}</div>
+            <div style="font-size:15px;font-weight:500">${esc(l.nome)}</div>
             <div style="font-size:12px;color:var(--tx2)">${getProdsLocal(l.id).length} itens${subs.length?' · '+subs.length+' sublocais':''}</div>
           </div>
           ${badge}<i class="ti ti-arrow-right" style="color:var(--tx2);font-size:16px"></i></div>`;
@@ -2396,10 +2403,10 @@ function renderHome(){
           <div style="display:flex;align-items:center;gap:10px">
             <div style="font-size:22px;width:32px;text-align:center">${l.icon}</div>
             <div style="flex:1">
-              <div style="font-size:15px;font-weight:500;color:var(--tx1)">${l.nome}</div>
+              <div style="font-size:15px;font-weight:500;color:var(--tx1)">${esc(l.nome)}</div>
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-                <div style="width:18px;height:18px;border-radius:50%;background:#639922;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${avatarUser}</div>
-                <span style="font-size:11px;color:#3B6D11">${nomeUser} · ${done}/${total} itens</span>
+                <div style="width:18px;height:18px;border-radius:50%;background:#639922;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${esc(avatarUser)}</div>
+                <span style="font-size:11px;color:#3B6D11">${esc(nomeUser)} · ${done}/${total} itens</span>
               </div>
             </div>
             <span class="bdg bdone">✓</span>
@@ -2423,7 +2430,7 @@ function renderSel(){
   document.getElementById('sel-list').innerHTML='<div class="sec">Selecione o local</div>'+
     locais.map(l=>`<div class="row" data-lid="${l.id}" data-action="local">
       <div style="font-size:22px;width:32px;text-align:center">${l.icon}</div>
-      <div style="flex:1"><div style="font-size:15px;font-weight:500">${l.nome}</div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:500">${esc(l.nome)}</div>
       <div style="font-size:12px;color:var(--tx2)">${getProdsLocal(l.id).length} itens</div></div>
       ${localBadge(l.id)}</div>`).join('');
   document.getElementById('sel-list').querySelectorAll('[data-action="local"]').forEach(el=>el.addEventListener('click',()=>goToLocal(el.dataset.lid)));
@@ -2454,7 +2461,7 @@ function renderPlano(lid){
       status==='prog'?`<span class="bdg bprog">${done}/${prods.length}</span>`:
       `<span class="bdg bpend">${prods.length} itens</span>`;
     if(i>0)h+=`<div class="sl-conn ${slStatus(lid,subs[i-1].id)==='done'?'done':''}"></div>`;
-    const slLabel=sl._parentNome?`<span style="font-size:11px;color:var(--tx2)">${sl._parentNome} ›</span> ${sl.nome}`:sl.nome;
+    const slLabel=sl._parentNome?`<span style="font-size:11px;color:var(--tx2)">${esc(sl._parentNome)} ›</span> ${esc(sl.nome)}`:esc(sl.nome);
     h+=`<div class="sl-step ${cls}" data-slid="${sl.id}" data-action="sublocal">
       ${numEl}<div style="flex:1"><div style="font-size:15px;font-weight:500">${slLabel}</div>
       <div style="font-size:12px;color:var(--tx2);margin-top:2px">${prods.length} itens${status==='prog'?` · ${done} contados`:''}</div>
@@ -2473,7 +2480,7 @@ function renderPlano(lid){
     document.getElementById('btn-revisar-plano').addEventListener('click',()=>entrarContagem(lid,firstContableSubId(lid)||null));
   } else {
     const proxSl=subs[proximoIdx]||subs[0];
-    bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp"><i class="ti ti-player-play"></i> ${totalDone>0?`Continuar · ${proxSl?.nome||''}`:`Iniciar · ${proxSl?.nome||''}`}</button>
+    bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp"><i class="ti ti-player-play"></i> ${totalDone>0?`Continuar · ${esc(proxSl?.nome||'')}`:`Iniciar · ${esc(proxSl?.nome||'')}`}</button>
       <button id="btn-pausar-plano" class="bg_">Pausar e sair</button>`;
     document.getElementById('btn-iniciar-plano').addEventListener('click',()=>entrarContagem(lid,proxSl?.id||null));
     document.getElementById('btn-pausar-plano').addEventListener('click',()=>{show('s-home');renderHome();});
@@ -2542,7 +2549,7 @@ function renderSlNav(){
   const nav=document.getElementById('sl-nav');
   nav.innerHTML=allFlat.map(sl=>{
     const st=slStatus(aLocal,sl.id);const cur=sl.id===aSublocal;
-    const label=sl._parentNome?`<span style="opacity:.6;font-size:10px">›</span> ${sl.nome}`:sl.nome;
+    const label=sl._parentNome?`<span style="opacity:.6;font-size:10px">›</span> ${esc(sl.nome)}`:esc(sl.nome);
     return `<div class="slni ${cur?'cur':st==='done'?'dn':'pn'}" data-slid="${sl.id}" data-action="slnav">${st==='done'?'<i class="ti ti-check"></i> ':''}${label}</div>`;
   }).join('');
   nav.querySelectorAll('[data-action="slnav"]').forEach(el=>el.addEventListener('click',()=>mudarSublocal(el.dataset.slid)));
@@ -2593,11 +2600,11 @@ function renderCount(){
     const spec=getSpec(aLocal,p.cod);
     const checkIco=d.touched?'<i class="ti ti-check" style="color:#639922;font-size:18px;flex-shrink:0"></i>':'';
     const slId=getVinculo(aLocal,p.cod);const slInfo=allFlat.find(s=>s.id===slId);
-    const slNomeDisplay=slInfo?(slInfo._parentNome?`${slInfo._parentNome} › ${slInfo.nome}`:slInfo.nome):null;
+    const slNomeDisplay=slInfo?esc(slInfo._parentNome?`${slInfo._parentNome} › ${slInfo.nome}`:slInfo.nome):null;
     const slTag=allFlat.length?(slInfo?`<span class="tsl">📍 ${slNomeDisplay}</span>`:'<span class="tns">Sem sublocal</span>'):'';
     const slBtn=allFlat.length&&isAdminRole()?`<button class="btn-assign" data-cod="${p.cod}" style="font-size:11px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">${slInfo?'Trocar':'Definir'}</button>`:'';
-    const specBadge=!spec?`<span class="sb-dec" style="background:#FEF3C7;color:#92400E;border-color:#FCD34D"><i class="ti ti-alert-triangle" style="font-size:10px"></i>Unidade Saipos · ${p.unidade}</span>`:spec.modo==='contador'?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${spec.embalagem} · ×${spec.fator} ${p.unidade}</span>`:`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${p.unidade}</span>`;
-    const isZeroed=d.touched&&(!spec||spec.modo==='decimal'?(d.qtyDec!==''&&parseFloat(d.qtyDec)===0):(d.qty||0)===0);
+    const specBadge=!spec?`<span class="sb-dec" style="background:#FEF3C7;color:#92400E;border-color:#FCD34D"><i class="ti ti-alert-triangle" style="font-size:10px"></i>Unidade Saipos · ${p.unidade}</span>`:spec.modo==='contador'?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${esc(spec.embalagem)} · ×${spec.fator} ${p.unidade}</span>`:`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${p.unidade}</span>`;
+    const isZeroed=d.touched&&(!spec||spec.modo==='decimal'?(d.qtyDec!==''&&pf(d.qtyDec)===0):(d.qty||0)===0);
     const zbCls=isZeroed?'zeroed':'';const zbTxt=isZeroed?'Zero ✓':'Zero';
     const hasObs=!!(d.note&&d.note.trim());
     const obsTxt=hasObs?'Obs. ✓':'+ Obs.';
@@ -2610,29 +2617,29 @@ function renderCount(){
     const fromPadraoTag=d._fromPadrao?`<span class="padrao-badge"><i class="ti ti-bookmark-filled" style="font-size:10px"></i>Pré-preenchido</span>`:'';
 
     const fotoURL=fotoSrc(d.foto);
-    const fotoBtn=fotoURL?`<img class="fthu btn-foto" data-cod="${p.cod}" src="${fotoURL}" style="width:32px;height:32px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0" alt="Foto"/>`:
+    const fotoBtn=fotoURL?`<img class="fthu btn-foto" data-cod="${p.cod}" src="${esc(fotoURL)}" style="width:32px;height:32px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0" alt="Foto"/>`:
       `<button class="ib btn-foto-opts" data-cod="${p.cod}" title="Foto" style="flex-shrink:0"><i class="ti ti-camera"></i></button>`;
     let ei='';
     if(spec&&spec.modo==='contador'){
       const qty=d.qty||0;const v=calcV(aLocal,p.cod,qty);
       ei=`<div class="cntb"><div class="cnt-row">
         <button class="cbt btn-minus" data-cod="${p.cod}">−</button>
-        <div class="cctr btn-qty-direct" data-cod="${p.cod}" title="Toque para digitar manualmente"><div class="cv" id="qty-${p.cod}">${qty}</div><div class="cu">${spec.unidContagem||spec.embalagem}</div></div>
+        <div class="cctr btn-qty-direct" data-cod="${p.cod}" title="Toque para digitar manualmente"><div class="cv" id="qty-${p.cod}">${qty}</div><div class="cu">${esc(spec.unidContagem||spec.embalagem)}</div></div>
         <button class="cbt btn-plus" data-cod="${p.cod}">+</button></div>
         <div class="ccv" id="conv-${p.cod}">${spec.fator!==1?`= ${fmtNum(v)} ${p.unidade}`:`${fmtNum(v)} ${p.unidade}`}</div></div>`;
     } else {
       const qd=d.qtyDec!==undefined&&d.qtyDec!==''?d.qtyDec:'';
       const unidLabel=spec?p.unidade:p.unidade;
       ei=`<div class="decb"><div class="decl">Quantidade em ${unidLabel}</div>
-        <div class="decr"><input class="deci inp-dec" data-cod="${p.cod}" type="number" step="0.001" min="0" placeholder="0.000" value="${qd}"/>
+        <div class="decr"><input class="deci inp-dec" data-cod="${p.cod}" type="text" inputmode="decimal" placeholder="0,000" value="${esc(qd)}"/>
         <span class="decu">${unidLabel}</span></div></div>`;
     }
     h+=`<div class="pcard ${d.touched?'done-card':''}${hasObs?' exp':''}" id="pc-${p.cod}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div style="flex:1"><div style="font-size:14px;font-weight:500">${p.nome}</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(p.nome)}</div>
         <div style="font-size:11px;color:var(--tx2);margin-top:1px">COD ${p.cod}</div>
         <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${specBadge}${subs.length?slTag+slBtn:''}${fromPadraoTag}</div></div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${checkIco}<button class="btn-rem-inline" data-cod="${p.cod}" data-nome="${p.nome.replace(/"/g,'&quot;')}" style="background:none;border:none;padding:2px 4px;cursor:pointer;color:var(--tx2);font-size:20px;line-height:1;opacity:0.4" title="Remover do local">×</button></div></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${checkIco}<button class="btn-rem-inline" data-cod="${p.cod}" data-nome="${esc(p.nome)}" style="background:none;border:none;padding:2px 4px;cursor:pointer;color:var(--tx2);font-size:20px;line-height:1;opacity:0.4" title="Remover do local">×</button></div></div>
       ${ei}
       <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap">
         <button class="zb ${zbCls} btn-zero" data-cod="${p.cod}">${zbTxt}</button>
@@ -2648,7 +2655,7 @@ function renderCount(){
           <button class="fbtn btn-cam" data-cod="${p.cod}" style="flex:1"><i class="ti ti-camera"></i> Câmera</button>
           <button class="fbtn btn-gal" data-cod="${p.cod}" style="flex:1"><i class="ti ti-photo"></i> Galeria</button>
         </div>
-        <input class="notei inp-note" data-cod="${p.cod}" placeholder="Observação (opcional)" value="${(d.note||'').replace(/"/g,'&quot;')}"/>
+        <input class="notei inp-note" data-cod="${p.cod}" placeholder="Observação (opcional)" value="${esc(d.note||'')}"/>
       </div>
     </div>`;
   });
@@ -2694,7 +2701,7 @@ function getAuditData(lid,slId){
     if(!d.touched){res.pendentes.push(p);return;}
     res.contados++;
     const isDecimal=!spec||spec.modo==='decimal';
-    const valor=isDecimal?parseFloat(d.qtyDec||0):(d.qty||0);
+    const valor=isDecimal?pf(d.qtyDec||0):(d.qty||0);
     if(valor===0)res.zerados.push(p);
     if(!fotoSrc(d.foto))res.semFoto.push(p);
     if(d.note&&d.note.trim())res.comObs.push(p);
@@ -2704,7 +2711,7 @@ function getAuditData(lid,slId){
 function auditSection(title,items,icon,color,emptyText,limit=8){
   const shown=items.slice(0,limit);
   const more=items.length>limit?`<div style="font-size:11px;color:var(--tx2);padding-top:4px">+${items.length-limit} outros itens</div>`:'';
-  const body=items.length?shown.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:.5px solid var(--bd3)"><span style="font-size:12px;color:var(--tx1)">${p.nome}</span><span style="font-size:10px;color:var(--tx2);white-space:nowrap">COD ${p.cod}</span></div>`).join('')+more:`<div style="font-size:12px;color:var(--tx2);padding-top:4px">${emptyText}</div>`;
+  const body=items.length?shown.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:.5px solid var(--bd3)"><span style="font-size:12px;color:var(--tx1)">${esc(p.nome)}</span><span style="font-size:10px;color:var(--tx2);white-space:nowrap">COD ${p.cod}</span></div>`).join('')+more:`<div style="font-size:12px;color:var(--tx2);padding-top:4px">${emptyText}</div>`;
   return `<div class="card" style="padding:10px 12px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="ti ${icon}" style="font-size:16px;color:${color}"></i><div style="font-size:13px;font-weight:500;color:var(--tx1);flex:1">${title}</div><div class="bdg" style="background:var(--bg2);color:var(--tx2)">${items.length}</div></div>${body}</div>`;
 }
 function showAuditoria(onConfirm,scope='sublocal'){
@@ -2745,7 +2752,7 @@ function renderCountBbar(prods,done){
     document.getElementById('btn-cb-salvar').addEventListener('click',()=>checkExtras(slNomeAtual,()=>runPreFinishAudit(goFinish,'local')));
   } else if(done===prods.length&&prods.length>0&&nextSl){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
-      <button id="btn-cb-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${nextSl.nome}</button>
+      <button id="btn-cb-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${esc(nextSl.nome)}</button>
       <button id="btn-cb-plano" class="bg_">Ver plano</button>`;
     document.getElementById('btn-cb-next').addEventListener('click',()=>checkExtras(slNomeAtual,()=>mudarSublocal(nextSl.id)));
     document.getElementById('btn-cb-plano').addEventListener('click',voltarAoPlano);
@@ -2784,13 +2791,13 @@ function openQtyInput(cod){
   const qty=(counts[aLocal]?.[cod]?.qty)||0;
   const spec=getSpec(aLocal,cod);
   const unid=spec?.unidContagem||spec?.embalagem||'';
-  cctr.innerHTML=`<input class="qty-input-inline" type="number" inputmode="numeric" min="0" step="1" value="${qty}" data-cod="${cod}"/><div class="cu">${unid}</div>`;
+  cctr.innerHTML=`<input class="qty-input-inline" type="number" inputmode="numeric" min="0" step="1" value="${qty}" data-cod="${cod}"/><div class="cu">${esc(unid)}</div>`;
   const inp=cctr.querySelector('input');
   inp.focus();inp.select();
   let committed=false;
   function commit(){if(committed)return;committed=true;commitQtyInput(cod,inp.value);}
   inp.addEventListener('blur',commit);
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();inp.blur();}else if(e.key==='Escape'){committed=true;const q=(counts[aLocal]?.[cod]?.qty)||0;cctr.innerHTML=`<div class="cv" id="qty-${cod}">${q}</div><div class="cu">${unid}</div>`;}});
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();inp.blur();}else if(e.key==='Escape'){committed=true;const q=(counts[aLocal]?.[cod]?.qty)||0;cctr.innerHTML=`<div class="cv" id="qty-${cod}">${q}</div><div class="cu">${esc(unid)}</div>`;}});
 }
 function commitQtyInput(cod,val){
   const n=parseInt(val,10);
@@ -2803,7 +2810,7 @@ function commitQtyInput(cod,val){
   const spec=getSpec(aLocal,cod);
   const unid=spec?.unidContagem||spec?.embalagem||'';
   const cctr=document.querySelector(`.cctr[data-cod="${cod}"]`);
-  if(cctr)cctr.innerHTML=`<div class="cv" id="qty-${cod}">${newQty}</div><div class="cu">${unid}</div>`;
+  if(cctr)cctr.innerHTML=`<div class="cv" id="qty-${cod}">${newQty}</div><div class="cu">${esc(unid)}</div>`;
   const cEl=document.getElementById('conv-'+cod);
   if(cEl){const prod=CATALOGO.find(p=>p.cod===cod);const v=calcV(aLocal,cod,newQty);
     cEl.textContent=spec&&spec.fator!==1?`= ${fmtNum(v)} ${prod?.unidade||''}`:`${fmtNum(v)} ${prod?.unidade||''}`;}
@@ -2811,17 +2818,18 @@ function commitQtyInput(cod,val){
   agendarSalvarRascunho(aLocal);
 }
 function chgDec(cod,val){
+  val=String(val??'').replace(/[^0-9.,]/g,'');
   if(!counts[aLocal])counts[aLocal]={};
   if(!counts[aLocal][cod])counts[aLocal][cod]={qty:0,qtyDec:'',note:'',touched:false,foto:null};
   counts[aLocal][cod].qtyDec=val;
   delete counts[aLocal][cod]._fromPadrao;
-  if(val!==''&&parseFloat(val)>=0){counts[aLocal][cod].touched=true;markTouched(cod);}
+  if(val!==''&&pf(val)>=0){counts[aLocal][cod].touched=true;markTouched(cod);}
   updProg();renderSlNav();
   agendarSalvarRascunho(aLocal);
 }
 function chgDecBlur(cod,val){
   if(!counts[aLocal]?.[cod])return;
-  if(val===''||isNaN(parseFloat(val)))counts[aLocal][cod].touched=false;
+  if(val===''||isNaN(pf(val)))counts[aLocal][cod].touched=false;
   else{counts[aLocal][cod].touched=true;markTouched(cod);updTopbarProgress();}
   const prods=getProdsSublocal(aLocal,aSublocal);
   const cnt=counts[aLocal]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
@@ -2852,7 +2860,7 @@ function openAssign(cod){
   const allFlat=getContableSubs(aLocal);const cur=getVinculo(aLocal,cod);
   const list=document.getElementById('assign-list');
   list.innerHTML=allFlat.map(sl=>{
-    const nomeDisplay=sl._parentNome?`<span style="color:var(--tx2);font-size:12px">${sl._parentNome} ›</span> ${sl.nome}`:sl.nome;
+    const nomeDisplay=sl._parentNome?`<span style="color:var(--tx2);font-size:12px">${esc(sl._parentNome)} ›</span> ${esc(sl.nome)}`:esc(sl.nome);
     return `<div class="row ${sl.id===cur?'row-active':''}" data-slid="${sl.id}" data-action="assign">
     <i class="ti ti-${sl._parentNome?'corner-down-right':'box'}" style="font-size:18px;color:var(--tx2)"></i>
     <div style="flex:1;font-size:14px;font-weight:500">${nomeDisplay}</div>
@@ -2879,29 +2887,29 @@ function goFinish(){
   if(!contados.length)h+='<div style="padding:12px 0;font-size:14px;color:var(--tx2)">Nenhum item contado</div>';
   else contados.forEach(p=>{
     const d=cnt[p.cod];const spec=getSpec(aLocal,p.cod);
-    const qtdTxt=spec?.modo==='contador'?`${d.qty||0} ${spec.unidContagem||'un'}`:`${d.qtyDec||0} ${p.unidade}`;
+    const qtdTxt=spec?.modo==='contador'?`${d.qty||0} ${esc(spec.unidContagem||'un')}`:`${d.qtyDec||0} ${p.unidade}`;
     const convV=spec?.modo==='contador'&&spec.fator!==1?fmtNum(calcV(aLocal,p.cod,d.qty||0)):null;
     const fotoURL=fotoSrc(d.foto);
-    const fi=fotoURL?`<img src="${fotoURL}" style="width:28px;height:28px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'<i class="ti ti-photo-off" style="color:var(--tx2);font-size:14px;opacity:.4"></i>';
-    h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fi}<span style="font-size:13px;color:var(--tx2)">${p.nome}</span></div>
+    const fi=fotoURL?`<img src="${esc(fotoURL)}" style="width:28px;height:28px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'<i class="ti ti-photo-off" style="color:var(--tx2);font-size:14px;opacity:.4"></i>';
+    h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fi}<span style="font-size:13px;color:var(--tx2)">${esc(p.nome)}</span></div>
       <div style="text-align:right"><div style="font-weight:500">${qtdTxt}</div>${convV?`<div style="font-size:11px;color:var(--acc)">= ${convV} ${p.unidade}</div>`:''}</div></div>`;
   });
   h+='</div>';
   if(prods.length-done>0){
     h+='<div class="sec">Pendentes</div><div class="card">';
-    prods.filter(p=>!cnt[p.cod]?.touched).forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${p.nome}</span><i class="ti ti-clock" style="color:#EF9F27"></i></div>`;});
+    prods.filter(p=>!cnt[p.cod]?.touched).forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${esc(p.nome)}</span><i class="ti ti-clock" style="color:#EF9F27"></i></div>`;});
     h+='</div>';
   }
   const comReposicao=prods.filter(p=>cnt[p.cod]?.reposicao);
   if(comReposicao.length){
     h+=`<div class="sec">Necessita reposição (${comReposicao.length})</div><div class="card">`;
-    comReposicao.forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${p.nome}</span><i class="ti ti-shopping-cart" style="color:#D97706"></i></div>`;});
+    comReposicao.forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${esc(p.nome)}</span><i class="ti ti-shopping-cart" style="color:#D97706"></i></div>`;});
     h+='</div>';
   }
   const comDescontinuar=prods.filter(p=>cnt[p.cod]?.descontinuar);
   if(comDescontinuar.length){
     h+=`<div class="sec" style="color:#991B1B">A descontinuar (${comDescontinuar.length})</div><div class="card">`;
-    comDescontinuar.forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${p.nome}</span><i class="ti ti-trash-x" style="color:#991B1B"></i></div>`;});
+    comDescontinuar.forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${esc(p.nome)}</span><i class="ti ti-trash-x" style="color:#991B1B"></i></div>`;});
     h+='</div>';
   }
   document.getElementById('fin-cnt').innerHTML=h;
@@ -2913,7 +2921,7 @@ function goFinish(){
     document.getElementById('btn-fin-salvar').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
     document.getElementById('btn-fin-rev').addEventListener('click',backCount);
   } else if(nextSl){
-    bbar.innerHTML=`<button id="btn-fin-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${nextSl.nome}</button>
+    bbar.innerHTML=`<button id="btn-fin-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${esc(nextSl.nome)}</button>
       <button id="btn-fin-cont" class="bs">Continuar aqui</button><button id="btn-fin-plano" class="bg_">Ver plano</button>`;
     document.getElementById('btn-fin-next').addEventListener('click',()=>entrarContagem(aLocal,nextSl.id));
     document.getElementById('btn-fin-cont').addEventListener('click',backCount);
@@ -2929,7 +2937,7 @@ function goFinish(){
 function renderSaved(){
   const l=getLocal(aLocal);const prods=getProdsLocal(aLocal);
   const cnt=counts[aLocal]||{};const done=prods.filter(p=>cnt[p.cod]?.touched).length;
-  document.getElementById('saved-sum').innerHTML=`<div class="srow"><span style="color:var(--tx2)">Local</span><span style="font-weight:500">${l.icon} ${l.nome}</span></div>
+  document.getElementById('saved-sum').innerHTML=`<div class="srow"><span style="color:var(--tx2)">Local</span><span style="font-weight:500">${esc(l.icon)} ${esc(l.nome)}</span></div>
     <div class="srow"><span style="color:var(--tx2)">Itens registrados</span><span style="font-weight:500">${done} de ${prods.length}</span></div>
     <div class="srow" style="border:none"><span style="color:var(--tx2)">Status</span><span style="color:#3B6D11;font-weight:500">✓ Salvo</span></div>`;
 }
@@ -2950,7 +2958,7 @@ function renderGestao(c){
         <div class="msh msh-clickable" data-bodyid="msb-${l.id}" data-chevid="chev-${l.id}" data-action="toggle" style="gap:8px">
           <div style="width:36px;height:36px;border-radius:8px;background:var(--bg2);border:.5px solid var(--bd3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${l.icon}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:500;color:var(--tx1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.nome}</div>
+            <div style="font-size:14px;font-weight:500;color:var(--tx1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(l.nome)}</div>
             <div style="font-size:12px;color:var(--tx2);margin-top:2px">${totalSubFlat?totalSubFlat+' sublocais':'Sem sublocais'}</div>
           </div>
           <i class="ti ti-chevron-down" id="chev-${l.id}" style="font-size:16px;color:var(--tx2);transform:rotate(180deg);transition:transform .2s;flex-shrink:0"></i>
@@ -2958,8 +2966,8 @@ function renderGestao(c){
         <div class="msb open" id="msb-${l.id}">
           <!-- v20: edição de ícone + nome no painel expandido, com auto-save no blur (melhoria 1 + 5) -->
           <div class="local-edit-row">
-            <input class="ii inp-local-icon" data-lid="${l.id}" value="${l.icon}" style="width:44px;text-align:center;font-size:18px;padding:4px;flex-shrink:0" title="Ícone do local (emoji)"/>
-            <input class="ii inp-local-nome" data-lid="${l.id}" value="${l.nome}" placeholder="Nome do local" style="font-size:14px;font-weight:500;flex:1"/>
+            <input class="ii inp-local-icon" data-lid="${l.id}" value="${esc(l.icon)}" style="width:44px;text-align:center;font-size:18px;padding:4px;flex-shrink:0" title="Ícone do local (emoji)"/>
+            <input class="ii inp-local-nome" data-lid="${l.id}" value="${esc(l.nome)}" placeholder="Nome do local" style="font-size:14px;font-weight:500;flex:1"/>
             <!-- v20: botão deletar local isolado no painel (melhoria 1) -->
             <button class="ib danger btn-del-local" data-lid="${l.id}" style="flex-shrink:0" title="Remover local"><i class="ti ti-trash"></i></button>
           </div>
@@ -2971,7 +2979,7 @@ function renderGestao(c){
             return `<div class="msr" style="flex-direction:column;align-items:stretch;padding:0">
               <div style="display:flex;align-items:center;gap:8px;padding:8px 14px 8px 32px">
                 <i class="ti ti-corner-down-right" style="font-size:13px;color:var(--tx2);flex-shrink:0"></i>
-                <input class="ii inp-sub" data-lid="${l.id}" data-slid="${sl.id}" value="${sl.nome}" style="font-size:13px"/>
+                <input class="ii inp-sub" data-lid="${l.id}" data-slid="${sl.id}" value="${esc(sl.nome)}" style="font-size:13px"/>
                 ${ssubBadge}
                 <!-- v20: botão delete de sublocal, confirmação adicionada no JS (melhoria 2) -->
                 <button class="ib danger btn-del-sub" data-lid="${l.id}" data-slid="${sl.id}" style="width:28px;height:28px" title="Remover sublocal"><i class="ti ti-trash" style="font-size:13px"></i></button>
@@ -2980,7 +2988,7 @@ function renderGestao(c){
               <div id="ssub-${sl.id}" style="display:${ssubs.length?'flex':'none'};flex-direction:column;background:var(--bg2)">
                 ${ssubs.map(ssl=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 14px 6px 48px;border-top:.5px solid var(--bd3)">
                   <i class="ti ti-corner-down-right" style="font-size:12px;color:var(--tx2);flex-shrink:0"></i>
-                  <input class="ii inp-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" value="${ssl.nome}" style="font-size:12px"/>
+                  <input class="ii inp-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" value="${esc(ssl.nome)}" style="font-size:12px"/>
                   <!-- v20: confirmação adicionada no JS (melhoria 2) -->
                   <button class="ib danger btn-del-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" style="width:26px;height:26px" title="Remover sub-sublocal"><i class="ti ti-trash" style="font-size:12px"></i></button>
                 </div>`).join('')}
@@ -3027,7 +3035,7 @@ function renderGestao(c){
   } else if(gestaoTabId==='specs'){
     h+=`<div class="sec">Selecione o local</div>
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
-        ${locais.map(l=>`<div class="chip ${gestaoSpecLocal===l.id?'on':''} btn-spec-local" data-lid="${l.id}">${l.icon} ${l.nome}</div>`).join('')}</div>`;
+        ${locais.map(l=>`<div class="chip ${gestaoSpecLocal===l.id?'on':''} btn-spec-local" data-lid="${l.id}">${esc(l.icon)} ${esc(l.nome)}</div>`).join('')}</div>`;
     const lid=gestaoSpecLocal;const prods=getProdsLocal(lid);const comSpec=prods.filter(p=>hasSpec(lid,p.cod)).length;
     h+=`<div class="sgrid"><div class="scard"><div class="slbl">Com especificação</div><div class="sval" style="color:#166634">${comSpec}</div></div>
       <div class="scard"><div class="slbl">Sem especificação</div><div class="sval" style="color:#92400E">${prods.length-comSpec}</div></div></div>
@@ -3043,10 +3051,10 @@ function renderGestao(c){
     filtrado.slice(0,40).forEach((p,i)=>{
       const spec=getSpec(lid,p.cod);const prod=CATALOGO.find(c=>c.cod===p.cod);
       const specInfo=spec?(spec.modo==='contador'?
-        `<div style="text-align:right"><div class="sb-cnt" style="display:inline-flex">${spec.embalagem}</div><div style="font-size:10px;color:var(--acc);margin-top:1px">×${spec.fator} ${prod?.unidade||''}</div></div>`:
+        `<div style="text-align:right"><div class="sb-cnt" style="display:inline-flex">${esc(spec.embalagem)}</div><div style="font-size:10px;color:var(--acc);margin-top:1px">×${spec.fator} ${prod?.unidade||''}</div></div>`:
         `<div class="sb-dec" style="display:inline-flex">Digitar ${prod?.unidade||''}</div>`):'<span class="sb-mis"><i class="ti ti-alert-circle" style="font-size:11px"></i>Sem spec</span>';
       h+=`<div class="spi" ${i===Math.min(filtrado.length,40)-1?'style="border-bottom:none"':''}>
-        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div>
         <div style="font-size:11px;color:var(--tx2)">Saipos: ${prod?.unidade||'—'}</div></div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">${specInfo}
         <button class="ib ${spec?'':'primary'} btn-edit-spec" data-lid="${lid}" data-cod="${p.cod}"><i class="ti ti-${spec?'pencil':'plus'}"></i></button></div></div>`;
@@ -3080,7 +3088,7 @@ function renderGestao(c){
           const novo=(catalogoMeta[p.cod]&&catalogoMeta[p.cod].addedAt)?'<span style="font-size:9px;font-weight:600;background:#E6F1FB;color:var(--acc);padding:1px 5px;border-radius:6px;margin-left:4px">NOVO</span>':'';
           h+=`<div class="spi">
             <label class="chk-nc-wrap" title="Não controlar este item"><input type="checkbox" class="chk-naocontrol" data-cod="${p.cod}"><span>Não contar</span></label>
-            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}${novo}</div>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}${novo}</div>
             <div style="font-size:11px;color:var(--tx2)">Saipos: ${p.cod} · ${p.unidade||'—'}</div></div>
             <button class="ib primary btn-vincular" data-cod="${p.cod}"><i class="ti ti-link"></i></button></div>`;
         });
@@ -3104,7 +3112,7 @@ function renderGestao(c){
         naoCtrl.forEach(p=>{
           h+=`<div class="spi">
             <label class="chk-nc-wrap" title="Voltar a controlar este item"><input type="checkbox" class="chk-naocontrol" data-cod="${p.cod}" checked><span>Não contar</span></label>
-            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div>
             <div style="font-size:11px;color:var(--tx2)">Saipos: ${p.cod} · ${p.unidade||'—'} · ${p.grupo||'Sem grupo'}</div></div></div>`;
         });
       }
@@ -3231,10 +3239,10 @@ function renderSpecList(lid,term){
   filtrado.slice(0,40).forEach((p,i)=>{
     const spec=getSpec(lid,p.cod);const prod=CATALOGO.find(c=>c.cod===p.cod);
     const specInfo=spec?(spec.modo==='contador'?
-      `<div style="text-align:right"><div class="sb-cnt" style="display:inline-flex">${spec.embalagem}</div><div style="font-size:10px;color:var(--acc);margin-top:1px">×${spec.fator} ${prod?.unidade||''}</div></div>`:
+      `<div style="text-align:right"><div class="sb-cnt" style="display:inline-flex">${esc(spec.embalagem)}</div><div style="font-size:10px;color:var(--acc);margin-top:1px">×${spec.fator} ${prod?.unidade||''}</div></div>`:
       `<div class="sb-dec" style="display:inline-flex">Digitar ${prod?.unidade||''}</div>`):'<span class="sb-mis"><i class="ti ti-alert-circle" style="font-size:11px"></i>Sem spec</span>';
     h+=`<div class="spi" ${i===Math.min(filtrado.length,40)-1?'style="border-bottom:none"':''}>
-      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div>
       <div style="font-size:11px;color:var(--tx2)">Saipos: ${prod?.unidade||'—'}</div></div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">${specInfo}
       <button class="ib ${spec?'':'primary'} btn-edit-spec" data-lid="${lid}" data-cod="${p.cod}"><i class="ti ti-${spec?'pencil':'plus'}"></i></button></div></div>`;
@@ -3257,7 +3265,7 @@ function editSpec(lid,cod){
 
   const header=document.createElement('div');
   header.innerHTML=`<div style="font-size:15px;font-weight:500;margin-bottom:2px">Especificação de contagem</div>
-    <div style="font-size:12px;color:var(--tx2)">${local.icon} ${local.nome} · ${prod?.nome||cod}</div>
+    <div style="font-size:12px;color:var(--tx2)">${esc(local.icon)} ${esc(local.nome)} · ${esc(prod?.nome||cod)}</div>
     <div style="font-size:11px;color:var(--tx2);margin-top:2px">Saipos: <strong>${unidade||'—'}</strong></div>`;
 
   const modoDiv=document.createElement('div');
@@ -3272,11 +3280,11 @@ function editSpec(lid,cod){
 
   const camposCnt=document.createElement('div');camposCnt.id='spec-campos-contador';camposCnt.style.display=editSpecModo==='contador'?'':'none';
   camposCnt.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px">
-    <div><div class="fl">Embalagem física</div><input id="spec-emb" class="fi" placeholder="Ex: Pote 500g, Garrafa 750ml" value="${(cur.embalagem||'').replace(/"/g,'&quot;')}"/></div>
+    <div><div class="fl">Embalagem física</div><input id="spec-emb" class="fi" placeholder="Ex: Pote 500g, Garrafa 750ml" value="${esc(cur.embalagem||'')}"/></div>
     <div style="display:flex;gap:8px">
-      <div style="flex:1"><div class="fl">Unidade de contagem</div><input id="spec-unit" class="fi" placeholder="pote, garrafa..." value="${(cur.unidContagem||'').replace(/"/g,'&quot;')}"/></div>
+      <div style="flex:1"><div class="fl">Unidade de contagem</div><input id="spec-unit" class="fi" placeholder="pote, garrafa..." value="${esc(cur.unidContagem||'')}"/></div>
       <div style="width:100px"><div class="fl">Fator (${unidade})</div><input id="spec-fator" class="fi" type="number" step="0.001" min="0.001" value="${cur.fator||1}"/></div></div>
-    <div class="cpv"><i class="ti ti-calculator"></i><span id="spec-prev-txt">1 ${cur.unidContagem||'embalagem'} = ${cur.fator||1} ${unidade}</span></div></div>`;
+    <div class="cpv"><i class="ti ti-calculator"></i><span id="spec-prev-txt">1 ${esc(cur.unidContagem||'embalagem')} = ${cur.fator||1} ${unidade}</span></div></div>`;
 
   const camposDec=document.createElement('div');camposDec.id='spec-campos-decimal';camposDec.style.display=editSpecModo==='decimal'?'':'none';
   camposDec.innerHTML=`<div><div class="fl">Descrição (opcional)</div><input id="spec-desc" class="fi" placeholder="Ex: Pesado na balança" value="${(cur.descricao||'').replace(/"/g,'&quot;')}"/></div>
@@ -3319,7 +3327,7 @@ function updatePreview(unidade){
 // Lê o valor já contado de um item no rascunho (local + nuvem), interpretando pelo modo ANTIGO
 async function valorContadoExistente(lid,cod,oldIsDecimal){
   let valor=0,fonte=null;
-  const lerVal=o=>oldIsDecimal?(parseFloat(o.qtyDec)||0):(Number(o.qty)||0);
+  const lerVal=o=>oldIsDecimal?(pf(o.qtyDec)||0):(Number(o.qty)||0);
   const lc=counts[lid]&&counts[lid][cod];
   if(lc&&lc.touched){const v=lerVal(lc);if(v>0){valor=v;fonte='local';}}
   if(firebaseReady&&currentUser){
@@ -3340,7 +3348,7 @@ async function migrarValorPorModo(lid,cod,novoIsDecimal){
       if(v>0)o.qtyDec=String(v);
       o.qty=0;
     } else { // decimal -> contador: número vai para qty
-      const v=parseFloat(o.qtyDec);
+      const v=pf(o.qtyDec);
       o.qty=isNaN(v)?0:v;
       o.qtyDec='';
     }
@@ -3414,9 +3422,9 @@ function renderMgrRemover(){
   if(!prods.length){el.innerHTML='<div class="empty" style="padding:20px 0"><span>Nenhum item</span></div>';return;}
   el.innerHTML=prods.map(p=>{
     const spec=getSpec(aLocal,p.cod);const prod=CATALOGO.find(c=>c.cod===p.cod);
-    const specTxt=spec?(spec.modo==='contador'?`${spec.embalagem} ×${spec.fator}`:`Digitar ${prod?.unidade||''}`):'Sem especificação';
+    const specTxt=spec?(spec.modo==='contador'?`${esc(spec.embalagem)} ×${spec.fator}`:`Digitar ${prod?.unidade||''}`):'Sem especificação';
     return `<div style="background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:11px 14px;display:flex;align-items:center;gap:10px">
-      <div style="flex:1"><div style="font-size:13px;font-weight:500">${p.nome}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${esc(p.nome)}</div>
       <div style="font-size:11px;color:${spec?'#166534':'#92400E'}">${specTxt}</div></div>
       <button class="ib danger btn-rem-item" data-cod="${p.cod}"><i class="ti ti-trash"></i></button></div>`;
   }).join('');
@@ -3434,8 +3442,8 @@ function renderMgrAdicionar(q){
   list.innerHTML=res.map(p=>{
     const jaTem=jaNoLocal.has(p.cod);const spec=getSpec(aLocal,p.cod);
     return `<div style="background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:10px 14px;display:flex;align-items:center;gap:10px">
-      <div style="flex:1"><div style="font-size:13px;font-weight:500">${p.nome}</div>
-      <div style="font-size:11px;color:${spec?'#166534':'#92400E'}">${spec?(spec.modo==='contador'?spec.embalagem:`Digitar ${p.unidade}`):'Sem especificação'} · ${p.grupo}</div></div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${esc(p.nome)}</div>
+      <div style="font-size:11px;color:${spec?'#166534':'#92400E'}">${spec?(spec.modo==='contador'?esc(spec.embalagem):`Digitar ${p.unidade}`):'Sem especificação'} · ${p.grupo}</div></div>
       ${jaTem?'<span style="font-size:11px;color:#639922"><i class="ti ti-check"></i> Já está</span>':`<button class="ib primary btn-add-item" data-cod="${p.cod}"><i class="ti ti-plus"></i></button>`}</div>`;
   }).join('');
   list.querySelectorAll('.btn-add-item').forEach(e=>e.addEventListener('click',()=>adicionarItem(e.dataset.cod)));
@@ -3519,7 +3527,7 @@ function analisarBaseSaipos(){
   const semGrupo=ativos.filter(x=>!x.grupo);
   _basePreview={ativos,novos,removidosDesc,sumidos,alterados,semGrupo};
   st.style.color='var(--tx2)';st.textContent=`Lidos ${norm.length} itens (${ativos.length} ativos, ${descSet.size} descontinuados).`;
-  const li=(a,max=15)=>a.slice(0,max).map(p=>`<div style="font-size:11px;color:var(--tx2);padding:1px 0">${p.cod} · ${p.nome}</div>`).join('')+(a.length>max?`<div style="font-size:11px;color:var(--tx2);opacity:.7">+${a.length-max} mais</div>`:'');
+  const li=(a,max=15)=>a.slice(0,max).map(p=>`<div style="font-size:11px;color:var(--tx2);padding:1px 0">${p.cod} · ${esc(p.nome)}</div>`).join('')+(a.length>max?`<div style="font-size:11px;color:var(--tx2);opacity:.7">+${a.length-max} mais</div>`:'');
   let r=`<div class="sgrid" style="margin-top:4px">
     <div class="scard"><div class="slbl">Novos</div><div class="sval" style="color:var(--acc)">${novos.length}</div></div>
     <div class="scard"><div class="slbl">Remover</div><div class="sval" style="color:#ff3b30">${removidosDesc.length+sumidos.length}</div></div>
@@ -3557,7 +3565,7 @@ function abrirVincular(cod){
   _vincCod=cod;
   document.getElementById('vinc-item').textContent=`${prod.nome} · ${prod.grupo||'sem grupo'} · ${prod.unidade||''}`;
   const selL=document.getElementById('vinc-local');
-  selL.innerHTML=locais.map(l=>`<option value="${l.id}">${l.icon} ${l.nome}</option>`).join('');
+  selL.innerHTML=locais.map(l=>`<option value="${l.id}">${esc(l.icon)} ${esc(l.nome)}</option>`).join('');
   preencherVincSubs(locais[0]?.id);
   selL.onchange=()=>preencherVincSubs(selL.value);
   document.getElementById('modal-vincular').classList.add('on');
@@ -3565,7 +3573,7 @@ function abrirVincular(cod){
 function preencherVincSubs(lid){
   const sel=document.getElementById('vinc-sub');
   const subs=getContableSubs(lid)||[];
-  sel.innerHTML=`<option value="">— Sem sublocal —</option>`+subs.map(s=>`<option value="${s.id}">${s._parentNome?s._parentNome+' › ':''}${s.nome}</option>`).join('');
+  sel.innerHTML=`<option value="">— Sem sublocal —</option>`+subs.map(s=>`<option value="${s.id}">${s._parentNome?esc(s._parentNome)+' › ':''}${esc(s.nome)}</option>`).join('');
 }
 function vincularItem(){
   if(!_vincCod||!isAdminRole())return;
@@ -3714,7 +3722,7 @@ function getListaCompras(){
       const prod=CATALOGO.find(p=>p.cod===cod);if(!prod)return;
       prodByCod[cod]=prod;tocados[cod]=true;
       const spec=getSpec(lid,cod);
-      const v=(spec&&spec.modo==='contador')?calcV(lid,cod,d.qty||0):(parseFloat(d.qtyDec)||0);
+      const v=(spec&&spec.modo==='contador')?calcV(lid,cod,d.qty||0):(pf(d.qtyDec)||0);
       totais[cod]=(totais[cod]||0)+v;
       if(d.reposicao)comprar[cod]=true;
     });
@@ -3790,10 +3798,10 @@ function renderConsolidado(c){
 
   let statusDetalhes='';
   if(locaisEmAndamento.length){
-    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span style="font-size:11px;font-weight:500;color:#633806">Em andamento:</span><span style="font-size:11px;color:#633806">${locaisEmAndamento.map(l=>l.icon+' '+l.nome).join(', ')}</span></div>`;
+    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span style="font-size:11px;font-weight:500;color:#633806">Em andamento:</span><span style="font-size:11px;color:#633806">${esc(locaisEmAndamento.map(l=>l.icon+' '+l.nome).join(', '))}</span></div>`;
   }
   if(locaisPendentes.length&&!tudo){
-    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:11px;font-weight:500;color:var(--tx2)">Pendentes:</span><span style="font-size:11px;color:var(--tx2)">${locaisPendentes.map(l=>l.icon+' '+l.nome).join(', ')}</span></div>`;
+    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:11px;font-weight:500;color:var(--tx2)">Pendentes:</span><span style="font-size:11px;color:var(--tx2)">${esc(locaisPendentes.map(l=>l.icon+' '+l.nome).join(', '))}</span></div>`;
   }
 
   // Card de fechamento (confirmação do Gestor)
@@ -3825,8 +3833,8 @@ function renderConsolidado(c){
   Object.entries(counts).forEach(([lid,ps])=>{Object.entries(ps).forEach(([cod,d])=>{
     if(!d.touched)return;const prod=CATALOGO.find(p=>p.cod===cod);if(!prod)return;
     const spec=getSpec(lid,cod);let v=0;
-    if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);else v=parseFloat(d.qtyDec)||0;
-    const lbl=spec?.modo==='contador'?`${d.qty||0} ${spec.unidContagem||'un'}`:`${d.qtyDec||0} ${prod.unidade}`;
+    if(spec&&spec.modo==='contador')v=calcV(lid,cod,d.qty||0);else v=pf(d.qtyDec)||0;
+    const lbl=spec?.modo==='contador'?`${d.qty||0} ${esc(spec.unidContagem||'un')}`:`${d.qtyDec||0} ${prod.unidade}`;
     if(!totais[prod.nome])totais[prod.nome]={unidade:prod.unidade,total:0,locais:[],foto:null};
     totais[prod.nome].total+=v;totais[prod.nome].locais.push(`${lid}: ${lbl}`);
     if(d.foto)totais[prod.nome].foto=fotoSrc(d.foto);
@@ -3836,10 +3844,10 @@ function renderConsolidado(c){
   let h=hHeader+`<div class="sec">${entries.length} itens contados</div><div class="card">`;
   entries.forEach(([nome,d])=>{
     const fotoURL=fotoSrc(d.foto);
-    const fEl=fotoURL?`<img src="${fotoURL}" style="width:36px;height:36px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'';
+    const fEl=fotoURL?`<img src="${esc(fotoURL)}" style="width:36px;height:36px;border-radius:var(--r2);object-fit:cover" alt="foto"/>`:'';
     h+=`<div class="srow"><div style="display:flex;align-items:center;gap:8px">${fEl}
-      <div><div style="font-size:13px;font-weight:500">${nome}</div>
-      <div style="font-size:11px;color:var(--tx2)">${d.locais.join(' · ')}</div></div></div>
+      <div><div style="font-size:13px;font-weight:500">${esc(nome)}</div>
+      <div style="font-size:11px;color:var(--tx2)">${esc(d.locais.join(' · '))}</div></div></div>
       <div style="text-align:right"><div style="font-size:15px;font-weight:500;color:var(--acc)">${fmtNum(d.total)}</div>
       <div style="font-size:11px;color:var(--tx2)">${d.unidade}</div></div></div>`;
   });
@@ -3859,7 +3867,7 @@ function renderConsolidado(c){
       if(motivos.has('zerado'))tags.push(`<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);border:.5px solid var(--bd3);font-weight:500">Zero</span>`);
       h+=`<div class="srow" style="padding:10px 14px;border-bottom:.5px solid var(--bd3)">
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prod.nome}</div>
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(prod.nome)}</div>
           <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">${tags.join('')}</div>
         </div>
         <div style="font-size:11px;color:var(--tx2);padding-left:8px;flex-shrink:0">${prod.unidade}</div>
@@ -3880,7 +3888,7 @@ function renderConsolidado(c){
     listaDescontinuar.forEach(({prod,locais})=>{
       h+=`<div class="srow" style="padding:10px 14px;border-bottom:.5px solid var(--bd3)">
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prod.nome}</div>
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(prod.nome)}</div>
           <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap"><span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#FEE2E2;color:#991B1B;border:.5px solid #FCA5A5;font-weight:500">✕ Descontinuar</span></div>
         </div>
         <div style="font-size:11px;color:var(--tx2);padding-left:8px;flex-shrink:0">${prod.unidade}</div>
@@ -4090,7 +4098,7 @@ function renderHistorico(c){
         h+=`<div class="hist-entry" data-hist-id="${e.id}" style="background:#F0F7E8;border:.5px solid #C0DD97">
           <div style="font-size:24px;width:36px;text-align:center">🏁</div>
           <div style="flex:1">
-            <div style="font-size:15px;font-weight:600;color:#27500A">${e.nome||'Contagem final'}</div>
+            <div style="font-size:15px;font-weight:600;color:#27500A">${esc(e.nome||'Contagem final')}</div>
             <div style="font-size:12px;color:#3B6D11;margin-top:2px">${linhaSub}</div>
           </div>
           <span class="hist-badge">Final</span><i class="ti ti-chevron-right" style="color:var(--tx2);font-size:16px"></i></div>`;
@@ -4099,9 +4107,9 @@ function renderHistorico(c){
       const completo=e.totalContados>=e.totalItens;
       const badge=completo?`<span class="hist-badge">✓ Completo</span>`:`<span class="hist-badge-partial">${e.totalContados}/${e.totalItens}</span>`;
       h+=`<div class="hist-entry" data-hist-id="${e.id}">
-        <div style="font-size:26px;width:36px;text-align:center">${e.localIcon||'📦'}</div>
+        <div style="font-size:26px;width:36px;text-align:center">${esc(e.localIcon||'📦')}</div>
         <div style="flex:1">
-          <div style="font-size:15px;font-weight:500">${e.localNome||e.local}</div>
+          <div style="font-size:15px;font-weight:500">${esc(e.localNome||e.local)}</div>
           <div style="font-size:12px;color:var(--tx2);margin-top:2px">${hora} · ${e.totalContados} de ${e.totalItens} itens</div>
         </div>
         ${badge}<i class="ti ti-chevron-right" style="color:var(--tx2);font-size:16px"></i></div>`;
@@ -4153,17 +4161,17 @@ function abrirDetalheHistorico(entry){
       if(spec?.modo==='decimal'){qtdTxt=`${d.qtyDec||0} ${p.unidade}`;}
       else if(spec?.modo==='contador'){
         const conv=spec.fator!==1?` = ${fmtNum((d.qty||0)*spec.fator)} ${p.unidade}`:'';
-        qtdTxt=`${d.qty||0} ${spec.unidContagem||'un'}${conv}`;
+        qtdTxt=`${d.qty||0} ${esc(spec.unidContagem||'un')}${conv}`;
       }else{qtdTxt=`${d.qty||0} un`;}
-      const noteEl=d.note?`<div style="font-size:11px;color:var(--acc);margin-top:2px"><i class="ti ti-note" style="font-size:11px"></i> ${d.note}</div>`:'';
-      h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${p.nome}${noteEl}</span>
+      const noteEl=d.note?`<div style="font-size:11px;color:var(--acc);margin-top:2px"><i class="ti ti-note" style="font-size:11px"></i> ${esc(d.note)}</div>`:'';
+      h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${esc(p.nome)}${noteEl}</span>
         <span style="font-size:13px;font-weight:500;text-align:right;white-space:nowrap">${qtdTxt}</span></div>`;
     });
     h+='</div>';
   }
   if(pendentes.length){
     h+='<div class="sec">Não contados</div><div class="card">';
-    pendentes.forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${p.nome}</span><i class="ti ti-clock" style="color:#EF9F27"></i></div>`;});
+    pendentes.forEach(p=>{h+=`<div class="srow"><span style="font-size:13px;color:var(--tx2)">${esc(p.nome)}</span><i class="ti ti-clock" style="color:#EF9F27"></i></div>`;});
     h+='</div>';
   }
   body.innerHTML=h;
@@ -4197,7 +4205,7 @@ function abrirDetalheContagemFinal(entry){
     if(!arr.length)return '';
     let b=`<div class="sec">${titulo} · ${arr.length}</div><div class="card">`;
     arr.forEach(i=>{
-      b+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${i.nome}</span>
+      b+=`<div class="srow"><span style="font-size:13px;color:var(--tx2);flex:1;padding-right:8px">${esc(i.nome)}</span>
         <span style="font-size:13px;font-weight:500;${cor||''}white-space:nowrap">${fmtNum(i.total)} ${i.unidade}</span></div>`;
     });
     return b+'</div>';
@@ -4220,7 +4228,7 @@ function abrirDetalheContagemFinal(entry){
       if((i.motivos||[]).includes('comprar'))tags.push('<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#FEF3C7;color:#92400E;border:.5px solid #FCD34D;font-weight:500">🛒 Comprar</span>');
       if((i.motivos||[]).includes('zerado'))tags.push('<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);border:.5px solid var(--bd3);font-weight:500">Zero</span>');
       h+=`<div class="srow" style="padding:10px 14px;border-bottom:.5px solid var(--bd3)">
-        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${i.nome}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${esc(i.nome)}</div>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">${tags.join('')}</div></div>
         <div style="font-size:11px;color:var(--tx2);padding-left:8px;flex-shrink:0">${i.unidade}</div></div>`;
     });
@@ -4232,8 +4240,8 @@ function abrirDetalheContagemFinal(entry){
     h+=`<div class="sec" style="color:#991B1B">✕ Itens a descontinuar · ${descont.length}</div><div class="card" style="padding:0;overflow:hidden">`;
     descont.forEach(i=>{
       h+=`<div class="srow" style="padding:10px 14px;border-bottom:.5px solid var(--bd3)">
-        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${i.nome}</div>
-        ${(i.locais&&i.locais.length)?`<div style="font-size:11px;color:var(--tx2);margin-top:2px">${i.locais.join(', ')}</div>`:''}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${esc(i.nome)}</div>
+        ${(i.locais&&i.locais.length)?`<div style="font-size:11px;color:var(--tx2);margin-top:2px">${esc(i.locais.join(', '))}</div>`:''}</div>
         <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#FEE2E2;color:#991B1B;border:.5px solid #FCA5A5;font-weight:500;flex-shrink:0">✕ Descontinuar</span></div>`;
     });
     h+=`</div><button id="hist-final-copy-desc" class="bs" style="display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-clipboard-copy"></i> Copiar lista</button>`;
