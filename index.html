@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v74</title>
+<title>Estoque Gesto v75</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -279,7 +279,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v74</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v75</span></span></div>
   </div>
 </div>
 
@@ -1079,6 +1079,7 @@ let CATALOGO=[
 {cod:"6005327",nome:"SACO KRAFT P 5KG 500UN",grupo:"Embalagens",unidade:"UN"},
 {cod:"6016108",nome:"QUEIJO COLONIAL",grupo:"Lácteos",unidade:"KG"},
 {cod:"6108520",nome:"BASE BRANCA CAIXA DE PIZZA MICROONDULADO 30X30CM",grupo:"Embalagens",unidade:"UN"},
+{cod:"6168306",nome:"ARANCINI OSSOBUCO CONGELADO",grupo:"Processados Cozinha",unidade:"PÇ"},
 ];
 const BASE={
 "Bar":["5265054", "5265104", "5352691", "5265141", "5362183", "5265313", "5265076", "5265081", "5265082", "5265083", "5265129", "5265135", "5265136", "5265137", "5265138", "5265139", "5265150", "5265170", "5265171", "5265237", "5265251", "5265253", "5265254", "5265261", "5265262", "5265264", "5265275", "5265276", "5265277", "5375544", "5265278", "5265279", "5265280", "5265281", "5265304", "5265331", "5265347", "5265361", "5265395", "5265396", "5265397", "5265398", "5265426", "5265427", "5265454", "5265455", "5265467", "5265468", "5265469", "5265470", "5265489", "5265490", "5265491", "5727126", "5265492", "5265493", "5265494", "5265495", "5265496", "5265175", "5265176", "5265203", "5265256", "5265257", "5265425", "5265430", "5265460", "5265461", "5265061", "5265063", "5265066", "5265163", "5265172", "5265162", "5265152", "5265364", "5265271", "5265222", "5265268", "5265284", "5265317", "5265174", "5265185", "5265187", "5265188", "5265189", "5265190", "5265191", "5265192", "5265194", "5265195", "5265196", "5265197", "5265198", "5265358", "5265360", "5265400", "5265451", "5265438", "5265439", "5265444", "5265445", "5265446", "5265497", "5602089", "5602092", "5463591", "5513567", "5463601", "5463602", "5463603", "5463605", "5463606", "5463626", "5576773", "5463625", "5463629", "5463627", "5463628", "5463630", "5265067", "5265217", "5265229", "5265161", "5265155"],
@@ -1111,8 +1112,8 @@ const SK_HIST='app-estoque-gesto-v2-hist';
 const SK_CAT='app-estoque-gesto-catalogo-v1';
 const CATALOGO_DOC='cfg_catalogo'; // catálogo global: admin atualiza pelo Saipos, todos leem
 const CATALOGO_BASE=CATALOGO.map(x=>({...x})); // snapshot original embutido (fallback)
-let catalogoMeta=(()=>{const n=["5988783","6005327","6016108","6108520"],t=Date.now(),m={};n.forEach(c=>m[c]={addedAt:t});return m;})(); // { cod: { addedAt } } — marca itens novos para o selo
-let catalogoUpdatedAt=new Date(2026,5,26).getTime();  // timestamp da última atualização pelo Saipos (carga inicial 30/05/2026)
+let catalogoMeta=(()=>{const n=["6168306"],t=Date.now(),m={};n.forEach(c=>m[c]={addedAt:t});return m;})(); // { cod: { addedAt } } — marca itens novos para o selo
+let catalogoUpdatedAt=new Date(2026,5,26,19,22).getTime();  // timestamp da última atualização pelo Saipos (carga inicial 30/05/2026)
 function aplicarCatalogo(arr,meta,updatedAt){
   if(Array.isArray(arr)&&arr.length){
     CATALOGO=arr.map(x=>({cod:String(x.cod),nome:x.nome||'',grupo:x.grupo||'',unidade:x.unidade||''}));
@@ -1229,7 +1230,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v74';
+const APP_VERSION = 'v75';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
