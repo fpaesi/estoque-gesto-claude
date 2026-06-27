@@ -14,6 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <style>*{box-sizing:border-box;margin:0;padding:0}:root{--bg1:#fff;--bg2:#f5f5f7;--bg3:#e8e8ed;--tx1:#1c1c1e;--tx2:#6c6c70;--bd3:#d1d1d6;--r1:12px;--r2:8px}@media(prefers-color-scheme:dark){:root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--tx1:#fff;--tx2:#98989d;--bd3:#38383a}}html,body{height:100%;background:var(--bg3);font-family:-apple-system,BlinkMacSystemFont,sans-serif}#app{max-width:430px;margin:0 auto;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;position:relative}.scr{display:none;flex-direction:column;flex:1;min-height:100vh}.scr.on{display:flex}.topbar{background:var(--bg1);border-bottom:.5px solid var(--bd3);padding:13px 16px 11px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}.tt{font-size:17px;font-weight:500;color:var(--tx1)}.ts{font-size:12px;color:var(--tx2);margin-top:1px}.tbtn{background:none;border:none;cursor:pointer;color:var(--tx2);font-size:22px;display:flex;align-items:center;padding:4px}.content{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.bbar{background:var(--bg1);border-top:.5px solid var(--bd3);padding:10px 14px 20px;display:flex;flex-direction:column;gap:7px;flex-shrink:0}.bp{width:100%;padding:13px;border-radius:var(--r1);background:var(--acc);color:#E6F1FB;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}.bp:active{opacity:.85}.bp:disabled{opacity:.4}.bs{width:100%;padding:10px;border-radius:var(--r1);background:var(--bg2);color:var(--tx1);border:.5px solid var(--bd3);font-size:14px;cursor:pointer}.bg_{width:100%;padding:10px;background:none;color:var(--tx2);border:none;font-size:14px;cursor:pointer}.sec{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 2px}.row{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.row:active{background:var(--bg2)}.bdg{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}.bdone{background:#EAF3DE;color:#27500A}.bprog{background:#FAEEDA;color:#633806}.bpend{background:var(--bg2);color:var(--tx2)}.bwarn{background:#FEF3C7;color:#92400E}.ntabs{display:flex;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0}.ntab{flex:1;padding:11px 6px;font-size:12px;font-weight:500;color:var(--tx2);text-align:center;cursor:pointer;border-bottom:2px solid transparent}.ntab.on{color:var(--acc);border-bottom-color:var(--acc)}.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{display:inline-flex;align-items:center;padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx2);white-space:nowrap}.chip.on{background:var(--acc);color:#E6F1FB;border-color:var(--acc)}.srch{width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none}.srch:focus{border-color:var(--acc)}.pcard{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:10px}.pcard.done-card{border-color:#C0DD97}.cntb{display:flex;flex-direction:column;background:var(--bg2);border-radius:var(--r2);overflow:hidden}.cnt-row{display:flex;align-items:center}.cbt{width:52px;height:52px;border:none;background:var(--bg2);color:var(--tx1);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;flex-shrink:0}.cbt:active{background:var(--bg3)}.cctr{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}.cctr:active{opacity:.7}.cv{font-size:30px;font-weight:600;color:var(--tx1);line-height:1;border-bottom:1.5px dashed var(--bd3)}.cu{font-size:12px;color:var(--tx2);font-weight:500}.qty-input-inline{width:80px;font-size:30px;font-weight:600;color:var(--tx1);background:none;border:none;border-bottom:1.5px solid var(--acc);outline:none;text-align:center;font-family:inherit;line-height:1;-moz-appearance:textfield}.qty-input-inline::-webkit-inner-spin-button,.qty-input-inline::-webkit-outer-spin-button{-webkit-appearance:none}.ccv{font-size:13px;color:var(--acc);font-weight:500;text-align:center;padding:7px 12px;border-top:.5px solid var(--bd3);background:var(--bg1)}.decb{background:var(--bg2);border-radius:var(--r2);overflow:hidden}.decl{font-size:11px;font-weight:500;color:var(--tx2);padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.04em}.decr{display:flex;align-items:center}.deci{flex:1;font-size:28px;font-weight:600;color:var(--tx1);padding:6px 12px 10px;background:none;border:none;outline:none;font-family:inherit;min-width:0}.decu{font-size:14px;font-weight:500;color:var(--tx2);padding-right:14px;white-space:nowrap}.sb-cnt{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#F0FDF4;color:#166534;border:.5px solid #BBF7D0;font-weight:500}.sb-dec{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;font-weight:500}.sb-mis{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:8px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;font-weight:500}.notei{width:100%;font-size:13px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;height:33px;outline:none}.progr{display:flex;align-items:center;gap:10px}.progt{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}.progf{height:100%;background:var(--acc);border-radius:3px;transition:width .3s}.progp{font-size:12px;color:var(--tx2);white-space:nowrap}.gsep{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 4px;border-bottom:.5px solid var(--bd3);margin-bottom:2px}.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd3)}.srow:last-child{border-bottom:none}.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scard{background:var(--bg2);border-radius:var(--r2);padding:11px 12px}.slbl{font-size:11px;color:var(--tx2);margin-bottom:3px}.sval{font-size:20px;font-weight:500;color:var(--tx1)}.card{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px}.syncr{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);justify-content:center}.syncd{width:7px;height:7px;border-radius:50%;background:#639922}.av{width:28px;height:28px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#0C447C}.uc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}.empty{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:10px;color:var(--tx2);font-size:14px;text-align:center}.fthu{width:52px;height:52px;border-radius:var(--r2);object-fit:cover;border:.5px solid var(--bd3);cursor:pointer;flex-shrink:0}.fthp{width:52px;height:52px;border-radius:var(--r2);border:.5px dashed var(--bd3);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--tx2)}.fbtn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:12px;cursor:pointer;font-family:inherit}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center}.modal-bg.on{display:flex}.modal-box{background:var(--bg1);border-radius:var(--r1);padding:16px;width:92%;max-width:380px;display:flex;flex-direction:column;gap:12px;border:.5px solid var(--bd3);max-height:90vh;overflow:hidden}.sl-step{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer}.sl-step.done{border-color:#C0DD97}.sl-step.active{border-color:var(--acc)}.sl-sn{width:32px;height:32px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--tx2);flex-shrink:0}.sl-step.done .sl-sn{background:#EAF3DE;color:#27500A}.sl-step.active .sl-sn{background:var(--acc);color:#E6F1FB}.sl-conn{width:2px;height:12px;background:var(--bd3);margin-left:29px}.sl-conn.done{background:#C0DD97}.slnav{background:var(--bg2);border-bottom:.5px solid var(--bd3);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}.slnav::-webkit-scrollbar{display:none}.slni{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:.5px solid transparent}.slni.cur{background:var(--bg1);border-color:var(--acc);color:var(--acc)}.slni.dn{color:#639922}.slni.pn{color:var(--tx2)}.ms{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden}.msh{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.msb{display:none;flex-direction:column;border-top:.5px solid var(--bd3)}.msb.open{display:flex}.msr{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.msa{padding:10px 14px 10px 48px;display:flex;align-items:center;gap:8px;border-top:.5px solid var(--bd3)}.ib{width:44px;height:44px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--tx2);flex-shrink:0}.ib.danger{border-color:#ff3b30;background:#fff5f5;color:#ff3b30}.ib.primary{border-color:var(--acc);background:var(--acc-bg);color:var(--acc)}.ii{flex:1;font-size:13px;padding:6px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.ii:focus{border-color:var(--acc)}.tsl{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--acc-bg);color:var(--acc-tx);font-weight:500;white-space:nowrap}.tns{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);font-weight:500}.wb{background:#FEF3C7;border-radius:var(--r1);border:.5px solid #FDE68A;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}.spi{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--bd3)}.spi:last-child{border-bottom:none}.chk-nc-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;user-select:none;width:50px}.chk-nc-wrap input{width:20px;height:20px;cursor:pointer;accent-color:var(--acc);margin:0}.chk-nc-wrap span{font-size:9px;color:var(--tx2);line-height:1;text-align:center}.mto{display:flex;background:var(--bg2);border-radius:var(--r2);overflow:hidden;border:.5px solid var(--bd3)}.mo{flex:1;padding:9px 8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;color:var(--tx2);border:none;background:none;font-family:inherit}.mo.on{background:var(--bg1);color:var(--tx1);box-shadow:0 1px 3px rgba(0,0,0,.08)}.fl{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}.fi{width:100%;font-size:14px;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none;font-family:inherit}.fi:focus{border-color:var(--acc)}.cpv{background:var(--acc-bg);border-radius:var(--r2);padding:10px 12px;font-size:13px;color:var(--acc-tx);display:flex;align-items:center;gap:6px}.tipb{font-size:11px;color:var(--tx2);background:var(--bg2);padding:8px 10px;border-radius:var(--r2);line-height:1.5}.bbtn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r1);border:.5px solid var(--bd3);background:var(--bg1);cursor:pointer;font-family:inherit;width:100%;text-align:left}.bbtn:active{opacity:.85}.card-extra{display:none;flex-direction:column;gap:8px;border-top:.5px solid var(--bd3);padding-top:8px;margin-top:4px}.pcard.exp .card-extra{display:flex}.zb{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}.zb.zeroed{background:var(--acc-bg);color:var(--acc);border-color:var(--acc-bd)}.repob{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}.repob.active{background:#FEF3C7;color:#92400E;border-color:#FCD34D}.descob{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}.descob.active{background:#FEE2E2;color:#991B1B;border-color:#FCA5A5}
 .padb{padding:4px 10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}.padb.active{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE}
 .padrao-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 7px;border-radius:8px;background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;font-weight:500}
@@ -304,7 +305,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v76</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v80</span></span></div>
   </div>
 </div>
 
@@ -532,7 +533,11 @@
     </div>
     <div>
       <div class="fl">Senha temporária</div>
-      <input id="nu-pwd" class="fi" type="text" placeholder="mínimo 6 caracteres" autocomplete="off"/>
+      <div style="display:flex;gap:6px">
+        <input id="nu-pwd" class="fi" type="text" placeholder="mínimo 6 caracteres" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="flex:1;min-width:0"/>
+        <button class="bs" id="nu-genpwd" type="button" title="Gerar senha" style="flex-shrink:0;width:44px;padding:0"><i class="ti ti-dice-5"></i></button>
+      </div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:4px">O usuário será obrigado a trocar a senha no primeiro acesso.</div>
     </div>
     <div>
       <div class="fl">Nível de acesso</div>
@@ -540,6 +545,11 @@
         <button class="mo" id="nu-role-admin" data-role="admin">Administrador</button>
         <button class="mo on" id="nu-role-contador" data-role="contador_conferente">Contador/Conferente</button>
       </div>
+    </div>
+    <div id="nu-tabs-wrap">
+      <div class="fl">Abas liberadas para este contador</div>
+      <div id="nu-tabs" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:4px">Administradores sempre veem todas as abas.</div>
     </div>
     <div class="tipb">
       <strong>Administrador:</strong> acesso total, usuários, cadastros, fechamento e exportação<br>
@@ -562,6 +572,42 @@
       <button id="gu-fechar" class="tbtn"><i class="ti ti-x"></i></button>
     </div>
     <div id="gu-body"></div>
+  </div>
+</div>
+
+<!-- v80: menu do usuário logado -->
+<div class="modal-bg" id="modal-user-menu">
+  <div class="modal-box" style="gap:10px">
+    <div style="font-size:15px;font-weight:500" id="um-nome">Minha conta</div>
+    <div style="font-size:12px;color:var(--tx2);margin-top:-4px" id="um-login"></div>
+    <button class="bs" id="um-troca" style="width:100%;margin-top:6px"><i class="ti ti-key"></i> Alterar minha senha</button>
+    <button class="bs" id="um-sair" style="width:100%;color:#ff3b30;border-color:#ffb3ad"><i class="ti ti-logout"></i> Sair da conta</button>
+    <button class="bg_" id="um-cancel" style="width:100%;padding:11px;border-radius:var(--r1);background:var(--bg2);border:.5px solid var(--bd3);color:var(--tx2)">Cancelar</button>
+  </div>
+</div>
+
+<!-- v80: troca de senha (self-service e troca obrigatória) -->
+<div class="modal-bg" id="modal-troca-senha">
+  <div class="modal-box" style="gap:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:15px;font-weight:500" id="ts-titulo">Alterar senha</div>
+      <button id="ts-fechar" class="tbtn"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="ts-aviso" style="font-size:13px;color:var(--tx2);line-height:1.5"></div>
+    <div>
+      <div class="fl">Senha atual</div>
+      <input id="ts-atual" class="fi" type="password" placeholder="Senha atual" autocomplete="off"/>
+    </div>
+    <div>
+      <div class="fl">Nova senha (mín. 6 caracteres)</div>
+      <input id="ts-nova" class="fi" type="password" placeholder="Nova senha" autocomplete="off"/>
+    </div>
+    <div>
+      <div class="fl">Confirmar nova senha</div>
+      <input id="ts-conf" class="fi" type="password" placeholder="Repita a nova senha" autocomplete="off"/>
+    </div>
+    <div id="ts-status" style="font-size:12px;color:#ff3b30;min-height:16px"></div>
+    <button class="bp" id="ts-salvar" style="width:100%"><i class="ti ti-device-floppy"></i> Salvar nova senha</button>
   </div>
 </div>
 
@@ -1125,7 +1171,16 @@ let aLocal=null,aSublocal=null,aGrupo='todos',sTerm='';
 let aScope=null;
 let counts={},homeTabId='locais',pendingCod=null,pendingLocal=null,pendingAssignCod=null;
 let currentUserRole=null,currentUserNome=null;
+// v80: abas de operação que um contador pode acessar (admin sempre vê todas).
+// ACCESS_TABS = catálogo de abas controláveis. perfis/{uid}.tabs guarda o subconjunto liberado.
+const ACCESS_TABS=[
+  {id:'locais',label:'Locais'},
+  {id:'consolidado',label:'Resumo'},
+  {id:'historico',label:'Histórico'},
+];
+let currentUserTabs=null; // abas liberadas para o usuário logado (array de ids) ou null = todas
 let nuRole='contador_conferente'; // role selecionado no modal novo usuário
+let nuTabs=ACCESS_TABS.map(t=>t.id); // abas marcadas no modal novo usuário
 let secondaryAuthApp=null; // instância secundária do Firebase para criar usuários
 let locais=[...DEFAULT_LOCAIS];
 let sublocais={},subsubs={},vinculos={},ajustes={},specs={},qtdsPadrao={};
@@ -1225,6 +1280,17 @@ const CONFIG_DOC='cfg_config'; // configuração global: locais, sublocais, vín
 //        match /historico/{id} {
 //          allow read, write: if request.auth != null;
 //        }
+//        // v80: log de acessos (logins). Só admin lê. Cada usuário pode criar o
+//        // próprio registro de sucesso; falhas são gravadas pela Cloud Function
+//        // (Admin SDK, ignora regras). Ninguém edita/apaga pelo app.
+//        match /acessos/{id} {
+//          allow read: if request.auth != null &&
+//            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin';
+//          allow create: if request.auth != null &&
+//            request.resource.data.success == true &&
+//            request.resource.data.uid == request.auth.uid;
+//          allow update, delete: if false;
+//        }
 //      }
 //    }
 // 8. No Firebase Storage → Regras, libere imagens autenticadas:
@@ -1247,18 +1313,19 @@ const FIREBASE_CONFIG = {
 };
 
 let firebaseReady = false;
-let auth, db, storage, currentUser = null;
+let auth, db, storage, functionsSvc, currentUser = null;
 
 try {
   firebase.initializeApp(FIREBASE_CONFIG);
   auth = firebase.auth();
   db = firebase.firestore();
   storage = firebase.storage();
+  try { functionsSvc = firebase.functions(); } catch(e){ functionsSvc = null; }
   firebaseReady = true;
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v76';
+const APP_VERSION = 'v80';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2070,6 +2137,7 @@ function signIn(){
   auth.signInWithEmailAndPassword(email,pwd)
     .catch(e=>{
       setLoginLoading(false);
+      registrarAcessoFalha(cleanLogin(login),e.code||'erro'); // v80: log de tentativa falha
       if(st)st.textContent=(e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'||e.code==='auth/invalid-email')
         ?'Usuário ou senha incorretos.'
         :'Erro: '+e.message;
@@ -2077,12 +2145,125 @@ function signIn(){
 }
 function signOut(){
   if(!auth)return;
-  auth.signOut().then(()=>{currentUserRole=null;currentUserNome=null;show('s-login');}).catch(()=>{});
+  auth.signOut().then(()=>{currentUserRole=null;currentUserNome=null;currentUserTabs=null;show('s-login');}).catch(()=>{});
+}
+
+// ── v80 · Log de acessos ──────────────────────────────────────────────────────
+// Identifica o dispositivo a partir do user-agent (resumo legível para o admin).
+function parseDevice(ua){
+  ua=ua||navigator.userAgent||'';
+  let os='Desconhecido';
+  if(/iPhone|iPad|iPod/i.test(ua))os='iOS';
+  else if(/Android/i.test(ua))os='Android';
+  else if(/Windows/i.test(ua))os='Windows';
+  else if(/Mac OS X|Macintosh/i.test(ua))os='Mac';
+  else if(/Linux/i.test(ua))os='Linux';
+  let nav='';
+  if(/Edg\//i.test(ua))nav='Edge';
+  else if(/Chrome\//i.test(ua)&&!/Edg\//i.test(ua))nav='Chrome';
+  else if(/Safari\//i.test(ua)&&!/Chrome\//i.test(ua))nav='Safari';
+  else if(/Firefox\//i.test(ua))nav='Firefox';
+  const tipo=/Mobi|Android|iPhone|iPad|iPod/i.test(ua)?'Celular/Tablet':'Computador';
+  return [tipo,os,nav].filter(Boolean).join(' · ');
+}
+// IP público (melhor esforço, não bloqueia o login). Falha em silêncio offline.
+async function getIpPublico(){
+  try{
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),2500);
+    const r=await fetch('https://api.ipify.org?format=json',{signal:ctrl.signal});
+    clearTimeout(t);
+    if(!r.ok)return '';
+    const j=await r.json();
+    return j.ip||'';
+  }catch(e){return '';}
+}
+// Registra um login bem-sucedido na coleção `acessos` (o usuário já está autenticado).
+async function registrarAcessoSucesso(user){
+  if(!firebaseReady||!db||!user)return;
+  try{
+    const ip=await getIpPublico();
+    await db.collection('acessos').add({
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+      uid:user.uid,
+      login:emailToLogin(user.email||''),
+      nome:currentUserNome||user.displayName||user.email||'',
+      success:true,
+      device:parseDevice(),
+      ua:(navigator.userAgent||'').slice(0,300),
+      ip:ip||''
+    });
+  }catch(e){console.warn('Falha ao registrar acesso:',e.message);}
+}
+// Registra uma tentativa de login FALHA. O usuário não está autenticado, então o
+// registro só é possível pela Cloud Function `registrarAcesso` (Admin SDK). Se a
+// função não estiver publicada, a falha é ignorada — o login com sucesso continua
+// sendo auditado normalmente.
+async function registrarAcessoFalha(login,reason){
+  if(!functionsSvc)return;
+  try{
+    const fn=functionsSvc.httpsCallable('registrarAcesso');
+    await fn({login:login||'',reason:reason||'',ua:(navigator.userAgent||'').slice(0,300),device:parseDevice()});
+  }catch(e){/* silencioso: função pode não estar publicada */}
+}
+
+// ── v80 · Troca de senha (self-service e troca obrigatória) ──────────────────
+// forced=true → troca obrigatória (admin definiu senha temporária); não dá para fechar sem trocar.
+function abrirTrocaSenha(forced){
+  const aviso=document.getElementById('ts-aviso');
+  const titulo=document.getElementById('ts-titulo');
+  const fechar=document.getElementById('ts-fechar');
+  titulo.textContent=forced?'Defina sua nova senha':'Alterar senha';
+  aviso.textContent=forced
+    ?'Sua senha foi definida pelo administrador. Por segurança, escolha uma nova senha só sua para continuar.'
+    :'Digite sua senha atual e a nova senha.';
+  // Em troca obrigatória esconde o X (não pode pular)
+  if(fechar)fechar.style.display=forced?'none':'';
+  document.getElementById('modal-troca-senha').dataset.forced=forced?'1':'';
+  document.getElementById('ts-atual').value='';
+  document.getElementById('ts-nova').value='';
+  document.getElementById('ts-conf').value='';
+  document.getElementById('ts-status').textContent='';
+  closeModal('modal-user-menu');
+  document.getElementById('modal-troca-senha').classList.add('on');
+  setTimeout(()=>document.getElementById('ts-atual').focus(),100);
+}
+async function trocarMinhaSenha(){
+  const st=document.getElementById('ts-status');
+  const atual=document.getElementById('ts-atual').value;
+  const nova=document.getElementById('ts-nova').value;
+  const conf=document.getElementById('ts-conf').value;
+  if(!atual){st.style.color='#ff3b30';st.textContent='Digite sua senha atual.';return;}
+  if(nova.length<6){st.style.color='#ff3b30';st.textContent='A nova senha precisa ter ao menos 6 caracteres.';return;}
+  if(nova!==conf){st.style.color='#ff3b30';st.textContent='A confirmação não confere.';return;}
+  if(nova===atual){st.style.color='#ff3b30';st.textContent='A nova senha precisa ser diferente da atual.';return;}
+  const btn=document.getElementById('ts-salvar');
+  btn.disabled=true;btn.style.opacity='.6';
+  st.style.color='var(--tx2)';st.textContent='Salvando...';
+  try{
+    const user=auth.currentUser;
+    const cred=firebase.auth.EmailAuthProvider.credential(user.email,atual);
+    await user.reauthenticateWithCredential(cred); // confirma a senha atual
+    await user.updatePassword(nova);
+    // limpa o flag de troca obrigatória
+    try{await db.collection('perfis').doc(user.uid).update({mustChangePassword:false});}catch(e){}
+    btn.disabled=false;btn.style.opacity='';
+    st.style.color='#27500A';st.textContent='Senha alterada com sucesso!';
+    setTimeout(()=>closeModal('modal-troca-senha'),900);
+  }catch(e){
+    btn.disabled=false;btn.style.opacity='';
+    const msg=(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')?'Senha atual incorreta.'
+      :e.code==='auth/weak-password'?'Senha muito fraca (mín. 6 caracteres).'
+      :e.code==='auth/requires-recent-login'?'Sessão expirada. Saia e entre de novo para trocar a senha.'
+      :e.message;
+    st.style.color='#ff3b30';st.textContent='Erro: '+msg;
+  }
 }
 
 if(firebaseReady){
   auth.onAuthStateChanged(async(user)=>{
     if(user){
+      let mustChange=false; // v80: forçar troca de senha temporária
       // Carrega perfil do Firestore
       try{
         const perfDoc=await db.collection('perfis').doc(user.uid).get();
@@ -2097,12 +2278,15 @@ if(firebaseReady){
           }
           currentUserRole=normalizeRole(perf.role);
           currentUserNome=perf.nome||user.email;
+          currentUserTabs=normalizeTabs(perf.tabs); // v80
+          mustChange=!!perf.mustChangePassword; // v80
         }else{
           // Primeiro acesso — cria perfil admin automaticamente
           currentUserRole='admin';
           currentUserNome=user.displayName||user.email;
+          currentUserTabs=null; // admin vê todas
           await db.collection('perfis').doc(user.uid).set({
-            nome:currentUserNome,email:user.email,role:'admin',
+            nome:currentUserNome,email:user.email,role:'admin',tabs:[],
             disabled:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()
           });
         }
@@ -2110,9 +2294,11 @@ if(firebaseReady){
         console.warn('Erro ao carregar perfil:',e);
         currentUserRole='contador_conferente';
         currentUserNome=user.email;
+        currentUserTabs=null;
       }
       currentUser=user;
       setLoginLoading(false);
+      registrarAcessoSucesso(user); // v80: log de acesso bem-sucedido
       // Atualiza avatar e nome na topbar
       const initials=currentUserNome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
       const avEl=document.getElementById('user-av');if(avEl)avEl.textContent=initials;
@@ -2123,8 +2309,10 @@ if(firebaseReady){
       await carregarNuvem();
       if(document.getElementById('s-login').classList.contains('on'))show('s-home');
       renderHome();
+      // v80: se o admin definiu uma senha temporária, obriga a troca antes de seguir
+      if(mustChange)abrirTrocaSenha(true);
     }else{
-      currentUser=null;currentUserRole=null;currentUserNome=null;
+      currentUser=null;currentUserRole=null;currentUserNome=null;currentUserTabs=null;
       setSyncState('local');
       show('s-login');
     }
@@ -2350,6 +2538,25 @@ function countSemSpec(lid){return getProdsLocal(lid).filter(p=>!hasSpec(lid,p.co
 function normalizeRole(role){return role==='admin'?'admin':'contador_conferente';}
 function isAdminRole(){return normalizeRole(currentUserRole)==='admin';}
 function isContadorRole(){return normalizeRole(currentUserRole)==='contador_conferente';}
+// v80 — Controle de acesso por aba ------------------------------------------------
+// Normaliza o campo perfis/{uid}.tabs em uma lista válida. Vazio/ausente = todas as
+// abas (compatível com usuários antigos que não tinham o campo).
+function normalizeTabs(tabs){
+  const all=ACCESS_TABS.map(t=>t.id);
+  if(!Array.isArray(tabs)||!tabs.length)return all.slice();
+  const filtered=all.filter(id=>tabs.includes(id));
+  return filtered.length?filtered:all.slice();
+}
+// Abas que o usuário logado pode ver. Admin sempre vê todas.
+function userAllowedTabs(){
+  if(isAdminRole())return ACCESS_TABS.map(t=>t.id);
+  return normalizeTabs(currentUserTabs);
+}
+// O usuário logado pode acessar a aba t? ('gestao' só admin.)
+function canAccessTab(t){
+  if(t==='gestao'||t==='usuarios')return isAdminRole();
+  return userAllowedTabs().includes(t);
+}
 
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');}
 function closeModal(id){document.getElementById(id).classList.remove('on');}
@@ -2360,19 +2567,45 @@ function voltarAoPlano(){aScope=null;show('s-plano');renderPlano(aLocal);}
 function homeTab(t){
   if(t==='usuarios')t='gestao';
   if(t==='gestao'&&!isAdminRole())t='locais';
+  // v80: respeita as abas liberadas para o usuário (admin passa direto)
+  if(!canAccessTab(t)){
+    const permitidas=userAllowedTabs();
+    t=permitidas[0]||'locais';
+  }
   homeTabId=t;
   document.querySelectorAll('#s-home .ntab').forEach(el=>el.classList.toggle('on',el.dataset.homeTab===t));
   renderHome();
 }
 function goToLocal(lid){aLocal=lid;aScope=null;const subs=getRoteiroTop(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
 
+// v80: senha aleatória forte (sem caracteres ambíguos)
+function gerarSenha(n){
+  n=n||10;
+  const chars='abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s='';for(let i=0;i<n;i++)s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+// v80: desenha os checkboxes de abas no modal de novo usuário e ajusta visibilidade por role
+function renderNuTabs(){
+  const wrap=document.getElementById('nu-tabs');
+  if(wrap)wrap.innerHTML=ACCESS_TABS.map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" class="nu-tab-chk" data-tab="${t.id}" ${nuTabs.includes(t.id)?'checked':''}> ${t.label}</label>`).join('');
+  wrap.querySelectorAll('.nu-tab-chk').forEach(ch=>ch.addEventListener('change',()=>{
+    const id=ch.dataset.tab;
+    if(ch.checked){if(!nuTabs.includes(id))nuTabs.push(id);}
+    else nuTabs=nuTabs.filter(x=>x!==id);
+  }));
+  const tabsWrap=document.getElementById('nu-tabs-wrap');
+  if(tabsWrap)tabsWrap.style.display=nuRole==='admin'?'none':'';
+}
 function abrirNovoUsuario(){
   document.getElementById('nu-nome').value='';
   document.getElementById('nu-email').value='';
   document.getElementById('nu-pwd').value='';
   document.getElementById('nu-status').textContent='';
   nuRole='contador_conferente';
+  nuTabs=ACCESS_TABS.map(t=>t.id);
   document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b.dataset.role===nuRole));
+  renderNuTabs();
   document.getElementById('modal-novo-usuario').classList.add('on');
   setTimeout(()=>document.getElementById('nu-nome').focus(),100);
 }
@@ -3123,9 +3356,10 @@ function renderSaved(){
 
 function renderGestao(c){
   if(!isAdminRole()){homeTab('locais');return;}
-  const tabs=['locais','specs','base','usuarios','backup'];
-  let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden">
-    ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1">${t==='locais'?'Locais':t==='specs'?'Specs':t==='base'?'Base':t==='usuarios'?'Usuários':'Backup'}</div>`).join('')}</div>`;
+  const tabs=['locais','specs','base','usuarios','acessos','backup'];
+  const tabLabel={locais:'Locais',specs:'Specs',base:'Base',usuarios:'Usuários',acessos:'Acessos',backup:'Backup'};
+  let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden;font-size:13px">
+    ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1;padding-left:4px;padding-right:4px">${tabLabel[t]}</div>`).join('')}</div>`;
 
   if(gestaoTabId==='locais'){
     h+='<div class="sec">Locais e sublocais</div>';
@@ -3300,6 +3534,8 @@ function renderGestao(c){
     h+=`</div>`;
   } else if(gestaoTabId==='usuarios'){
     h+='<div id="gestao-usuarios-list"></div>';
+  } else if(gestaoTabId==='acessos'){
+    h+='<div id="gestao-acessos-list"></div>';
   } else {
     const nSpecs=Object.values(specs).reduce((a,b)=>a+Object.keys(b).length,0);
     const nSubs=Object.values(sublocais).reduce((a,b)=>a+b.length,0);
@@ -3334,6 +3570,10 @@ function renderGestao(c){
   if(gestaoTabId==='usuarios'){
     const alvo=c.querySelector('#gestao-usuarios-list');
     if(alvo)renderUsuarios(alvo);
+  }
+  if(gestaoTabId==='acessos'){
+    const alvo=c.querySelector('#gestao-acessos-list');
+    if(alvo)renderAcessos(alvo);
   }
 
   // Event listeners
@@ -4466,7 +4706,14 @@ function ajustarTabsPorRole(){
   currentUserRole=normalizeRole(currentUserRole);
   const isAdmin=isAdminRole();
   if(tabGestao)tabGestao.style.display=isAdmin?'':'none';
-  if(!isAdmin&&(homeTabId==='gestao'||homeTabId==='usuarios'))homeTabId='locais';
+  // v80: mostra/esconde cada aba de operação conforme as abas liberadas para o usuário
+  const permitidas=userAllowedTabs();
+  document.querySelectorAll('#s-home .ntab[data-home-tab]').forEach(el=>{
+    const id=el.dataset.homeTab;
+    if(id==='gestao')return; // controlada acima (só admin)
+    el.style.display=permitidas.includes(id)?'':'none';
+  });
+  if(!canAccessTab(homeTabId))homeTabId=permitidas[0]||'locais';
 }
 
 // ── Gestão de Usuários ────────────────────────────────────────────────────────
@@ -4477,7 +4724,7 @@ function getSecondaryAuth(){
   return secondaryAuthApp.auth();
 }
 
-async function criarUsuario(nome,login,tempPwd,role){
+async function criarUsuario(nome,login,tempPwd,role,tabs){
   const loginLimpo=cleanLogin(login);
   const email=loginToEmail(loginLimpo);
   const secAuth=getSecondaryAuth();
@@ -4488,6 +4735,8 @@ async function criarUsuario(nome,login,tempPwd,role){
     await secAuth.signOut();
     await db.collection('perfis').doc(uid).set({
       nome,email,login:emailToLogin(email),internalLogin:isInternalEmail(email),role,disabled:false,
+      tabs:role==='admin'?[]:(Array.isArray(tabs)?tabs:[]), // v80: abas liberadas
+      mustChangePassword:true, // v80: força troca da senha temporária no 1º acesso
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
     return {success:true};
@@ -4506,12 +4755,73 @@ async function resetarSenha(email){
   catch(e){return {success:false,error:e.message};}
 }
 
+// v79: admin define nova senha temporária para usuário interno (via Cloud Function)
+async function definirSenhaUsuarioInterno(uid,novaSenha){
+  if(!functionsSvc)return {success:false,error:'Serviço indisponível. Faça o deploy da Cloud Function.'};
+  try{
+    const fn=functionsSvc.httpsCallable('definirSenhaUsuario');
+    const r=await fn({uid,novaSenha});
+    return {success:true,...(r.data||{})};
+  }catch(e){
+    return {success:false,error:e.message||'Erro ao definir a senha.'};
+  }
+}
+
 async function toggleDesativar(uid,disabled){
   try{await db.collection('perfis').doc(uid).update({disabled});return {success:true};}
   catch(e){return {success:false,error:e.message};}
 }
+// v80: atualiza as abas liberadas de um contador
+async function atualizarTabsUsuario(uid,tabs){
+  try{await db.collection('perfis').doc(uid).update({tabs:Array.isArray(tabs)?tabs:[]});return {success:true};}
+  catch(e){return {success:false,error:e.message};}
+}
 
 // ── Renderização da aba Usuários ──────────────────────────────────────────────
+// ── v80 · Aba Acessos (log de logins) ────────────────────────────────────────
+async function renderAcessos(c){
+  if(!isAdminRole()){homeTab('locais');return;}
+  c.innerHTML='<div class="empty"><i class="ti ti-loader" style="font-size:30px;animation:pulse 1s infinite"></i><span>Carregando acessos...</span></div>';
+  try{
+    const snap=await db.collection('acessos').orderBy('ts','desc').limit(100).get();
+    const logs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!logs.length){
+      c.innerHTML=`<div class="empty" style="padding:24px 0"><i class="ti ti-shield-lock" style="font-size:34px;opacity:.4"></i><span>Nenhum acesso registrado ainda</span><span style="font-size:12px;color:var(--tx2)">Os logins passam a aparecer aqui a partir de agora.</span></div>`;
+      return;
+    }
+    const ok=logs.filter(l=>l.success).length;
+    const fail=logs.length-ok;
+    let h=`<div class="sgrid"><div class="scard"><div class="slbl">Logins com sucesso</div><div class="sval" style="color:#166534">${ok}</div></div>
+      <div class="scard"><div class="slbl">Tentativas falhas</div><div class="sval" style="color:${fail?'#ff3b30':'var(--tx2)'}">${fail}</div></div></div>
+      <div style="font-size:11px;color:var(--tx2);margin:-2px 0 8px">Últimos ${logs.length} acessos · falhas dependem da Cloud Function publicada</div>
+      <div class="ms"><div style="padding:4px 0">`;
+    logs.forEach((l,i)=>{
+      let quando='—';
+      if(l.ts){const dt=l.ts.toDate?l.ts.toDate():new Date(l.ts);quando=dt.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+      const nome=esc(l.nome||l.login||'?');
+      const ic=l.success?'<i class="ti ti-circle-check" style="color:#166534;font-size:16px"></i>':'<i class="ti ti-circle-x" style="color:#ff3b30;font-size:16px"></i>';
+      const detalhe=[l.device,l.ip].filter(Boolean).join(' · ');
+      const motivo=!l.success&&l.reason?`<span style="color:#ff3b30">${esc(traduzMotivo(l.reason))}</span>`:'';
+      h+=`<div class="spi" ${i===logs.length-1?'style="border-bottom:none"':''}>
+        <div style="flex-shrink:0">${ic}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}${l.success?'':' <span style="font-size:10px;color:#ff3b30">(falha)</span>'}</div>
+          <div style="font-size:11px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(detalhe||'—')} ${motivo}</div>
+        </div>
+        <div style="font-size:11px;color:var(--tx2);flex-shrink:0;text-align:right">${quando}</div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+    c.innerHTML=h;
+  }catch(e){
+    c.innerHTML=`<div class="empty"><i class="ti ti-alert-circle" style="font-size:36px;opacity:.4;color:#ff3b30"></i><span>Erro ao carregar acessos</span><span style="font-size:12px;color:var(--tx2)">Confira a regra do Firestore para a coleção "acessos".</span></div>`;
+  }
+}
+function traduzMotivo(code){
+  const m={'auth/invalid-credential':'senha incorreta','auth/wrong-password':'senha incorreta','auth/user-not-found':'usuário não existe','auth/invalid-email':'usuário inválido','auth/too-many-requests':'muitas tentativas','auth/user-disabled':'conta desativada'};
+  return m[code]||code;
+}
+
 async function renderUsuarios(c){
   if(!isAdminRole()){homeTab('locais');return;}
   const ROLE_LABEL={admin:'Administrador',contador_conferente:'Contador/Conferente',operador:'Contador/Conferente',visualizador:'Contador/Conferente'};
@@ -4569,7 +4879,21 @@ function abrirGerenciarUsuario(perf){
       <span class="bdg" style="background:var(--acc-bg);color:var(--acc-tx)">${ROLE_LABEL[perf.role]||perf.role}</span>
       ${perf.disabled?'<span class="bdg" style="background:#fff0f0;color:#ff3b30">Desativado</span>':''}
     </div>
-    ${internal?'<div class="tipb" style="margin-bottom:8px">Para redefinir senha, solicite ao Fabio (admin).</div>':'<button class="bp" id="gu-reset" style="margin-bottom:8px;width:100%"><i class="ti ti-mail"></i> Enviar redefinição de senha</button>'}
+    ${internal?`<div style="margin-bottom:8px">
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Definir nova senha temporária (mín. 6 caracteres):</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input id="gu-newpwd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Nova senha" style="flex:1;min-width:0;padding:10px;border-radius:var(--r1);border:.5px solid var(--bd3);font-size:14px;font-family:inherit">
+        <button class="bs" id="gu-genpwd" type="button" title="Gerar senha" style="flex-shrink:0;width:44px;padding:0"><i class="ti ti-dice-5"></i></button>
+      </div>
+      <button class="bp" id="gu-setpwd" style="width:100%"><i class="ti ti-key"></i> Definir senha temporária</button>
+      <div id="gu-pwd-status" style="font-size:12px;margin-top:6px;word-break:break-word"></div>
+    </div>`:'<button class="bp" id="gu-reset" style="margin-bottom:8px;width:100%"><i class="ti ti-mail"></i> Enviar redefinição de senha</button>'}
+    ${perf.role!=='admin'?`<div style="margin:10px 0 8px;padding-top:10px;border-top:.5px solid var(--bd3)">
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Abas liberadas para este contador:</div>
+      <div id="gu-tabs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div>
+      <button class="bs" id="gu-savetabs" style="width:100%"><i class="ti ti-check"></i> Salvar abas</button>
+      <div id="gu-tabs-status" style="font-size:12px;margin-top:6px"></div>
+    </div>`:''}
     <button class="bs" id="gu-toggle" style="margin-bottom:8px;width:100%">
       <i class="ti ti-${perf.disabled?'user-check':'user-off'}"></i> ${perf.disabled?'Reativar usuário':'Desativar usuário'}
     </button>
@@ -4577,11 +4901,50 @@ function abrirGerenciarUsuario(perf){
   `;
   document.getElementById('modal-gerenciar-usuario').classList.add('on');
 
+  // v80: estado local das abas deste usuário (subconjunto liberado)
+  let guTabs=normalizeTabs(perf.tabs);
+  const guTabsWrap=document.getElementById('gu-tabs');
+  if(guTabsWrap){
+    guTabsWrap.innerHTML=ACCESS_TABS.map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" class="gu-tab-chk" data-tab="${t.id}" ${guTabs.includes(t.id)?'checked':''}> ${t.label}</label>`).join('');
+    guTabsWrap.querySelectorAll('.gu-tab-chk').forEach(ch=>ch.addEventListener('change',()=>{
+      const id=ch.dataset.tab;
+      if(ch.checked){if(!guTabs.includes(id))guTabs.push(id);}else guTabs=guTabs.filter(x=>x!==id);
+    }));
+  }
+  document.getElementById('gu-savetabs')?.addEventListener('click',async()=>{
+    const st=document.getElementById('gu-tabs-status');
+    if(!guTabs.length){st.style.color='#ff3b30';st.textContent='Marque ao menos uma aba.';return;}
+    st.style.color='var(--tx2)';st.textContent='Salvando...';
+    const r=await atualizarTabsUsuario(perf.uid,guTabs.slice());
+    if(r.success){st.style.color='#27500A';st.textContent='Abas atualizadas. Vale no próximo carregamento do usuário.';perf.tabs=guTabs.slice();}
+    else{st.style.color='#ff3b30';st.textContent='Erro: '+r.error;}
+  });
+
   document.getElementById('gu-close-body')?.addEventListener('click',()=>closeModal('modal-gerenciar-usuario'));
   document.getElementById('gu-reset')?.addEventListener('click',async()=>{
     const r=await resetarSenha(perf.email);
     if(r.success){alert('E-mail de redefinição enviado para '+perf.email+'.');closeModal('modal-gerenciar-usuario');}
     else alert('Erro: '+r.error);
+  });
+  document.getElementById('gu-genpwd')?.addEventListener('click',()=>{
+    const inp=document.getElementById('gu-newpwd');if(inp)inp.value=gerarSenha(8);
+  });
+  document.getElementById('gu-setpwd')?.addEventListener('click',async()=>{
+    const inp=document.getElementById('gu-newpwd');
+    const st=document.getElementById('gu-pwd-status');
+    const nova=(inp?.value||'').trim();
+    if(nova.length<6){st.style.color='#ff3b30';st.textContent='A senha precisa ter ao menos 6 caracteres.';return;}
+    const btn=document.getElementById('gu-setpwd');
+    if(btn){btn.disabled=true;btn.style.opacity='.6';}
+    st.style.color='var(--tx2)';st.textContent='Definindo...';
+    const r=await definirSenhaUsuarioInterno(perf.uid,nova);
+    if(btn){btn.disabled=false;btn.style.opacity='';}
+    if(r.success){
+      // v80: força o usuário a trocar a senha temporária no próximo acesso
+      try{await db.collection('perfis').doc(perf.uid).update({mustChangePassword:true});}catch(e){}
+      st.style.color='#27500A';st.textContent='Senha definida! Informe ao usuário "'+(perf.login||perf.nome)+'": '+nova;
+    }
+    else{st.style.color='#ff3b30';st.textContent='Erro: '+r.error;}
   });
   document.getElementById('gu-toggle').addEventListener('click',async()=>{
     const novoDisabled=!perf.disabled;
@@ -4614,7 +4977,22 @@ document.getElementById('btn-forgot-pwd').addEventListener('click',async()=>{
   document.getElementById('login-status').textContent=r.success?'E-mail de redefinição enviado!':'Erro: '+r.error;
   if(r.success)document.getElementById('login-status').style.color='#27500A';
 });
-document.getElementById('btn-user-menu').addEventListener('click',()=>{if(confirm('Sair da conta?'))signOut();});
+// v80: menu do usuário (alterar senha / sair) em vez do confirm direto
+document.getElementById('btn-user-menu').addEventListener('click',()=>{
+  document.getElementById('um-nome').textContent=currentUserNome||'Minha conta';
+  const lg=currentUser?emailToLogin(currentUser.email||''):'';
+  document.getElementById('um-login').textContent=lg?('Usuário: '+lg):'';
+  document.getElementById('modal-user-menu').classList.add('on');
+});
+document.getElementById('um-cancel').addEventListener('click',()=>closeModal('modal-user-menu'));
+document.getElementById('um-troca').addEventListener('click',()=>abrirTrocaSenha(false));
+document.getElementById('um-sair').addEventListener('click',()=>{closeModal('modal-user-menu');signOut();});
+document.getElementById('ts-fechar').addEventListener('click',()=>{
+  if(document.getElementById('modal-troca-senha').dataset.forced)return; // troca obrigatória
+  closeModal('modal-troca-senha');
+});
+document.getElementById('ts-salvar').addEventListener('click',trocarMinhaSenha);
+document.getElementById('ts-conf').addEventListener('keydown',e=>{if(e.key==='Enter')trocarMinhaSenha();});
 
 // Modal Novo Usuário
 document.getElementById('nu-cancel').addEventListener('click',()=>closeModal('modal-novo-usuario'));
@@ -4622,7 +5000,11 @@ document.querySelectorAll('#modal-novo-usuario .mo').forEach(btn=>{
   btn.addEventListener('click',()=>{
     nuRole=btn.dataset.role;
     document.querySelectorAll('#modal-novo-usuario .mo').forEach(b=>b.classList.toggle('on',b===btn));
+    renderNuTabs(); // v80: mostra/esconde abas conforme o nível
   });
+});
+document.getElementById('nu-genpwd')?.addEventListener('click',()=>{
+  const inp=document.getElementById('nu-pwd');if(inp)inp.value=gerarSenha(10);
 });
 document.getElementById('nu-criar').addEventListener('click',async()=>{
   const nome=document.getElementById('nu-nome').value.trim();
@@ -4633,9 +5015,12 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
   if(!login){st.textContent='Informe o usuário de acesso.';return;}
   if(!login.includes('@')&&!validInternalLogin(login)){st.textContent='Use 3 a 32 caracteres: letras, números, ponto, hífen ou underline.';return;}
   if(tempPwd.length<6){st.textContent='Informe uma senha temporária com pelo menos 6 caracteres.';return;}
+  // v80: admin sempre vê todas as abas; contador recebe o subconjunto marcado (mín. 1)
+  const tabsSel=nuRole==='admin'?[]:nuTabs.slice();
+  if(nuRole!=='admin'&&!tabsSel.length){st.textContent='Marque ao menos uma aba para o contador.';return;}
   const btn=document.getElementById('nu-criar');
   btn.disabled=true;btn.textContent='Criando...';
-  const r=await criarUsuario(nome,login,tempPwd,nuRole);
+  const r=await criarUsuario(nome,login,tempPwd,nuRole,tabsSel);
   btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Criar usuário';
   if(r.success){
     closeModal('modal-novo-usuario');
