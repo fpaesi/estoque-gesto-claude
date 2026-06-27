@@ -238,7 +238,7 @@
 /* ── Impressão: lista de conferência por local (v77) ── */
 #print-area{display:none}
 @media print{
-  @page{size:A4;margin:12mm}
+  @page{size:A4 landscape;margin:12mm}
   html,body{background:#fff!important;height:auto!important}
   #app{display:none!important}
   #print-area{display:block!important;color:#000;font-family:-apple-system,Arial,sans-serif}
@@ -252,10 +252,11 @@
   #print-area tbody tr{page-break-inside:avoid}
   #print-area .pa-sub{font-weight:600}
   #print-area .pa-conf{height:24px}
-  #print-area .col-sub{width:22%}
-  #print-area .col-item{width:40%}
-  #print-area .col-un{width:20%}
-  #print-area .col-conf{width:18%}
+  #print-area .col-sub{width:16%}
+  #print-area .col-cat{width:16%}
+  #print-area .col-item{width:34%}
+  #print-area .col-un{width:18%}
+  #print-area .col-conf{width:16%}
   #print-area .pa-grp{font-size:10px;font-weight:700;text-transform:uppercase;background:#f3f3f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
@@ -1878,6 +1879,7 @@ function exportarListaLocalPDF(lid){
     if(novoGrupo)lastSub=r.subNome;
     body+=`<tr>
       <td class="pa-sub">${subCell}</td>
+      <td>${esc(r.grupo)}</td>
       <td>${esc(r.nome)}</td>
       <td>${esc(r.un)}</td>
       <td class="pa-conf"></td>
@@ -1888,10 +1890,11 @@ function exportarListaLocalPDF(lid){
   const meta=`${dataStr} · ${prods.length} ${prods.length===1?'item':'itens'}${currentUserNome?' · '+esc(currentUserNome):''}`;
   const html=`<table class="pa-table">
     <thead>
-      <tr><th colspan="4" class="pa-loc">${esc(l.nome)}</th></tr>
-      <tr><th colspan="4" class="pa-meta">${meta}</th></tr>
+      <tr><th colspan="5" class="pa-loc">${esc(l.nome)}</th></tr>
+      <tr><th colspan="5" class="pa-meta">${meta}</th></tr>
       <tr>
         <th class="pa-th col-sub">Sublocal</th>
+        <th class="pa-th col-cat">Categoria</th>
         <th class="pa-th col-item">Item</th>
         <th class="pa-th col-un">Un. Contagem</th>
         <th class="pa-th col-conf">Conferência</th>
