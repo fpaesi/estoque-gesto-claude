@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v81</title>
+<title>Estoque Gesto v82</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -305,7 +305,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v81</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v82</span></span></div>
   </div>
 </div>
 
@@ -1325,7 +1325,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v81';
+const APP_VERSION = 'v82';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -1450,6 +1450,13 @@ async function carregarNuvem(){
           const merged={};
           allLids.forEach(lid=>{merged[lid]={...(specs[lid]||{}),...(sharedSpecs[lid]||{})};});
           specs=merged;
+        }
+        // Auto-correção: ao logar como admin, garante que o doc compartilhado reflita TODAS as
+        // specs do admin (fonte de verdade). Corrige specs antigas que nunca foram para o cfg_specs.
+        // Após as mesclagens acima, `specs` é superconjunto do que está na nuvem, então nunca perde dado.
+        if(isAdminRole()){
+          db.collection(RASCUNHO_COL).doc(SPECS_DOC).set({specs})
+            .catch(e=>console.warn('Erro ao ressincronizar specs compartilhadas:',e));
         }
       }catch(e){console.warn('Erro ao carregar specs compartilhadas:',e);}
       // Carrega configuração global compartilhada (locais, sublocais, vínculos, itens removidos/extras).
