@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v75</title>
+<title>Estoque Gesto v76</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -279,7 +279,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v75</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v76</span></span></div>
   </div>
 </div>
 
@@ -1095,6 +1095,9 @@ const BASE={
 };
 
 let aLocal=null,aSublocal=null,aGrupo='todos',sTerm='';
+// aScope: sublocal de 1º nível (agrupador) dentro do qual a contagem está acontecendo.
+// null = contagem não escopada (roteiro mostra sublocais de 1º nível).
+let aScope=null;
 let counts={},homeTabId='locais',pendingCod=null,pendingLocal=null,pendingAssignCod=null;
 let currentUserRole=null,currentUserNome=null;
 let nuRole='contador_conferente'; // role selecionado no modal novo usuário
@@ -1230,7 +1233,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v75';
+const APP_VERSION = 'v76';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2112,6 +2115,50 @@ function getRoteiroSteps(lid){
   if(temItensSemSublocal(lid))steps.push({id:'__sem__',nome:'Sem sublocal',_sem:true});
   return steps;
 }
+// Roteiro de topo: mostra APENAS os sublocais de 1º nível (ex.: "Adega Tintos"),
+// sem expandir os sub-sublocais (prateleiras). Esses são contados ao entrar no escopo.
+function getRoteiroTop(lid){
+  const steps=getSubs(lid).map(sl=>({...sl,_agrup:isSublocalAgrupador(lid,sl.id)}));
+  if(temItensSemSublocal(lid))steps.push({id:'__sem__',nome:'Sem sublocal',_sem:true});
+  return steps;
+}
+// Produtos de um sublocal de topo: se for agrupador, soma os itens de todas as prateleiras.
+function getProdsTop(lid,topId){
+  if(topId==='__sem__')return getProdsSublocal(lid,'__sem__');
+  if(isSublocalAgrupador(lid,topId)){
+    const ids=new Set(getSubSubs(lid,topId).map(s=>s.id));
+    return getProdsLocal(lid).filter(p=>ids.has(getVinculo(lid,p.cod)));
+  }
+  return getProdsSublocal(lid,topId);
+}
+function topStatus(lid,topId){
+  const prods=getProdsTop(lid,topId);const cnt=counts[lid]||{};
+  const done=prods.filter(p=>cnt[p.cod]?.touched).length;
+  if(done===0)return 'pend';if(done<prods.length)return 'prog';return 'done';
+}
+// Prateleiras (folhas) de um agrupador de 1º nível, com rótulo do pai.
+function getScopeChildren(lid,topId){
+  const pai=getSubs(lid).find(s=>s.id===topId);
+  return getSubSubs(lid,topId).map(ssl=>({...ssl,_parentId:topId,_parentNome:pai?.nome}));
+}
+// Passos exibidos no slNav da tela de contagem:
+// dentro de um escopo -> prateleiras; fora -> sublocais de 1º nível.
+function getCountNavSteps(lid){
+  if(aScope)return getScopeChildren(lid,aScope);
+  return getRoteiroTop(lid);
+}
+// Abre uma etapa do roteiro: se for agrupador entra no escopo (primeira prateleira),
+// senão entra direto na contagem do sublocal/folha.
+function abrirEtapa(lid,topId){
+  if(topId&&topId!=='__sem__'&&isSublocalAgrupador(lid,topId)){
+    aScope=topId;
+    const first=getSubSubs(lid,topId)[0];
+    entrarContagem(lid,first?first.id:topId);
+  }else{
+    aScope=null;
+    entrarContagem(lid,topId);
+  }
+}
 function isSublocalAgrupador(lid,slId){
   if(slId==='__sem__')return false;
   return getSubSubs(lid,slId).length>0;
@@ -2218,7 +2265,7 @@ function closeModal(id){document.getElementById(id).classList.remove('on');}
 function goHome(){show('s-home');renderHome();}
 function goSel(){show('s-sel');renderSel();}
 function backCount(){renderCount();show('s-count');}
-function voltarAoPlano(){show('s-plano');renderPlano(aLocal);}
+function voltarAoPlano(){aScope=null;show('s-plano');renderPlano(aLocal);}
 function homeTab(t){
   if(t==='usuarios')t='gestao';
   if(t==='gestao'&&!isAdminRole())t='locais';
@@ -2226,7 +2273,7 @@ function homeTab(t){
   document.querySelectorAll('#s-home .ntab').forEach(el=>el.classList.toggle('on',el.dataset.homeTab===t));
   renderHome();
 }
-function goToLocal(lid){aLocal=lid;const subs=getContableSubs(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
+function goToLocal(lid){aLocal=lid;aScope=null;const subs=getRoteiroTop(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
 
 function abrirNovoUsuario(){
   document.getElementById('nu-nome').value='';
@@ -2460,22 +2507,23 @@ function renderSel(){
 }
 
 function renderPlano(lid){
-  const l=getLocal(lid);const subs=getRoteiroSteps(lid);const cnt=counts[lid]||{};
+  const l=getLocal(lid);const subs=getRoteiroTop(lid);const cnt=counts[lid]||{};
   document.getElementById('plano-title').textContent=`${l.icon} ${l.nome}`;
   const totalProds=getProdsLocal(lid).length;
   const totalDone=Object.values(cnt).filter(x=>x.touched).length;
   const semSpec=countSemSpec(lid);
   document.getElementById('plano-sub').textContent=semSpec>0?`⚠️ ${semSpec} sem especificação`:totalDone>0?`${totalDone}/${totalProds} contados`:`${totalProds} itens`;
-  let proximoIdx=subs.findIndex(sl=>slStatus(lid,sl.id)!=='done');if(proximoIdx===-1)proximoIdx=0;
+  let proximoIdx=subs.findIndex(sl=>topStatus(lid,sl.id)!=='done');if(proximoIdx===-1)proximoIdx=0;
   let h='';
   if(semSpec>0)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
     <div><div style="font-size:13px;font-weight:500;color:#92400E">${semSpec} itens sem especificação</div>
     ${isAdminRole()?'<button id="btn-ir-gestao" style="margin-top:6px;font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Ir para Gestão →</button>':''}</div></div>`;
   h+='<div class="sec">Roteiro de contagem</div>';
   subs.forEach((sl,i)=>{
-    const prods=getProdsSublocal(lid,sl.id);
+    const prods=getProdsTop(lid,sl.id);
     const done=prods.filter(p=>cnt[p.cod]?.touched).length;
-    const status=slStatus(lid,sl.id);const isNext=i===proximoIdx&&totalDone<totalProds;
+    const status=topStatus(lid,sl.id);const isNext=i===proximoIdx&&totalDone<totalProds;
+    const nPrat=sl._agrup?getSubSubs(lid,sl.id).length:0;
     const numEl=status==='done'?`<div class="sl-sn" style="background:#EAF3DE"><i class="ti ti-check" style="color:#27500A;font-size:14px"></i></div>`:
       status==='prog'?`<div class="sl-sn" style="background:#FAEEDA;color:#633806">${i+1}</div>`:
       `<div class="sl-sn" ${isNext?'style="background:var(--acc);color:#E6F1FB"':''}>${i+1}</div>`;
@@ -2483,15 +2531,16 @@ function renderPlano(lid){
     const badge=status==='done'?'<span class="bdg bdone">Concluído</span>':
       status==='prog'?`<span class="bdg bprog">${done}/${prods.length}</span>`:
       `<span class="bdg bpend">${prods.length} itens</span>`;
-    if(i>0)h+=`<div class="sl-conn ${slStatus(lid,subs[i-1].id)==='done'?'done':''}"></div>`;
-    const slLabel=sl._parentNome?`<span style="font-size:11px;color:var(--tx2)">${esc(sl._parentNome)} ›</span> ${esc(sl.nome)}`:esc(sl.nome);
+    if(i>0)h+=`<div class="sl-conn ${topStatus(lid,subs[i-1].id)==='done'?'done':''}"></div>`;
+    const slLabel=esc(sl.nome);
+    const sub2=nPrat?`${prods.length} itens · ${nPrat} prateleiras`:`${prods.length} itens`;
     h+=`<div class="sl-step ${cls}" data-slid="${sl.id}" data-action="sublocal">
       ${numEl}<div style="flex:1"><div style="font-size:15px;font-weight:500">${slLabel}</div>
-      <div style="font-size:12px;color:var(--tx2);margin-top:2px">${prods.length} itens${status==='prog'?` · ${done} contados`:''}</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:2px">${sub2}${status==='prog'?` · ${done} contados`:''}</div>
       ${isNext&&status!=='done'?'<div style="font-size:11px;color:var(--acc);margin-top:3px;font-weight:500">↑ Começar aqui</div>':''}</div>${badge}</div>`;
   });
   document.getElementById('plano-list').innerHTML=h;
-  document.getElementById('plano-list').querySelectorAll('[data-action="sublocal"]').forEach(el=>el.addEventListener('click',()=>entrarContagem(lid,el.dataset.slid)));
+  document.getElementById('plano-list').querySelectorAll('[data-action="sublocal"]').forEach(el=>el.addEventListener('click',()=>abrirEtapa(lid,el.dataset.slid)));
   const btnGestao=document.getElementById('btn-ir-gestao');
   if(btnGestao)btnGestao.addEventListener('click',()=>{homeTab('gestao');show('s-home');});
   const bbar=document.getElementById('plano-bbar');
@@ -2500,20 +2549,22 @@ function renderPlano(lid){
     bbar.innerHTML=`<button id="btn-salvar-plano" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button>
       <button id="btn-revisar-plano" class="bs">Revisar</button>`;
     document.getElementById('btn-salvar-plano').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
-    document.getElementById('btn-revisar-plano').addEventListener('click',()=>entrarContagem(lid,firstContableSubId(lid)||null));
+    document.getElementById('btn-revisar-plano').addEventListener('click',()=>abrirEtapa(lid,subs[0]?.id||null));
   } else {
     const proxSl=subs[proximoIdx]||subs[0];
     bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp"><i class="ti ti-player-play"></i> ${totalDone>0?`Continuar · ${esc(proxSl?.nome||'')}`:`Iniciar · ${esc(proxSl?.nome||'')}`}</button>
       <button id="btn-pausar-plano" class="bg_">Pausar e sair</button>`;
-    document.getElementById('btn-iniciar-plano').addEventListener('click',()=>entrarContagem(lid,proxSl?.id||null));
+    document.getElementById('btn-iniciar-plano').addEventListener('click',()=>abrirEtapa(lid,proxSl?.id||null));
     document.getElementById('btn-pausar-plano').addEventListener('click',()=>{show('s-home');renderHome();});
   }
 }
 
 async function entrarContagem(lid,slId){
-  if(slId&&isSublocalAgrupador(lid,slId)){
-    const prox=firstContableSubId(lid);
-    if(prox)slId=prox;
+  if(slId&&slId!=='__sem__'&&isSublocalAgrupador(lid,slId)){
+    // Sublocal de 1º nível com prateleiras: entra no escopo e abre a 1ª prateleira.
+    aScope=slId;
+    const first=getSubSubs(lid,slId)[0];
+    slId=first?first.id:slId;
   }
   aLocal=lid;aSublocal=slId;aGrupo='todos';sTerm='';
   document.getElementById('srch-inp').value='';
@@ -2568,22 +2619,29 @@ async function entrarContagem(lid,slId){
 }
 
 function renderSlNav(){
-  const allFlat=getRoteiroSteps(aLocal);
-  if(!allFlat.length){document.getElementById('sl-nav').style.display='none';return;}
+  const steps=getCountNavSteps(aLocal);
+  if(!steps.length){document.getElementById('sl-nav').style.display='none';return;}
   document.getElementById('sl-nav').style.display='flex';
   const nav=document.getElementById('sl-nav');
-  nav.innerHTML=allFlat.map(sl=>{
-    const st=slStatus(aLocal,sl.id);const cur=sl.id===aSublocal;
+  // Quando escopado, o 1º chip volta ao roteiro (sai do escopo).
+  let html=aScope?`<div class="slni pn" data-action="slback" style="font-weight:500"><i class="ti ti-arrow-left"></i> ${esc(getSubs(aLocal).find(s=>s.id===aScope)?.nome||'Roteiro')}</div>`:'';
+  html+=steps.map(sl=>{
+    const st=aScope?slStatus(aLocal,sl.id):topStatus(aLocal,sl.id);const cur=sl.id===aSublocal;
     const label=sl._parentNome?`<span style="opacity:.6;font-size:10px">›</span> ${esc(sl.nome)}`:esc(sl.nome);
     return `<div class="slni ${cur?'cur':st==='done'?'dn':'pn'}" data-slid="${sl.id}" data-action="slnav">${st==='done'?'<i class="ti ti-check"></i> ':''}${label}</div>`;
   }).join('');
+  nav.innerHTML=html;
   nav.querySelectorAll('[data-action="slnav"]').forEach(el=>el.addEventListener('click',()=>mudarSublocal(el.dataset.slid)));
+  const back=nav.querySelector('[data-action="slback"]');
+  if(back)back.addEventListener('click',voltarAoPlano);
 }
 
 function mudarSublocal(slId){
-  if(slId&&isSublocalAgrupador(aLocal,slId)){
-    const prox=firstContableSubId(aLocal);
-    if(prox)slId=prox;
+  if(slId&&slId!=='__sem__'&&isSublocalAgrupador(aLocal,slId)){
+    // Entrou num agrupador pelo slNav (modo não escopado): entra no escopo.
+    aScope=slId;
+    const first=getSubSubs(aLocal,slId)[0];
+    slId=first?first.id:slId;
   }
   aSublocal=slId;aGrupo='todos';sTerm='';
   document.getElementById('srch-inp').value='';
@@ -2766,10 +2824,10 @@ function runPreFinishAudit(onConfirm,scope='sublocal'){
 }
 
 function renderCountBbar(prods,done){
-  const subs=getContableSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
+  const steps=getCountNavSteps(aLocal);const curIdx=steps.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<steps.length-1?steps[curIdx+1]:null;
   const bbar=document.getElementById('count-bbar');
   const allDone=getProdsLocal(aLocal).every(p=>itemResolvido(aLocal,p.cod));
-  const slAtual=subs.find(s=>s.id===aSublocal);
+  const slAtual=steps.find(s=>s.id===aSublocal)||getContableSubs(aLocal).find(s=>s.id===aSublocal);
   const slNomeAtual=slAtual?(slAtual._parentNome?`${slAtual._parentNome} › ${slAtual.nome}`:slAtual.nome):(aSublocal==='__todos__'?getLocal(aLocal).nome:aSublocal);
   if(allDone){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
@@ -2778,16 +2836,17 @@ function renderCountBbar(prods,done){
   } else if(done===prods.length&&prods.length>0&&nextSl){
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" style="width:100%"></div></div><div class="progp">100%</div></div>
       <button id="btn-cb-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${esc(nextSl.nome)}</button>
-      <button id="btn-cb-plano" class="bg_">Ver plano</button>`;
+      <button id="btn-cb-plano" class="bg_">Ver roteiro</button>`;
     document.getElementById('btn-cb-next').addEventListener('click',()=>checkExtras(slNomeAtual,()=>mudarSublocal(nextSl.id)));
     document.getElementById('btn-cb-plano').addEventListener('click',voltarAoPlano);
   } else {
     const isTodos=aSublocal==='__todos__';
-    const finBtnTxt=(isTodos||!nextSl)?'Finalizar contagem':'Finalizar este sublocal';
+    // Sem próxima etapa: dentro de um escopo volta ao roteiro; senão finaliza o local.
+    const finBtnTxt=nextSl?(aScope?'Próxima prateleira':'Finalizar este sublocal'):(aScope?'Voltar ao roteiro':'Finalizar contagem');
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" id="pbar" style="width:0%"></div></div><div class="progp" id="ppct">0%</div></div>
       <button id="btn-cb-fin" class="bp">${finBtnTxt}</button>
-      <button id="btn-cb-vp" class="bg_">Ver plano</button>`;
-    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,()=>nextSl?mudarSublocal(nextSl.id):runPreFinishAudit(goFinish,'local')));
+      <button id="btn-cb-vp" class="bg_">Ver roteiro</button>`;
+    document.getElementById('btn-cb-fin').addEventListener('click',()=>checkExtras(slNomeAtual,()=>nextSl?mudarSublocal(nextSl.id):(aScope?voltarAoPlano():runPreFinishAudit(goFinish,'local'))));
     document.getElementById('btn-cb-vp').addEventListener('click',voltarAoPlano);
     updProg(prods,done);
   }
@@ -2940,7 +2999,7 @@ function goFinish(){
     h+='</div>';
   }
   document.getElementById('fin-cnt').innerHTML=h;
-  const subs=getContableSubs(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
+  const subs=getCountNavSteps(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('fin-bbar');
   const allDone=getProdsLocal(aLocal).every(p=>itemResolvido(aLocal,p.cod));
   if(allDone){
