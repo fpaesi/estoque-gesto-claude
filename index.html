@@ -234,6 +234,30 @@
 
 /* Modal ícone decorativo (substituiu emojis grandes) */
 .modal-icon{font-size:32px;color:var(--acc);display:block;text-align:center;margin-bottom:4px}
+
+/* ── Impressão: lista de conferência por local (v77) ── */
+#print-area{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff!important;height:auto!important}
+  #app{display:none!important}
+  #print-area{display:block!important;color:#000;font-family:-apple-system,Arial,sans-serif}
+  #print-area .pa-table{width:100%;border-collapse:collapse;table-layout:fixed}
+  /* thead vira cabeçalho de grupo: repete o Título (Local) no topo de cada página */
+  #print-area thead{display:table-header-group}
+  #print-area .pa-loc{font-size:18px;font-weight:700;text-align:left;padding:0 0 2px;border:none}
+  #print-area .pa-meta{font-size:10px;font-weight:400;color:#444;text-align:left;padding:0 0 8px;border:none}
+  #print-area .pa-th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:6px 6px;border:1px solid #000;background:#eee;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print-area td{font-size:11px;padding:7px 6px;border:1px solid #999;vertical-align:top;word-wrap:break-word}
+  #print-area tbody tr{page-break-inside:avoid}
+  #print-area .pa-sub{font-weight:600}
+  #print-area .pa-conf{height:24px}
+  #print-area .col-sub{width:22%}
+  #print-area .col-item{width:40%}
+  #print-area .col-un{width:20%}
+  #print-area .col-conf{width:18%}
+  #print-area .pa-grp{font-size:10px;font-weight:700;text-transform:uppercase;background:#f3f3f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -1817,6 +1841,70 @@ function salvarContagemFinal(nome,quando){
 }
 
 // Exporta CSV das especificações (todos os locais)
+// Gera a lista de conferência (em branco) de um local para impressão/PDF (v77).
+// Colunas: Sublocal · Item · Un. Contagem · Conferência (vazia para preencher à mão).
+// O Título (nome do Local) fica no <thead>, então repete no topo de cada página impressa.
+function unidContagemLabel(lid,p){
+  const spec=getSpec(lid,p.cod);
+  if(!spec)return `Unidade Saipos · ${p.unidade}`;
+  if(spec.modo==='contador')return `${spec.embalagem||'Unidade'} · ×${spec.fator||1} ${p.unidade}`;
+  return `Digitar em ${p.unidade}`;
+}
+function exportarListaLocalPDF(lid){
+  const l=getLocal(lid);
+  if(!l){alert('Local não encontrado.');return;}
+  const prods=getProdsLocal(lid);
+  if(!prods.length){alert('Este local não tem itens para exportar.');return;}
+  // Ordem dos sublocais conforme o roteiro; "Sem Sublocal" por último.
+  const ordem=new Map();
+  getContableSubs(lid).forEach((s,i)=>ordem.set(s.id,i));
+  // Monta linhas com a chave de ordenação.
+  const rows=prods.map(p=>{
+    const slId=getVinculo(lid,p.cod);
+    const semSub=isItemSemSublocalEfetivo(lid,p.cod);
+    const subNome=semSub?'Sem Sublocal':getSublocNome(lid,slId);
+    const subOrd=semSub?Number.MAX_SAFE_INTEGER:(ordem.has(slId)?ordem.get(slId):Number.MAX_SAFE_INTEGER-1);
+    return {subNome,subOrd,grupo:p.grupo||'',nome:p.nome||'',un:unidContagemLabel(lid,p)};
+  });
+  rows.sort((a,b)=>a.subOrd-b.subOrd
+    ||a.subNome.localeCompare(b.subNome,'pt-BR')
+    ||a.grupo.localeCompare(b.grupo,'pt-BR')
+    ||a.nome.localeCompare(b.nome,'pt-BR'));
+  // Corpo da tabela: nome do sublocal só na 1ª linha de cada grupo (mais limpo).
+  let body='',lastSub=null;
+  rows.forEach(r=>{
+    const novoGrupo=r.subNome!==lastSub;
+    const subCell=novoGrupo?esc(r.subNome):'';
+    if(novoGrupo)lastSub=r.subNome;
+    body+=`<tr>
+      <td class="pa-sub">${subCell}</td>
+      <td>${esc(r.nome)}</td>
+      <td>${esc(r.un)}</td>
+      <td class="pa-conf"></td>
+    </tr>`;
+  });
+  const agora=new Date();
+  const dataStr=agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const meta=`${dataStr} · ${prods.length} ${prods.length===1?'item':'itens'}${currentUserNome?' · '+esc(currentUserNome):''}`;
+  const html=`<table class="pa-table">
+    <thead>
+      <tr><th colspan="4" class="pa-loc">${esc(l.nome)}</th></tr>
+      <tr><th colspan="4" class="pa-meta">${meta}</th></tr>
+      <tr>
+        <th class="pa-th col-sub">Sublocal</th>
+        <th class="pa-th col-item">Item</th>
+        <th class="pa-th col-un">Un. Contagem</th>
+        <th class="pa-th col-conf">Conferência</th>
+      </tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table>`;
+  const area=document.getElementById('print-area');
+  area.innerHTML=html;
+  document.title=`Conferência ${l.nome} - ${dataStr}`;
+  setTimeout(()=>window.print(),60);
+}
+
 function exportarEspecsCSV(){
   const agora=new Date();
   const dataExport=agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -2515,6 +2603,7 @@ function renderPlano(lid){
   document.getElementById('plano-sub').textContent=semSpec>0?`⚠️ ${semSpec} sem especificação`:totalDone>0?`${totalDone}/${totalProds} contados`:`${totalProds} itens`;
   let proximoIdx=subs.findIndex(sl=>topStatus(lid,sl.id)!=='done');if(proximoIdx===-1)proximoIdx=0;
   let h='';
+  h+=`<button id="btn-export-pdf-local" style="width:100%;padding:11px 14px;border-radius:var(--r1);background:var(--bg1);border:.5px solid var(--bd3);font-size:14px;font-weight:500;color:var(--tx1);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit"><i class="ti ti-printer" style="font-size:17px;color:var(--acc)"></i> Exportar lista para impressão</button>`;
   if(semSpec>0)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
     <div><div style="font-size:13px;font-weight:500;color:#92400E">${semSpec} itens sem especificação</div>
     ${isAdminRole()?'<button id="btn-ir-gestao" style="margin-top:6px;font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Ir para Gestão →</button>':''}</div></div>`;
@@ -2540,6 +2629,7 @@ function renderPlano(lid){
       ${isNext&&status!=='done'?'<div style="font-size:11px;color:var(--acc);margin-top:3px;font-weight:500">↑ Começar aqui</div>':''}</div>${badge}</div>`;
   });
   document.getElementById('plano-list').innerHTML=h;
+  document.getElementById('btn-export-pdf-local')?.addEventListener('click',()=>exportarListaLocalPDF(lid));
   document.getElementById('plano-list').querySelectorAll('[data-action="sublocal"]').forEach(el=>el.addEventListener('click',()=>abrirEtapa(lid,el.dataset.slid)));
   const btnGestao=document.getElementById('btn-ir-gestao');
   if(btnGestao)btnGestao.addEventListener('click',()=>{homeTab('gestao');show('s-home');});
@@ -4693,5 +4783,6 @@ document.addEventListener('keydown',e=>{
   else if(mq.addListener) mq.addListener(onThemeChange);
 })();
 </script>
+<div id="print-area"></div>
 </body>
 </html>
