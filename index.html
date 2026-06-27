@@ -1539,6 +1539,10 @@ function salvar(){
     if(isAdminRole()){
       db.collection(RASCUNHO_COL).doc(CONFIG_DOC).set({locais,sublocais,subsubs,vinculos,ajustes,qtdsPadrao})
         .catch(e=>console.warn('Erro ao salvar config compartilhada:',e));
+      // Specs são configuração global: replica para o doc compartilhado lido por todos os usuários.
+      // (Antes só o salvarNuvem() gravava cfg_specs, então edições de spec pela tela não propagavam.)
+      db.collection(RASCUNHO_COL).doc(SPECS_DOC).set({specs})
+        .catch(e=>console.warn('Erro ao salvar specs compartilhadas:',e));
     }
     const payload={locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao};
     const tentarSalvar=(tentativa)=>{
@@ -1696,8 +1700,20 @@ function iniciarListenerContagemAtiva(){
     snap.docChanges().forEach(change=>{
       const lid=change.doc.id;
       const d=change.doc.data();
-      // Documentos especiais: ignorar no listener de rascunhos
-      if(lid===SPECS_DOC)return;
+      // Specs compartilhadas mudaram (admin editou): aplica para todos em tempo real.
+      // Mescla por local/item: a versão compartilhada (admin) prevalece sobre a do usuário.
+      if(lid===SPECS_DOC){
+        if(change.type!=='removed'){
+          const sharedSpecs=d.specs||{};
+          const allLids=new Set([...Object.keys(specs),...Object.keys(sharedSpecs)]);
+          const merged={};
+          allLids.forEach(l=>{merged[l]={...(specs[l]||{}),...(sharedSpecs[l]||{})};});
+          specs=merged;
+          try{localStorage.setItem(SK,JSON.stringify({locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao}));}catch(e){}
+          needsCountRerender=true;
+        }
+        return;
+      }
       // Configuração global mudou (admin alterou locais/itens): aplica para todos em tempo real
       if(lid===CONFIG_DOC){
         if(change.type!=='removed'){
