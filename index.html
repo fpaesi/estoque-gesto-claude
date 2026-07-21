@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v85</title>
+<title>Estoque Gesto v86</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -306,7 +306,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v85</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v86</span></span></div>
   </div>
 </div>
 
@@ -386,7 +386,7 @@
   <div class="topbar">
     <button class="tbtn" onclick="fecharDreg()"><i class="ti ti-arrow-left"></i></button>
     <div style="text-align:center"><div class="tt" id="dreg-title">Registro</div><div class="ts" id="dreg-sub"></div></div>
-    <div style="width:36px"></div>
+    <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit">🏠 Início</button>
   </div>
   <div class="content" id="dreg-cnt"></div>
   <div class="bbar" id="dreg-bbar"></div>
@@ -397,7 +397,7 @@
   <div class="topbar">
     <button class="tbtn" onclick="fecharDreg()"><i class="ti ti-arrow-left"></i></button>
     <div style="text-align:center"><div class="tt">Conferência</div><div class="ts">Insumos processados</div></div>
-    <div style="width:36px"></div>
+    <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit">🏠 Início</button>
   </div>
   <div class="content" id="dconf-cnt"></div>
   <div class="bbar" id="dconf-bbar"></div>
@@ -1394,7 +1394,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v85';
+const APP_VERSION = 'v86';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
