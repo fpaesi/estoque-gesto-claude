@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v84</title>
+<title>Estoque Gesto v85</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -301,11 +301,12 @@
     <div class="ntab with-icon on" data-home-tab="locais"><i class="ti ti-map-pin ntab-icon"></i>Locais</div>
     <div class="ntab with-icon" data-home-tab="consolidado"><i class="ti ti-chart-bar ntab-icon"></i>Resumo</div>
     <div class="ntab with-icon" data-home-tab="historico"><i class="ti ti-clock ntab-icon"></i>Histórico</div>
+    <div class="ntab with-icon" data-home-tab="diario" id="tab-diario"><i class="ti ti-notebook ntab-icon"></i>Diário</div>
     <div class="ntab with-icon" data-home-tab="gestao" id="tab-gestao"><i class="ti ti-settings ntab-icon"></i>Gestão</div>
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v84</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v85</span></span></div>
   </div>
 </div>
 
@@ -378,6 +379,28 @@
     <div class="card" style="width:100%" id="saved-sum"></div>
   </div>
   <div class="bbar"><button id="btn-saved-home" class="bp">Voltar ao início</button></div>
+</div>
+
+<!-- v85: Diário — registro de produção / erro / desperdício -->
+<div id="s-dreg" class="scr">
+  <div class="topbar">
+    <button class="tbtn" onclick="fecharDreg()"><i class="ti ti-arrow-left"></i></button>
+    <div style="text-align:center"><div class="tt" id="dreg-title">Registro</div><div class="ts" id="dreg-sub"></div></div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="content" id="dreg-cnt"></div>
+  <div class="bbar" id="dreg-bbar"></div>
+</div>
+
+<!-- v85: Diário — conferência de processados -->
+<div id="s-dconf" class="scr">
+  <div class="topbar">
+    <button class="tbtn" onclick="fecharDreg()"><i class="ti ti-arrow-left"></i></button>
+    <div style="text-align:center"><div class="tt">Conferência</div><div class="ts">Insumos processados</div></div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="content" id="dconf-cnt"></div>
+  <div class="bbar" id="dconf-bbar"></div>
 </div>
 
 <div class="modal-bg" id="modal-hist-detail">
@@ -491,6 +514,29 @@
   </div>
 </div>
 
+<!-- v85: Modal — Atualizar cardápio pelo Saipos -->
+<div class="modal-bg" id="modal-atualizar-cardapio">
+  <div class="modal-box" style="gap:12px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:15px;font-weight:500">Atualizar cardápio pelo Saipos</div>
+    <div style="font-size:12px;color:var(--tx1);background:var(--bg2);border:.5px solid var(--bd3);border-radius:var(--r2);padding:10px;line-height:1.6">
+      <div style="font-weight:500;margin-bottom:4px">Passo único de configuração (no computador):</div>
+      Arraste o botão azul abaixo para a sua <strong>barra de favoritos</strong> do navegador.
+    </div>
+    <a id="ac-bookmarklet" href="#" draggable="true" title="Arraste-me para a barra de favoritos" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:var(--r2);background:var(--acc);color:#E6F1FB;font-size:14px;font-weight:500;text-decoration:none;cursor:grab;user-select:none">
+      <i class="ti ti-download"></i> Extrair cardápio do Saipos
+    </a>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6">
+      <strong>Para atualizar:</strong> com o Saipos aberto e logado, clique no botão <em>Extrair cardápio do Saipos</em> nos favoritos e aguarde. Toque em <em>Copiar</em> e cole aqui embaixo.
+    </div>
+    <textarea id="ac-json" placeholder="Cole aqui o resultado copiado do Saipos..." style="width:100%;height:90px;font-size:12px;font-family:monospace;padding:10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;outline:none"></textarea>
+    <div id="ac-status" style="font-size:12px;min-height:16px;color:var(--tx2)"></div>
+    <div style="display:flex;gap:8px">
+      <button id="ac-cancel" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid var(--bd3);font-size:14px;cursor:pointer;color:var(--tx2)">Fechar</button>
+      <button id="ac-analisar" style="flex:2;padding:10px;border-radius:var(--r2);background:var(--acc);border:none;font-size:14px;font-weight:500;cursor:pointer;color:#E6F1FB">Analisar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Vincular item a local/sublocal -->
 <div class="modal-bg" id="modal-vincular">
   <div class="modal-box" style="gap:12px">
@@ -546,6 +592,14 @@
         <button class="mo" id="nu-role-admin" data-role="admin">Administrador</button>
         <button class="mo on" id="nu-role-contador" data-role="contador_conferente">Contador/Conferente</button>
       </div>
+    </div>
+    <div id="nu-setor-wrap">
+      <div class="fl">Setor</div>
+      <select id="nu-setor" class="fi" style="width:100%">
+        <option value="">Todos os setores</option>
+        <option>Cozinha</option><option>Bar</option><option>Forno</option><option>Salão</option>
+      </select>
+      <div style="font-size:11px;color:var(--tx2);margin-top:4px">Contador com setor vê apenas os locais e itens do seu setor. Gestores veem tudo.</div>
     </div>
     <div id="nu-tabs-wrap">
       <div class="fl">Abas liberadas para este contador</div>
@@ -1179,6 +1233,7 @@ const ACCESS_TABS=[
   {id:'consolidado',label:'Resumo'},
   {id:'historico',label:'Histórico'},
 ];
+let currentUserSetor=null; // v85: setor do colaborador — null = todos
 let currentUserTabs=null; // abas liberadas para o usuário logado (array de ids) ou null = todas
 let nuRole='contador_conferente'; // role selecionado no modal novo usuário
 let nuTabs=ACCESS_TABS.map(t=>t.id); // abas marcadas no modal novo usuário
@@ -1274,12 +1329,22 @@ const CONFIG_DOC='cfg_config'; // configuração global: locais, sublocais, vín
 //          allow read: if request.auth != null;
 //          // v72: docs de configuração global só podem ser escritos por admin
 //          allow write: if request.auth != null && (
-//            !(docId in ['cfg_config','cfg_specs','cfg_catalogo','cfg_fechamento']) ||
+//            !(docId in ['cfg_config','cfg_specs','cfg_catalogo','cfg_fechamento','cfg_cardapio','cfg_diario']) ||
 //            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin'
 //          );
 //        }
 //        match /historico/{id} {
 //          allow read, write: if request.auth != null;
+//        }
+//        // v85: diário (produção, conferência, erros, desperdícios)
+//        match /diario/{id} {
+//          allow read: if request.auth != null;
+//          allow create: if request.auth != null &&
+//            request.resource.data.uid == request.auth.uid;
+//          // só admin muda status (lançado/ignorado); ninguém apaga
+//          allow update: if request.auth != null &&
+//            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin';
+//          allow delete: if false;
 //        }
 //        // v80: log de acessos (logins). Só admin lê. Cada usuário pode criar o
 //        // próprio registro de sucesso; falhas são gravadas pela Cloud Function
@@ -1299,6 +1364,9 @@ const CONFIG_DOC='cfg_config'; // configuração global: locais, sublocais, vín
 //    service firebase.storage {
 //      match /b/{bucket}/o {
 //        match /contagem-fotos/{userId}/{allPaths=**} {
+//          allow read, write: if request.auth != null;
+//        }
+//        match /diario/{userId}/{allPaths=**} {
 //          allow read, write: if request.auth != null;
 //        }
 //      }
@@ -1326,7 +1394,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v84';
+const APP_VERSION = 'v85';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2303,12 +2371,13 @@ if(firebaseReady){
           currentUserRole=normalizeRole(perf.role);
           currentUserNome=perf.nome||user.email;
           currentUserTabs=normalizeTabs(perf.tabs); // v80
+          currentUserSetor=perf.setor||null; // v85
           mustChange=!!perf.mustChangePassword; // v80
         }else{
           // Primeiro acesso — cria perfil admin automaticamente
           currentUserRole='admin';
           currentUserNome=user.displayName||user.email;
-          currentUserTabs=null; // admin vê todas
+          currentUserTabs=null;currentUserSetor=null; // admin vê todas
           await db.collection('perfis').doc(user.uid).set({
             nome:currentUserNome,email:user.email,role:'admin',tabs:[],
             disabled:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -2336,7 +2405,7 @@ if(firebaseReady){
       // v80: se o admin definiu uma senha temporária, obriga a troca antes de seguir
       if(mustChange)abrirTrocaSenha(true);
     }else{
-      currentUser=null;currentUserRole=null;currentUserNome=null;currentUserTabs=null;
+      currentUser=null;currentUserRole=null;currentUserNome=null;currentUserTabs=null;currentUserSetor=null;
       setSyncState('local');
       show('s-login');
     }
@@ -2578,6 +2647,7 @@ function userAllowedTabs(){
 }
 // O usuário logado pode acessar a aba t? ('gestao' só admin.)
 function canAccessTab(t){
+  if(t==='diario')return true; // v85: Diário liberado a todos os usuários logados
   if(t==='gestao'||t==='usuarios')return isAdminRole();
   return userAllowedTabs().includes(t);
 }
@@ -2725,8 +2795,9 @@ function renderHome(){
   const c=document.getElementById('home-cnt');
   if(homeTabId==='locais'){
     // Classifica cada local em uma das três categorias
+    const visLocais=locaisVisiveis(); // v85: setorização
     const finalizados=[], emContagem=[], aContar=[];
-    locais.forEach(l=>{
+    visLocais.forEach(l=>{
       const r=rascunhos[l.id];
       const cnt=counts[l.id]||{};
       const done=Object.values(cnt).filter(x=>x.touched).length;
@@ -2736,7 +2807,7 @@ function renderHome(){
     });
 
     // Progresso geral
-    const total=locais.length;
+    const total=visLocais.length;
     const nFin=finalizados.length;
     const pct=total?Math.round(nFin/total*100):0;
     const tudo=nFin===total;
@@ -2841,12 +2912,13 @@ function renderHome(){
     c.querySelectorAll('[data-action="local"]').forEach(el=>el.addEventListener('click',()=>goToLocal(el.dataset.lid)));
   } else if(homeTabId==='consolidado'){renderConsolidado(c);
   } else if(homeTabId==='historico'){renderHistorico(c);
+  } else if(homeTabId==='diario'){renderDiario(c);
   } else {renderGestao(c);}
 }
 
 function renderSel(){
   document.getElementById('sel-list').innerHTML='<div class="sec">Selecione o local</div>'+
-    locais.map(l=>`<div class="row" data-lid="${l.id}" data-action="local">
+    locaisVisiveis().map(l=>`<div class="row" data-lid="${l.id}" data-action="local">
       <div style="font-size:22px;width:32px;text-align:center">${l.icon}</div>
       <div style="flex:1"><div style="font-size:15px;font-weight:500">${esc(l.nome)}</div>
       <div style="font-size:12px;color:var(--tx2)">${getProdsLocal(l.id).length} itens</div></div>
@@ -3380,8 +3452,8 @@ function renderSaved(){
 
 function renderGestao(c){
   if(!isAdminRole()){homeTab('locais');return;}
-  const tabs=['locais','specs','base','usuarios','acessos','backup'];
-  const tabLabel={locais:'Locais',specs:'Specs',base:'Base',usuarios:'Usuários',acessos:'Acessos',backup:'Backup'};
+  const tabs=['locais','specs','base','diario','usuarios','acessos','backup'];
+  const tabLabel={locais:'Locais',specs:'Specs',base:'Base',diario:'Diário',usuarios:'Usuários',acessos:'Acessos',backup:'Backup'};
   let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);overflow:hidden;font-size:13px">
     ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:1;padding-left:4px;padding-right:4px">${tabLabel[t]}</div>`).join('')}</div>`;
 
@@ -3560,6 +3632,8 @@ function renderGestao(c){
     h+='<div id="gestao-usuarios-list"></div>';
   } else if(gestaoTabId==='acessos'){
     h+='<div id="gestao-acessos-list"></div>';
+  } else if(gestaoTabId==='diario'){
+    h+=renderGestaoDiario();
   } else {
     const nSpecs=Object.values(specs).reduce((a,b)=>a+Object.keys(b).length,0);
     const nSubs=Object.values(sublocais).reduce((a,b)=>a+b.length,0);
@@ -3599,6 +3673,7 @@ function renderGestao(c){
     const alvo=c.querySelector('#gestao-acessos-list');
     if(alvo)renderAcessos(alvo);
   }
+  if(gestaoTabId==='diario'){wireGestaoDiario(c);} // v85
 
   // Event listeners
   c.querySelectorAll('[data-action="gestao-tab"]').forEach(el=>el.addEventListener('click',()=>{gestaoTabId=el.dataset.tab;gestaoAddLocalOpen=false;renderHome();}));
@@ -3909,6 +3984,618 @@ function adicionarItem(cod){
 }
 
 // ── Base / Catálogo Saipos ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// v85 — DIÁRIO: produção de processados, conferência, erros de prato e desperdícios
+// Registros ficam na collection 'diario' (histórico completo, nada é apagado).
+// Admin lança no Saipos pela Fila (Gestão > Diário): via Claude ou bookmarklet.
+// ═══════════════════════════════════════════════════════════════════════════════
+const DIARIO_COL='diario';
+const SK_CARD='app-estoque-gesto-cardapio-v1';
+const CARDAPIO_DOC='cfg_cardapio';
+const DIARIO_CFG_DOC='cfg_diario';
+let CARDAPIO=[],cardapioUpdatedAt=0;
+let diarioCfg={processados:[],setores:{},lanc:null};
+let diarioCfgLoaded=false;
+let diarioHoje=[],diarioHojeDia=null;
+let diarioHist=[],diarioHistOpen=false,diarioHistDias=7;
+let filaPend=[];
+let dregTipo=null,dregItem=null,dregMotivo=null,dregDestino=null,dregBusca='',dregFotoBlob=null,dregFotoTipo='';
+let dconfVals={};
+let gdProcBusca='';
+
+const DIARIO_TIPOS={
+  producao:{label:'Produção',icon:'ti-tools-kitchen-2',cor:'#0F6E56',bg:'#E1F5EE',verbo:'Registrar produção'},
+  conferencia:{label:'Conferência',icon:'ti-clipboard-check',cor:'#185FA5',bg:'#E6F1FB',verbo:'Conferir processados'},
+  erro:{label:'Erro de prato',icon:'ti-alert-triangle',cor:'#854F0B',bg:'#FAEEDA',verbo:'Registrar erro'},
+  desperdicio:{label:'Desperdício',icon:'ti-trash',cor:'#A32D2D',bg:'#FCEBEB',verbo:'Registrar desperdício'},
+};
+const SETORES=['Cozinha','Bar','Forno','Salão'];
+const MOTIVOS_ERRO=['Comanda errada','Preparo errado','Devolvido pelo cliente','Outro'];
+const DESTINOS_ERRO=['Descartado','Consumo equipe'];
+const MOTIVOS_DESP=['Vencido','Estragado','Queda / quebra','Erro de preparo','Outro'];
+
+function hojeStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function diaStrOffset(n){const d=new Date();d.setDate(d.getDate()-n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function dnorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function parseQtdDiario(v){const n=parseFloat(String(v??'').replace(/\./g,'').replace(',','.'));return isFinite(n)?n:NaN;}
+function fmtQtdDiario(n){return Number(n).toLocaleString('pt-BR',{maximumFractionDigits:3});}
+
+// ── Setores ────────────────────────────────────────────────────────────────────
+function setorLocais(setor){
+  if(diarioCfg.setores&&Array.isArray(diarioCfg.setores[setor])&&diarioCfg.setores[setor].length)return diarioCfg.setores[setor];
+  const l=locais.find(x=>x.nome===setor||x.id===setor);
+  return l?[l.id]:[];
+}
+function locaisVisiveis(){
+  if(isAdminRole()||!currentUserSetor)return locais;
+  const ids=new Set(setorLocais(currentUserSetor));
+  const f=locais.filter(l=>ids.has(l.id));
+  return f.length?f:locais;
+}
+function codsDoSetor(){
+  if(isAdminRole()||!currentUserSetor)return null;
+  const s=new Set();
+  setorLocais(currentUserSetor).forEach(lid=>getProdsLocal(lid).forEach(p=>s.add(p.cod)));
+  return s.size?s:null;
+}
+
+// ── Cardápio (base de pratos p/ erro de prato) ────────────────────────────────
+function carregarCardapioLocal(){
+  try{const d=JSON.parse(localStorage.getItem(SK_CARD)||'null');
+    if(d&&Array.isArray(d.cardapio)){CARDAPIO=d.cardapio;cardapioUpdatedAt=d.updatedAt||0;}}catch(e){}
+}
+function salvarCardapioLocal(){try{localStorage.setItem(SK_CARD,JSON.stringify({cardapio:CARDAPIO,updatedAt:cardapioUpdatedAt}));}catch(e){}}
+async function sincronizarCardapio(){
+  if(!firebaseReady||!currentUser)return;
+  try{const doc=await db.collection(RASCUNHO_COL).doc(CARDAPIO_DOC).get();
+    if(doc.exists){const d=doc.data();
+      if((d.updatedAt||0)>cardapioUpdatedAt&&Array.isArray(d.cardapio)){CARDAPIO=d.cardapio;cardapioUpdatedAt=d.updatedAt;salvarCardapioLocal();}}
+  }catch(e){console.warn('cardapio sync:',e);}
+}
+async function salvarCardapioNuvem(){
+  if(!firebaseReady||!currentUser)return;
+  try{await db.collection(RASCUNHO_COL).doc(CARDAPIO_DOC).set({cardapio:CARDAPIO,updatedAt:cardapioUpdatedAt});}catch(e){console.warn(e);}
+}
+function analisarCardapioSaipos(){
+  const st=document.getElementById('ac-status');
+  let raw=(document.getElementById('ac-json').value||'').trim();
+  if(!raw){st.textContent='Cole o resultado copiado do Saipos.';return;}
+  let arr;
+  try{arr=JSON.parse(raw);}catch(e){st.textContent='Conteúdo inválido — cole exatamente o que foi copiado.';return;}
+  if(!Array.isArray(arr)||!arr.length){st.textContent='Nenhum item encontrado no conteúdo colado.';return;}
+  const norm=arr.map(x=>({cod:String(x.cod||''),nome:String(x.nome||''),cat:String(x.cat||'')})).filter(x=>x.nome);
+  if(!norm.length){st.textContent='Nenhum item válido no conteúdo colado.';return;}
+  CARDAPIO=norm;cardapioUpdatedAt=Date.now();
+  salvarCardapioLocal();salvarCardapioNuvem();
+  st.style.color='#27500A';st.textContent='✓ Cardápio atualizado: '+norm.length+' itens.';
+  document.getElementById('ac-json').value='';
+  setTimeout(()=>{closeModal('modal-atualizar-cardapio');renderHome();},900);
+}
+
+// ── Configuração do Diário (processados p/ conferência, setores, lançamento) ──
+async function ensureDiarioCfg(){
+  if(diarioCfgLoaded||!firebaseReady||!currentUser)return;
+  try{const doc=await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).get();
+    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null};}
+  }catch(e){console.warn('cfg diario:',e);}
+  diarioCfgLoaded=true;
+}
+async function salvarDiarioCfg(){
+  try{await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).set(diarioCfg);}
+  catch(e){alert('Erro ao salvar configuração: '+e.message);}
+}
+
+// ── Registros ──────────────────────────────────────────────────────────────────
+async function carregarDiarioHoje(){
+  if(!firebaseReady||!currentUser)return;
+  const hoje=hojeStr();
+  try{
+    const snap=await db.collection(DIARIO_COL).where('dataDia','==',hoje).get();
+    diarioHoje=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ts||0)-(a.ts||0));
+    diarioHojeDia=hoje;
+  }catch(e){console.warn('diario hoje:',e);diarioHoje=[];}
+}
+async function carregarDiarioHist(dias){
+  try{
+    const ini=diaStrOffset(dias);
+    const snap=await db.collection(DIARIO_COL).where('dataDia','>=',ini).get();
+    diarioHist=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  }catch(e){console.warn('diario hist:',e);diarioHist=[];}
+}
+async function salvarRegistroDiario(reg){
+  reg.ts=Date.now();
+  reg.dataDia=hojeStr();
+  reg.uid=currentUser?currentUser.uid:null;
+  reg.userNome=currentUserNome||'';
+  reg.setor=currentUserSetor||null;
+  reg.status=reg.tipo==='conferencia'?'na':'pendente';
+  const ref=await db.collection(DIARIO_COL).add(reg);
+  return ref.id;
+}
+async function marcarRegistroDiario(id,status){
+  if(!isAdminRole())return;
+  try{
+    await db.collection(DIARIO_COL).doc(id).update({status,statusPor:currentUserNome||'',statusEm:Date.now()});
+    filaPend=filaPend.filter(r=>r.id!==id);
+    const el=document.getElementById('gd-fila');if(el)renderFilaLista(el);
+  }catch(e){alert('Erro: '+e.message);}
+}
+
+// ── Aba Diário (home) ─────────────────────────────────────────────────────────
+function renderDiario(c){
+  c.innerHTML='<div class="empty"><span>Carregando o diário…</span></div>';
+  Promise.all([ensureDiarioCfg(),carregarDiarioHoje(),sincronizarCardapio()]).then(()=>{
+    if(homeTabId!=='diario')return;
+    const el=document.getElementById('home-cnt');
+    if(el)renderDiarioBody(el);
+  });
+}
+function diarioCountHoje(tipo){return diarioHoje.filter(r=>r.tipo===tipo).length;}
+function regLinhaHTML(r,admin){
+  const t=DIARIO_TIPOS[r.tipo]||DIARIO_TIPOS.producao;
+  const hora=r.ts?new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+  let desc,sub;
+  if(r.tipo==='conferencia'){
+    desc='Conferência · '+(r.items?r.items.length:0)+' itens';
+    sub=(r.userNome||'')+' · '+hora+(r.setor?' · '+esc(r.setor):'');
+  }else{
+    desc=esc((r.item&&r.item.nome)||'?')+(r.qtd!=null?' · '+fmtQtdDiario(r.qtd)+' '+esc((r.item&&r.item.unidade)||''):'');
+    sub=[t.label,r.motivo?esc(r.motivo):null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
+  }
+  const stBadge=r.tipo==='conferencia'?'' :
+    r.status==='lancado'?'<span class="bdg" style="background:#EAF3DE;color:#27500A">lançado</span>' :
+    r.status==='ignorado'?'<span class="bdg" style="background:var(--bg2);color:var(--tx2)">ignorado</span>' :
+    '<span class="bdg" style="background:#FAEEDA;color:#633806">pendente</span>';
+  return `<div class="row" data-reg-id="${r.id}" style="cursor:default">
+    <i class="ti ${t.icon}" style="font-size:20px;color:${t.cor};width:28px;text-align:center;flex-shrink:0"></i>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${desc}</div>
+      <div style="font-size:11.5px;color:var(--tx2);margin-top:1px">${sub}${r.obs?' · '+esc(r.obs):''}</div>
+    </div>${stBadge}</div>`;
+}
+function renderDiarioBody(c){
+  const setorTxt=isAdminRole()?'Gestor · vê tudo':(currentUserSetor?'Setor: '+esc(currentUserSetor):'Sem setor definido');
+  let h=`<div style="font-size:12px;color:var(--tx2);display:flex;justify-content:space-between;align-items:center">
+    <span>${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}</span><span>${setorTxt}</span></div>`;
+  h+='<div class="sec">Registrar agora</div>';
+  const cards=[
+    {tipo:'producao',sub:'Insumos processados/beneficiados hoje'},
+    {tipo:'conferencia',sub:'Contagem rápida dos processados em estoque'},
+    {tipo:'erro',sub:'Prato feito por engano ou devolvido'},
+    {tipo:'desperdicio',sub:'Vencidos, estragados, quebras'},
+  ];
+  cards.forEach(cd=>{
+    const t=DIARIO_TIPOS[cd.tipo];
+    const n=diarioCountHoje(cd.tipo);
+    h+=`<div class="row" data-diario-acao="${cd.tipo}">
+      <div style="width:38px;height:38px;border-radius:9px;background:${t.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${t.icon}" style="font-size:20px;color:${t.cor}"></i></div>
+      <div style="flex:1"><div style="font-size:14.5px;font-weight:500">${t.label}</div>
+      <div style="font-size:12px;color:var(--tx2)">${cd.sub}</div></div>
+      ${n?`<span class="bdg" style="background:${t.bg};color:${t.cor}">${n} hoje</span>`:''}
+      <i class="ti ti-chevron-right" style="color:var(--tx2)"></i></div>`;
+  });
+  h+=`<div class="sec">Registros de hoje · ${diarioHoje.length}</div>`;
+  if(!diarioHoje.length)h+='<div class="empty" style="padding:20px"><span>Nenhum registro hoje ainda.</span></div>';
+  else h+=diarioHoje.map(r=>regLinhaHTML(r)).join('');
+  h+=`<button class="bs" id="btn-diario-hist" style="width:100%;margin-top:4px">${diarioHistOpen?'Ocultar histórico':'Ver histórico dos últimos dias'}</button>`;
+  if(diarioHistOpen){
+    h+='<div id="diario-hist-wrap">';
+    const grupos={};
+    diarioHist.filter(r=>r.dataDia!==hojeStr()).forEach(r=>{(grupos[r.dataDia]=grupos[r.dataDia]||[]).push(r);});
+    const dias=Object.keys(grupos).sort().reverse();
+    if(!dias.length)h+='<div class="empty" style="padding:16px"><span>Sem registros no período.</span></div>';
+    dias.forEach(d=>{
+      const dt=new Date(d+'T12:00:00');
+      h+=`<div class="hist-date-sep">${dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}</div>`;
+      h+=grupos[d].map(r=>regLinhaHTML(r)).join('');
+    });
+    h+=`<button class="bg_" id="btn-diario-hist-mais" style="width:100%">Carregar mais dias</button></div>`;
+  }
+  c.innerHTML=h;
+  c.querySelectorAll('[data-diario-acao]').forEach(el=>el.addEventListener('click',()=>{
+    const tp=el.dataset.diarioAcao;
+    if(tp==='conferencia')abrirDconf();else abrirDreg(tp);
+  }));
+  const bh=c.querySelector('#btn-diario-hist');
+  if(bh)bh.addEventListener('click',async()=>{
+    diarioHistOpen=!diarioHistOpen;
+    if(diarioHistOpen)await carregarDiarioHist(diarioHistDias);
+    renderDiarioBody(c);
+  });
+  const bm=c.querySelector('#btn-diario-hist-mais');
+  if(bm)bm.addEventListener('click',async()=>{diarioHistDias+=14;await carregarDiarioHist(diarioHistDias);renderDiarioBody(c);});
+}
+
+// ── Formulário de registro (produção / erro / desperdício) ────────────────────
+function abrirDreg(tipo){
+  dregTipo=tipo;dregItem=null;dregMotivo=null;dregDestino=null;dregBusca='';dregFotoBlob=null;
+  const t=DIARIO_TIPOS[tipo];
+  document.getElementById('dreg-title').textContent=t.label;
+  document.getElementById('dreg-sub').textContent=tipo==='erro'?'Escolha o prato do cardápio':'Escolha o item da base';
+  show('s-dreg');renderDreg();
+}
+function fecharDreg(){show('s-home');homeTab('diario');}
+function dregLista(){
+  if(dregTipo==='erro')return CARDAPIO.map(x=>({cod:x.cod,nome:x.nome,grupo:x.cat||'',unidade:'UN'}));
+  let lista=CATALOGO;
+  const allowed=codsDoSetor();
+  if(allowed)lista=lista.filter(x=>allowed.has(x.cod));
+  if(dregTipo==='producao'&&diarioCfg.processados&&diarioCfg.processados.length&&!dregBusca){
+    const pset=new Set(diarioCfg.processados);
+    const proc=lista.filter(x=>pset.has(x.cod));
+    if(proc.length)return proc;
+  }
+  return lista;
+}
+function renderDreg(){
+  const c=document.getElementById('dreg-cnt');
+  const bb=document.getElementById('dreg-bbar');
+  const t=DIARIO_TIPOS[dregTipo];
+  let h='';
+  if(!dregItem){
+    h+=`<input id="dreg-busca" class="srch" placeholder="${dregTipo==='erro'?'Buscar prato...':'Buscar item...'}" value="${esc(dregBusca)}" autocomplete="off"/>`;
+    let lista=dregLista();
+    const q=dnorm(dregBusca);
+    if(q)lista=lista.filter(x=>dnorm(x.nome).includes(q)||dnorm(x.grupo).includes(q));
+    if(dregTipo==='erro'&&!CARDAPIO.length){
+      h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
+        <div style="font-size:13px;color:#92400E">O cardápio ainda não foi carregado. ${isAdminRole()?'Vá em Gestão › Diário › Atualizar cardápio.':'Peça a um administrador para atualizar o cardápio.'}<br>Você também pode digitar o nome do prato e usar o texto digitado.</div></div>`;
+    }
+    h+=lista.slice(0,40).map(x=>`<div class="row" data-dreg-cod="${esc(x.cod)}" data-dreg-nome="${esc(x.nome)}" data-dreg-un="${esc(x.unidade)}" data-dreg-gr="${esc(x.grupo)}">
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11.5px;color:var(--tx2)">${esc(x.grupo)}${x.unidade?' · '+esc(x.unidade):''}</div></div>
+      <i class="ti ti-chevron-right" style="color:var(--tx2)"></i></div>`).join('');
+    if(dregBusca&&dregBusca.trim().length>=3)h+=`<div class="row" id="dreg-manual" style="border-style:dashed">
+      <i class="ti ti-pencil" style="font-size:18px;color:var(--tx2);width:28px;text-align:center"></i>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">Usar texto digitado</div>
+      <div style="font-size:11.5px;color:var(--tx2)">"${esc(dregBusca.trim())}"</div></div></div>`;
+    bb.innerHTML='';
+  }else{
+    h+=`<div class="pcard" style="border-color:${t.cor}"><div style="display:flex;align-items:center;gap:10px">
+      <i class="ti ${t.icon}" style="font-size:22px;color:${t.cor}"></i>
+      <div style="flex:1"><div style="font-size:15px;font-weight:500">${esc(dregItem.nome)}</div>
+      <div style="font-size:12px;color:var(--tx2)">${dregItem.cod?'cod '+esc(dregItem.cod)+' · ':''}${esc(dregItem.grupo||'')}</div></div>
+      <button class="zb" id="dreg-trocar">Trocar</button></div></div>`;
+    h+=`<div class="decb"><div class="decl">Quantidade (${esc(dregItem.unidade||'UN')})</div>
+      <div class="decr"><input id="dreg-qtd" class="deci" type="text" inputmode="decimal" placeholder="0" value="${dregTipo==='erro'?'1':''}"/>
+      <span class="decu">${esc(dregItem.unidade||'UN')}</span></div></div>`;
+    if(dregTipo==='erro'){
+      h+='<div class="fl" style="margin-top:4px">Motivo</div><div class="chips" style="flex-wrap:wrap">'+
+        MOTIVOS_ERRO.map(m=>`<span class="chip${dregMotivo===m?' on':''}" data-dreg-motivo="${esc(m)}">${esc(m)}</span>`).join('')+'</div>';
+      h+='<div class="fl" style="margin-top:4px">Destino</div><div class="chips">'+
+        DESTINOS_ERRO.map(m=>`<span class="chip${dregDestino===m?' on':''}" data-dreg-destino="${esc(m)}">${esc(m)}</span>`).join('')+'</div>';
+    }
+    if(dregTipo==='desperdicio'){
+      h+='<div class="fl" style="margin-top:4px">Motivo</div><div class="chips" style="flex-wrap:wrap">'+
+        MOTIVOS_DESP.map(m=>`<span class="chip${dregMotivo===m?' on':''}" data-dreg-motivo="${esc(m)}">${esc(m)}</span>`).join('')+'</div>';
+    }
+    h+=`<input id="dreg-obs" class="notei" placeholder="${dregTipo==='erro'?'Nº da comanda / observação (opcional)':'Observação (opcional)'}" style="height:38px"/>`;
+    h+=`<div style="display:flex;gap:8px;align-items:center">
+      <button class="fbtn" id="dreg-foto-btn"><i class="ti ti-camera"></i> <span id="dreg-foto-lbl">${dregFotoBlob?'Foto anexada ✓':'Foto (opcional)'}</span></button>
+      <input id="dreg-foto-input" type="file" accept="image/*" capture="environment" style="display:none"/></div>`;
+    if(dregTipo==='producao')h+=`<div class="tipb">A baixa dos insumos crus acontece no lançamento no Saipos, pela ficha técnica do processado.</div>`;
+    bb.innerHTML=`<button class="bp" id="dreg-salvar" style="background:${t.cor}"><i class="ti ti-check"></i> ${t.verbo}</button>
+      <div id="dreg-status" style="font-size:12px;color:#ff3b30;text-align:center;min-height:14px"></div>`;
+  }
+  c.innerHTML=h;
+  const bi=c.querySelector('#dreg-busca');
+  if(bi){
+    bi.addEventListener('input',()=>{dregBusca=bi.value;renderDreg();const el=document.getElementById('dreg-busca');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}});
+    setTimeout(()=>bi.focus(),60);
+  }
+  c.querySelectorAll('[data-dreg-cod]').forEach(el=>el.addEventListener('click',()=>{
+    dregItem={cod:el.dataset.dregCod,nome:el.dataset.dregNome,unidade:el.dataset.dregUn,grupo:el.dataset.dregGr};
+    renderDreg();
+  }));
+  const man=c.querySelector('#dreg-manual');
+  if(man)man.addEventListener('click',()=>{dregItem={cod:null,nome:dregBusca.trim(),unidade:'UN',grupo:'(digitado manualmente)'};renderDreg();});
+  const tr=c.querySelector('#dreg-trocar');
+  if(tr)tr.addEventListener('click',()=>{dregItem=null;renderDreg();});
+  c.querySelectorAll('[data-dreg-motivo]').forEach(el=>el.addEventListener('click',()=>{dregMotivo=el.dataset.dregMotivo;
+    c.querySelectorAll('[data-dreg-motivo]').forEach(x=>x.classList.toggle('on',x.dataset.dregMotivo===dregMotivo));}));
+  c.querySelectorAll('[data-dreg-destino]').forEach(el=>el.addEventListener('click',()=>{dregDestino=el.dataset.dregDestino;
+    c.querySelectorAll('[data-dreg-destino]').forEach(x=>x.classList.toggle('on',x.dataset.dregDestino===dregDestino));}));
+  const fb=c.querySelector('#dreg-foto-btn'),fi=c.querySelector('#dreg-foto-input');
+  if(fb&&fi){
+    fb.addEventListener('click',()=>fi.click());
+    fi.addEventListener('change',async()=>{
+      const f=fi.files&&fi.files[0];if(!f)return;
+      try{const comp=await compactarImagem(f);dregFotoBlob=comp?comp.blob:f;dregFotoTipo=(comp&&comp.blob.type)||f.type||'image/jpeg';}
+      catch(e){dregFotoBlob=f;dregFotoTipo=f.type||'image/jpeg';}
+      const lbl=document.getElementById('dreg-foto-lbl');if(lbl)lbl.textContent='Foto anexada ✓';
+    });
+  }
+  const sv=document.getElementById('dreg-salvar');
+  if(sv)sv.addEventListener('click',salvarDreg);
+}
+async function salvarDreg(){
+  const st=document.getElementById('dreg-status');
+  const qtd=parseQtdDiario(document.getElementById('dreg-qtd').value);
+  if(!isFinite(qtd)||qtd<=0){st.textContent='Informe a quantidade.';return;}
+  if((dregTipo==='erro'||dregTipo==='desperdicio')&&!dregMotivo){st.textContent='Escolha o motivo.';return;}
+  if(dregTipo==='erro'&&!dregDestino){st.textContent='Escolha o destino.';return;}
+  const btn=document.getElementById('dreg-salvar');
+  btn.disabled=true;btn.textContent='Salvando…';
+  let fotoURL=null;
+  if(dregFotoBlob&&storage&&currentUser){
+    try{
+      const path='diario/'+currentUser.uid+'/'+Date.now()+'.jpg';
+      const ref=storage.ref(path);
+      await ref.put(dregFotoBlob,{contentType:dregFotoTipo||'image/jpeg'});
+      fotoURL=await ref.getDownloadURL();
+    }catch(e){console.warn('foto diario:',e);}
+  }
+  try{
+    await salvarRegistroDiario({
+      tipo:dregTipo,
+      item:dregItem,
+      qtd,
+      motivo:dregMotivo||null,
+      destino:dregDestino||null,
+      obs:(document.getElementById('dreg-obs').value||'').trim()||null,
+      fotoURL,
+    });
+    fecharDreg();
+  }catch(e){
+    st.textContent='Erro ao salvar: '+e.message;
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> '+DIARIO_TIPOS[dregTipo].verbo;
+  }
+}
+
+// ── Conferência de processados ─────────────────────────────────────────────────
+function dconfItens(){
+  const pset=new Set(diarioCfg.processados||[]);
+  let lista=CATALOGO.filter(x=>pset.has(x.cod));
+  const allowed=codsDoSetor();
+  if(allowed)lista=lista.filter(x=>allowed.has(x.cod));
+  return lista;
+}
+function abrirDconf(){dconfVals={};show('s-dconf');renderDconf();}
+function renderDconf(){
+  const c=document.getElementById('dconf-cnt');
+  const bb=document.getElementById('dconf-bbar');
+  const itens=dconfItens();
+  if(!itens.length){
+    c.innerHTML=`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-clipboard-check" style="font-size:28px;opacity:.5"></i></div>
+      <div class="empty-title">Nenhum processado configurado</div>
+      <div class="empty-sub">${isAdminRole()?'Defina a lista de insumos processados em Gestão › Diário.':'Peça a um administrador para configurar a lista de processados (Gestão › Diário).'}</div></div>`;
+    bb.innerHTML='';return;
+  }
+  const jaHoje=diarioHoje.some(r=>r.tipo==='conferencia'&&r.uid===(currentUser&&currentUser.uid));
+  let h=jaHoje?'<div class="wb"><i class="ti ti-info-circle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12.5px;color:#92400E">Você já registrou uma conferência hoje. Um novo envio cria outro registro (o histórico guarda os dois).</div></div>':'';
+  h+='<div class="sec">Quanto tem agora de cada processado?</div>';
+  h+=itens.map(x=>`<div class="pcard" style="gap:6px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11.5px;color:var(--tx2)">${esc(x.grupo)}</div></div>
+      <input class="ii dconf-inp" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" placeholder="—" value="${dconfVals[x.cod]??''}" style="width:84px;text-align:center;font-size:16px;font-weight:600"/>
+      <span style="font-size:12px;color:var(--tx2);width:34px">${esc(x.unidade)}</span>
+    </div></div>`).join('');
+  c.innerHTML=h;
+  c.querySelectorAll('.dconf-inp').forEach(el=>el.addEventListener('input',()=>{dconfVals[el.dataset.cod]=el.value;atualizarDconfBar();}));
+  bb.innerHTML=`<button class="bp" id="dconf-salvar"><i class="ti ti-check"></i> Salvar conferência</button>
+    <div id="dconf-status" style="font-size:12px;color:var(--tx2);text-align:center;min-height:14px"></div>`;
+  document.getElementById('dconf-salvar').addEventListener('click',salvarDconf);
+  atualizarDconfBar();
+}
+function atualizarDconfBar(){
+  const n=Object.values(dconfVals).filter(v=>String(v).trim()!=='').length;
+  const st=document.getElementById('dconf-status');
+  if(st)st.textContent=n?n+' item'+(n>1?'s':'')+' preenchido'+(n>1?'s':''):'Preencha ao menos um item.';
+}
+async function salvarDconf(){
+  const itens=dconfItens();
+  const items=[];
+  itens.forEach(x=>{
+    const v=String(dconfVals[x.cod]??'').trim();
+    if(v==='')return;
+    const q=parseQtdDiario(v);
+    if(isFinite(q)&&q>=0)items.push({cod:x.cod,nome:x.nome,unidade:x.unidade,qtd:q});
+  });
+  const st=document.getElementById('dconf-status');
+  if(!items.length){st.style.color='#ff3b30';st.textContent='Preencha ao menos um item.';return;}
+  const btn=document.getElementById('dconf-salvar');
+  btn.disabled=true;btn.textContent='Salvando…';
+  try{
+    await salvarRegistroDiario({tipo:'conferencia',items});
+    fecharDreg();
+  }catch(e){
+    st.style.color='#ff3b30';st.textContent='Erro: '+e.message;
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Salvar conferência';
+  }
+}
+
+// ── Gestão › Diário: fila Saipos + configurações ──────────────────────────────
+function renderGestaoDiario(){
+  return `<div class="sec">Fila de lançamento no Saipos</div>
+  <div id="gd-fila"><div class="empty" style="padding:16px"><span>Carregando fila…</span></div></div>
+  <div class="sec">Conferência — lista de processados</div>
+  <div id="gd-proc"></div>
+  <div class="sec">Setores dos colaboradores</div>
+  <div class="tipb" style="margin-bottom:6px">Cada colaborador com setor definido vê apenas os locais marcados abaixo (itens, contagem e diário). Gestores veem tudo.</div>
+  <div id="gd-setores"></div>
+  <div class="sec">Cardápio (pratos p/ erro de prato)</div>
+  <button class="bbtn" id="gd-cardapio-btn">
+    <i class="ti ti-tools-kitchen-2" style="font-size:22px;color:var(--acc);flex-shrink:0"></i>
+    <div><div style="font-size:14px;font-weight:500">Atualizar cardápio pelo Saipos</div>
+    <div style="font-size:11px;color:var(--tx2);margin-top:2px" id="gd-cardapio-info"></div></div></button>`;
+}
+function wireGestaoDiario(c){
+  ensureDiarioCfg().then(()=>{
+    renderGdProc(c.querySelector('#gd-proc'));
+    renderGdSetores(c.querySelector('#gd-setores'));
+    const info=c.querySelector('#gd-cardapio-info');
+    if(info)info.textContent=CARDAPIO.length?CARDAPIO.length+' pratos · atualizado em '+new Date(cardapioUpdatedAt).toLocaleDateString('pt-BR'):'Nunca carregado';
+    carregarFila().then(()=>{const el=c.querySelector('#gd-fila');if(el)renderFilaLista(el);});
+  });
+  const cb=c.querySelector('#gd-cardapio-btn');
+  if(cb)cb.addEventListener('click',()=>{document.getElementById('modal-atualizar-cardapio').classList.add('on');});
+}
+async function carregarFila(){
+  try{
+    const snap=await db.collection(DIARIO_COL).where('status','==','pendente').get();
+    filaPend=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  }catch(e){console.warn('fila:',e);filaPend=[];}
+}
+function renderFilaLista(el){
+  if(!filaPend.length){
+    el.innerHTML='<div class="ok" style="padding:14px;font-size:13px">✓ Nenhum lançamento pendente.</div>';
+    return;
+  }
+  let h=filaPend.map(r=>{
+    const t=DIARIO_TIPOS[r.tipo]||DIARIO_TIPOS.producao;
+    const quando=new Date(r.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="row" style="cursor:default">
+      <i class="ti ${t.icon}" style="font-size:19px;color:${t.cor};width:26px;text-align:center;flex-shrink:0"></i>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((r.item&&r.item.nome)||'?')} · ${fmtQtdDiario(r.qtd||0)} ${esc((r.item&&r.item.unidade)||'')}</div>
+        <div style="font-size:11px;color:var(--tx2)">${t.label}${r.motivo?' · '+esc(r.motivo):''} · ${esc(r.userNome||'')} · ${quando}</div>
+      </div>
+      <button class="zb" data-fila-ok="${r.id}" title="Marcar como lançado no Saipos" style="color:#27500A;border-color:#C0DD97">Lançado</button>
+      <button class="zb" data-fila-ign="${r.id}" title="Ignorar (não lançar)">Ignorar</button>
+    </div>`;
+  }).join('');
+  h+=`<div style="display:flex;flex-direction:column;gap:7px;margin-top:8px">
+    <button class="bp" id="gd-copiar-pacote"><i class="ti ti-copy"></i> Copiar pacote (${filaPend.length}) — lançar com o Claude</button>
+    <a id="gd-lanc-bookmarklet" href="#" draggable="true" title="Arraste para a barra de favoritos" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:var(--r2);background:var(--bg1);border:.5px solid var(--bd3);color:var(--tx1);font-size:13px;font-weight:500;text-decoration:none;cursor:grab;user-select:none"><i class="ti ti-bookmark"></i> Lançar Diário no Saipos (favoritos)</a>
+    <div class="tipb">Produção = entrada por ajuste do processado + baixa dos crus pela ficha técnica. Erro/Desperdício = perda. <strong>Movimentação no Saipos não pode ser excluída</strong> — revise antes de lançar e marque aqui o que foi lançado.</div>
+    <div id="gd-fila-status" style="font-size:12px;color:var(--tx2);min-height:14px;text-align:center"></div></div>`;
+  el.innerHTML=h;
+  el.querySelectorAll('[data-fila-ok]').forEach(b=>b.addEventListener('click',()=>{
+    if(confirm('Marcar como lançado no Saipos?'))marcarRegistroDiario(b.dataset.filaOk,'lancado');
+  }));
+  el.querySelectorAll('[data-fila-ign]').forEach(b=>b.addEventListener('click',()=>{
+    if(confirm('Ignorar este registro? Ele fica no histórico, mas sai da fila.'))marcarRegistroDiario(b.dataset.filaIgn,'ignorado');
+  }));
+  const cp=el.querySelector('#gd-copiar-pacote');
+  if(cp)cp.addEventListener('click',async()=>{
+    const txt=montarPacoteFila();
+    let ok=false;
+    try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){}
+    const st=el.querySelector('#gd-fila-status');
+    if(ok){st.textContent='✓ Pacote copiado. Cole na conversa com o Claude e peça: "lançar a fila do diário".';}
+    else{prompt('Copie o pacote abaixo:',txt);}
+  });
+  const bm=el.querySelector('#gd-lanc-bookmarklet');
+  if(bm)bm.href='javascript:'+encodeURIComponent(SAIPOS_LANC_SNIPPET);
+}
+function montarPacoteFila(){
+  return JSON.stringify({
+    v:1,tipo:'pacote-diario-gesto',gerado:new Date().toISOString(),id_store:84869,
+    regras:{producao:'entrada por ajuste (id_movement_type 11) do processado + consumo dos insumos crus pela ficha técnica',
+            desperdicio:'perda (id_movement_type 6) do insumo',
+            erro:'perda (id_movement_type 6) dos insumos do prato, decompostos pela ficha técnica'},
+    lanc_cfg:diarioCfg.lanc||null,
+    itens:filaPend.map(r=>({id:r.id,tipo:r.tipo,dataDia:r.dataDia,hora:r.ts?new Date(r.ts).toLocaleTimeString('pt-BR'):null,
+      user:r.userNome||null,setor:r.setor||null,item:r.item||null,qtd:r.qtd??null,
+      motivo:r.motivo||null,destino:r.destino||null,obs:r.obs||null}))
+  },null,1);
+}
+
+// Config: lista de processados p/ conferência
+function renderGdProc(el){
+  if(!el)return;
+  const pset=new Set(diarioCfg.processados||[]);
+  const sel=CATALOGO.filter(x=>pset.has(x.cod));
+  let h='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">';
+  h+=sel.map(x=>`<span class="chip on" data-gd-rem="${esc(x.cod)}" title="Remover">${esc(x.nome)} ×</span>`).join('')||'<span style="font-size:12px;color:var(--tx2)">Nenhum item na lista ainda.</span>';
+  h+='</div>';
+  h+=`<input id="gd-proc-busca" class="srch" placeholder="Buscar item para adicionar..." value="${esc(gdProcBusca)}" autocomplete="off"/>`;
+  if(gdProcBusca.trim().length>=2){
+    const q=dnorm(gdProcBusca);
+    const res=CATALOGO.filter(x=>!pset.has(x.cod)&&(dnorm(x.nome).includes(q)||dnorm(x.grupo).includes(q))).slice(0,12);
+    h+=res.map(x=>`<div class="row" data-gd-add="${esc(x.cod)}" style="padding:9px 12px">
+      <div style="flex:1"><div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11px;color:var(--tx2)">${esc(x.grupo)} · ${esc(x.unidade)}</div></div>
+      <i class="ti ti-plus" style="color:var(--acc)"></i></div>`).join('');
+  }
+  el.innerHTML=h;
+  const bi=el.querySelector('#gd-proc-busca');
+  if(bi)bi.addEventListener('input',()=>{gdProcBusca=bi.value;renderGdProc(el);
+    const e2=el.querySelector('#gd-proc-busca');if(e2){e2.focus();e2.setSelectionRange(e2.value.length,e2.value.length);}});
+  el.querySelectorAll('[data-gd-add]').forEach(b=>b.addEventListener('click',()=>{
+    diarioCfg.processados=[...(diarioCfg.processados||[]),b.dataset.gdAdd];gdProcBusca='';salvarDiarioCfg();renderGdProc(el);
+  }));
+  el.querySelectorAll('[data-gd-rem]').forEach(b=>b.addEventListener('click',()=>{
+    diarioCfg.processados=(diarioCfg.processados||[]).filter(c=>c!==b.dataset.gdRem);salvarDiarioCfg();renderGdProc(el);
+  }));
+}
+
+// Config: mapeamento setor → locais
+function renderGdSetores(el){
+  if(!el)return;
+  let h='';
+  SETORES.forEach(s=>{
+    const marcados=new Set(setorLocais(s));
+    h+=`<div class="pcard" style="gap:6px;margin-bottom:8px"><div style="font-size:13.5px;font-weight:600">${esc(s)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">`+
+      locais.map(l=>`<label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer">
+        <input type="checkbox" class="gd-setor-chk" data-setor="${esc(s)}" data-lid="${esc(l.id)}" ${marcados.has(l.id)?'checked':''}> ${esc(l.nome)}</label>`).join('')+
+      '</div></div>';
+  });
+  el.innerHTML=h;
+  el.querySelectorAll('.gd-setor-chk').forEach(ch=>ch.addEventListener('change',()=>{
+    const s=ch.dataset.setor;
+    const atual=new Set(setorLocais(s));
+    if(ch.checked)atual.add(ch.dataset.lid);else atual.delete(ch.dataset.lid);
+    if(!diarioCfg.setores)diarioCfg.setores={};
+    diarioCfg.setores[s]=[...atual];
+    salvarDiarioCfg();
+  }));
+}
+
+// ── Bookmarklet: extrair cardápio do Saipos (via $http do Angular, herda auth) ─
+const SAIPOS_CARD_SNIPPET=`(async()=>{var inj=null;try{inj=angular.element(document.body).injector();}catch(e){}
+if(!inj){alert("Abra o Saipos (conta.saipos.com) logado antes de clicar.");return;}
+var $http=inj.get("$http");var idStore=84869;
+try{var m=(location.hash||"").match(/stores?\\/(\\d{4,})/);if(m)idStore=m[1];}catch(e){}
+var ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:sans-serif";
+var box=document.createElement("div");box.style.cssText="background:#fff;border-radius:12px;padding:20px;width:90%;max-width:540px;color:#111;box-shadow:0 8px 40px rgba(0,0,0,.3)";
+ov.appendChild(box);document.body.appendChild(ov);
+box.innerHTML='<div style="font-size:15px;font-weight:600">Gesto: extraindo o cardápio... aguarde</div>';
+var url="https://api.saipos.com/v1/stores/"+idStore+"/items?filter="+encodeURIComponent(JSON.stringify({where:{enabled:{inq:["Y"]}},limit:1000}));
+var data=null;
+try{var r=await $http.get(url);data=r.data;}catch(e){box.innerHTML='<div style="font-size:14px;color:#a00">Erro ao consultar o cardápio ('+((e&&e.status)||"?")+'). Abra a tela de Cardápio do Saipos e tente de novo.</div><button id="gxx" style="margin-top:10px;padding:10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">Fechar</button>';box.querySelector("#gxx").onclick=function(){ov.remove();};return;}
+if(!Array.isArray(data)){data=(data&&data.data)||[];}
+var out=[];
+data.forEach(function(it){
+var nome=it.desc_store_item||it.name||it.desc||"";if(!nome)return;
+var cat=(it.category_item&&(it.category_item.desc_store_category_item||it.category_item.desc_category_item||it.category_item.desc||it.category_item.name))||"";
+var vars=it.variations||[];
+if(!vars.length){out.push({cod:String(it.id_store_item||""),nome:nome,cat:cat});return;}
+vars.forEach(function(v){var vd=v.desc_store_item_variation||v.desc_variation||v.desc||"";
+out.push({cod:String(v.id_store_item_variation||""),nome:nome+(vd&&vd!==nome?" — "+vd:""),cat:cat});});});
+if(!out.length){box.innerHTML='<div style="font-size:14px;color:#a00">Nenhum item retornado. Confirme que está logado na loja certa.</div><button id="gxx" style="margin-top:10px;padding:10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">Fechar</button>';box.querySelector("#gxx").onclick=function(){ov.remove();};return;}
+var json=JSON.stringify(out);
+box.innerHTML='<div style="font-size:15px;font-weight:600;margin-bottom:6px">Gesto: '+out.length+' pratos prontos</div><div style="font-size:12px;color:#555;margin-bottom:8px">Toque em Copiar e cole no app, em Gestão › Diário › Atualizar cardápio.</div><textarea id="gxt" readonly style="width:100%;height:90px;font-size:11px;font-family:monospace;border:1px solid #ccc;border-radius:8px;padding:8px;box-sizing:border-box"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button id="gxc" style="flex:2;padding:11px;border:none;border-radius:8px;background:#0C447C;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Copiar</button><button id="gxx" style="flex:1;padding:11px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">Fechar</button></div>';
+var ta=box.querySelector("#gxt");ta.value=json;
+box.querySelector("#gxc").onclick=function(){ta.focus();ta.select();var ok=false;try{document.execCommand("copy");ok=true;}catch(e){}try{navigator.clipboard.writeText(json);ok=true;}catch(e){}this.textContent=ok?"Copiado!":"Selecione tudo e Ctrl+C";};
+box.querySelector("#gxx").onclick=function(){ov.remove();};})();`;
+
+// ── Bookmarklet: lançar a fila no Saipos (exige lanc_cfg configurado) ─────────
+const SAIPOS_LANC_SNIPPET=`(async()=>{var inj=null;try{inj=angular.element(document.body).injector();}catch(e){}
+if(!inj){alert("Abra o Saipos (conta.saipos.com) logado antes de clicar.");return;}
+var $http=inj.get("$http");
+var raw=prompt("Cole aqui o PACOTE copiado do app (Gestão › Diário › Copiar pacote):");
+if(!raw)return;var p=null;try{p=JSON.parse(raw);}catch(e){alert("Pacote inválido.");return;}
+if(!p||p.tipo!=="pacote-diario-gesto"||!Array.isArray(p.itens)){alert("Pacote inválido.");return;}
+var cfg=p.lanc_cfg;
+if(!cfg||!cfg.endpoint||!cfg.tpl){alert("O lançamento automático ainda não foi configurado (falta capturar o endpoint de movimentação com o Claude). Use o caminho: Copiar pacote → lançar com o Claude.");return;}
+var lanc=p.itens.filter(function(x){return (x.tipo==="producao"||x.tipo==="desperdicio")&&x.item&&x.item.cod;});
+var pulados=p.itens.length-lanc.length;
+if(!lanc.length){alert("Nenhum item lançável direto (erros de prato dependem de ficha técnica — lance com o Claude).");return;}
+if(!confirm("Lançar "+lanc.length+" movimento(s) no Saipos agora?"+(pulados?" ("+pulados+" item(ns) ficam para o Claude.)":"")+"\\n\\nATENÇÃO: movimentação não pode ser excluída."))return;
+var okn=0,err=[];
+for(var i=0;i<lanc.length;i++){var x=lanc[i];
+var body=JSON.parse(JSON.stringify(cfg.tpl)
+.replace(/"__ID_INGREDIENTE__"/g,String(x.item.cod))
+.replace(/"__QTD__"/g,String(x.qtd))
+.replace(/"__TIPO_MOV__"/g,x.tipo==="producao"?"11":"6")
+.replace(/__OBS__/g,("Diario Gesto: "+x.tipo+" "+(x.motivo||"")+" "+(x.user||"")).trim()));
+try{await $http.post(cfg.endpoint,body);okn++;}
+catch(e){err.push(x.item.nome+" ("+((e&&e.status)||"?")+")");}}
+alert("Lançados: "+okn+" de "+lanc.length+(err.length?"\\nFalhas: "+err.join(", "):"")+"\\n\\nVolte ao app e marque os itens como Lançado.");})();`;
+
 const SAIPOS_SNIPPET=`(async()=>{var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};var a=document.querySelector('a[href*="ingredient-record/edit"]');if(!a){alert("Abra a lista de Ingredientes do Saipos antes de clicar.");return;}var node=angular.element(a.closest("tr")).scope(),vm=null,d=0;while(!vm&&node&&d<15){if(node.vm)vm=node.vm;node=node.$parent;d++;}if(!vm){alert("Lista de ingredientes nao encontrada nesta tela.");return;}var umap={};(vm.unit_measures||[]).forEach(function(u){umap[u.id_unit_measure]=u.short_desc_unit_measure||u.desc_unit_measure});var acc={};var merge=function(){(vm.data||[]).forEach(function(it){acc[it.id_store_ingredient]={cod:String(it.id_store_ingredient),nome:it.desc_store_ingredient,grupo:it.desc_store_group_ingredient||"",unidade:umap[it.id_unit_measure]||String(it.id_unit_measure)}})};vm.pagination.rowsPerPage=100;var total=parseInt(vm.pagination.totalRows,10)||0;var pages=Math.max(1,Math.ceil(total/100));var ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:sans-serif";var box=document.createElement("div");box.style.cssText="background:#fff;border-radius:12px;padding:20px;width:90%;max-width:540px;color:#111;box-shadow:0 8px 40px rgba(0,0,0,.3)";ov.appendChild(box);document.body.appendChild(ov);box.innerHTML='<div id="gxm" style="font-size:15px;font-weight:600">Gesto: extraindo a base... aguarde</div>';for(var p=1;p<=pages;p++){vm.selectPage(p);await sleep(1600);merge();var gm=box.querySelector("#gxm");if(gm)gm.textContent="Gesto: extraindo... pagina "+p+" de "+pages;}var arr=Object.values(acc);var json=JSON.stringify(arr);box.innerHTML='<div style="font-size:15px;font-weight:600;margin-bottom:6px">Gesto: '+arr.length+' itens prontos</div><div style="font-size:12px;color:#555;margin-bottom:8px">Toque em Copiar e cole no app, na tela Atualizar base.</div><textarea id="gxt" readonly style="width:100%;height:90px;font-size:11px;font-family:monospace;border:1px solid #ccc;border-radius:8px;padding:8px;box-sizing:border-box"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button id="gxc" style="flex:2;padding:11px;border:none;border-radius:8px;background:#0C447C;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Copiar</button><button id="gxx" style="flex:1;padding:11px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">Fechar</button></div>';var ta=box.querySelector("#gxt");ta.value=json;box.querySelector("#gxc").onclick=function(){ta.focus();ta.select();var ok=false;try{document.execCommand("copy");ok=true;}catch(e){}try{navigator.clipboard.writeText(json);ok=true;}catch(e){}this.textContent=ok?"Copiado!":"Selecione tudo e Ctrl+C";};box.querySelector("#gxx").onclick=function(){ov.remove();};})();`;
 
 function codsVinculados(){
@@ -4734,7 +5421,7 @@ function ajustarTabsPorRole(){
   const permitidas=userAllowedTabs();
   document.querySelectorAll('#s-home .ntab[data-home-tab]').forEach(el=>{
     const id=el.dataset.homeTab;
-    if(id==='gestao')return; // controlada acima (só admin)
+    if(id==='gestao'||id==='diario')return; // gestao: só admin · diario: todos (v85)
     el.style.display=permitidas.includes(id)?'':'none';
   });
   if(!canAccessTab(homeTabId))homeTabId=permitidas[0]||'locais';
@@ -4748,7 +5435,7 @@ function getSecondaryAuth(){
   return secondaryAuthApp.auth();
 }
 
-async function criarUsuario(nome,login,tempPwd,role,tabs){
+async function criarUsuario(nome,login,tempPwd,role,tabs,setor){
   const loginLimpo=cleanLogin(login);
   const email=loginToEmail(loginLimpo);
   const secAuth=getSecondaryAuth();
@@ -4760,6 +5447,7 @@ async function criarUsuario(nome,login,tempPwd,role,tabs){
     await db.collection('perfis').doc(uid).set({
       nome,email,login:emailToLogin(email),internalLogin:isInternalEmail(email),role,disabled:false,
       tabs:role==='admin'?[]:(Array.isArray(tabs)?tabs:[]), // v80: abas liberadas
+      setor:role==='admin'?null:(setor||null), // v85: setor do colaborador
       mustChangePassword:true, // v80: força troca da senha temporária no 1º acesso
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -4897,6 +5585,7 @@ function abrirGerenciarUsuario(perf){
   const body=document.getElementById('gu-body');
   const login=perf.login||emailToLogin(perf.email);
   const internal=perf.internalLogin||isInternalEmail(perf.email);
+  const setorOpts='<option value="">Todos os setores</option>'+SETORES.map(x=>'<option'+(perf.setor===x?' selected':'')+'>'+x+'</option>').join('');
   body.innerHTML=`
     <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">Usuário: ${login}</div>
     <div style="margin-bottom:14px;display:flex;align-items:center;gap:6px">
@@ -4917,6 +5606,12 @@ function abrirGerenciarUsuario(perf){
       <div id="gu-tabs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div>
       <button class="bs" id="gu-savetabs" style="width:100%"><i class="ti ti-check"></i> Salvar abas</button>
       <div id="gu-tabs-status" style="font-size:12px;margin-top:6px"></div>
+    </div>`:''}
+    ${perf.role!=='admin'?`<div style="margin:10px 0 8px;padding-top:10px;border-top:.5px solid var(--bd3)">
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Setor do colaborador:</div>
+      <select id="gu-setor" class="fi" style="width:100%;margin-bottom:6px">${setorOpts}</select>
+      <button class="bs" id="gu-savesetor" style="width:100%"><i class="ti ti-check"></i> Salvar setor</button>
+      <div id="gu-setor-status" style="font-size:12px;margin-top:6px"></div>
     </div>`:''}
     <button class="bs" id="gu-toggle" style="margin-bottom:8px;width:100%">
       <i class="ti ti-${perf.disabled?'user-check':'user-off'}"></i> ${perf.disabled?'Reativar usuário':'Desativar usuário'}
@@ -4944,6 +5639,16 @@ function abrirGerenciarUsuario(perf){
     else{st.style.color='#ff3b30';st.textContent='Erro: '+r.error;}
   });
 
+  document.getElementById('gu-savesetor')?.addEventListener('click',async()=>{
+    const st=document.getElementById('gu-setor-status');
+    const v=document.getElementById('gu-setor').value||null;
+    st.style.color='var(--tx2)';st.textContent='Salvando...';
+    try{
+      await db.collection('perfis').doc(perf.uid).update({setor:v});
+      perf.setor=v;
+      st.style.color='#27500A';st.textContent='Setor atualizado. Vale no próximo carregamento do usuário.';
+    }catch(e){st.style.color='#ff3b30';st.textContent='Erro: '+e.message;}
+  });
   document.getElementById('gu-close-body')?.addEventListener('click',()=>closeModal('modal-gerenciar-usuario'));
   document.getElementById('gu-reset')?.addEventListener('click',async()=>{
     const r=await resetarSenha(perf.email);
@@ -5044,7 +5749,8 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
   if(nuRole!=='admin'&&!tabsSel.length){st.textContent='Marque ao menos uma aba para o contador.';return;}
   const btn=document.getElementById('nu-criar');
   btn.disabled=true;btn.textContent='Criando...';
-  const r=await criarUsuario(nome,login,tempPwd,nuRole,tabsSel);
+  const nuSetorEl=document.getElementById('nu-setor');
+  const r=await criarUsuario(nome,login,tempPwd,nuRole,tabsSel,nuSetorEl?(nuSetorEl.value||null):null);
   btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Criar usuário';
   if(r.success){
     closeModal('modal-novo-usuario');
@@ -5116,6 +5822,11 @@ document.getElementById('fechar-cont-ok').addEventListener('click',executarFecha
 document.getElementById('fechar-cont-nome').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();executarFechamento();}});
 // Base / Saipos
 document.getElementById('ab-analisar').addEventListener('click',analisarBaseSaipos);
+document.getElementById('ac-analisar').addEventListener('click',analisarCardapioSaipos);
+document.getElementById('ac-cancel').addEventListener('click',()=>closeModal('modal-atualizar-cardapio'));
+(function(){const bm=document.getElementById('ac-bookmarklet');if(bm)bm.href='javascript:'+encodeURIComponent(SAIPOS_CARD_SNIPPET);})();
+carregarCardapioLocal();
+
 document.getElementById('ab-cancel').addEventListener('click',()=>closeModal('modal-atualizar-base'));
 document.getElementById('vinc-cancel').addEventListener('click',()=>closeModal('modal-vincular'));
 document.getElementById('vinc-save').addEventListener('click',vincularItem);
