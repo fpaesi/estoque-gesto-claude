@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v86</title>
+<title>Estoque Gesto v87</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -306,7 +306,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v86</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v87</span></span></div>
   </div>
 </div>
 
@@ -518,6 +518,17 @@
 <div class="modal-bg" id="modal-atualizar-cardapio">
   <div class="modal-box" style="gap:12px;max-height:90vh;overflow-y:auto">
     <div style="font-size:15px;font-weight:500">Atualizar cardápio pelo Saipos</div>
+
+    <!-- v86: sincronização automática (Cloud Function) -->
+    <button id="ac-auto" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:var(--r2);background:var(--acc);border:none;color:#E6F1FB;font-size:14px;font-weight:600;cursor:pointer">
+      <i class="ti ti-refresh"></i> Atualizar agora
+    </button>
+    <div style="font-size:11px;color:var(--tx2);text-align:center">Puxa direto do Saipos, sem copiar e colar. Também atualiza sozinho todo dia às 5h.</div>
+    <div id="ac-auto-status" style="font-size:12px;min-height:16px;text-align:center;color:var(--tx2)"></div>
+    <a id="ac-baixar-planilha" href="#" style="display:none;font-size:12px;color:var(--acc);text-align:center;text-decoration:none"><i class="ti ti-download"></i> Baixar planilha (.csv)</a>
+
+    <div style="display:flex;align-items:center;gap:8px;margin:2px 0"><div style="flex:1;height:1px;background:var(--bd3)"></div><div style="font-size:11px;color:var(--tx2)">ou pelo método manual</div><div style="flex:1;height:1px;background:var(--bd3)"></div></div>
+
     <div style="font-size:12px;color:var(--tx1);background:var(--bg2);border:.5px solid var(--bd3);border-radius:var(--r2);padding:10px;line-height:1.6">
       <div style="font-weight:500;margin-bottom:4px">Passo único de configuração (no computador):</div>
       Arraste o botão azul abaixo para a sua <strong>barra de favoritos</strong> do navegador.
@@ -1394,7 +1405,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v86';
+const APP_VERSION = 'v87';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5825,6 +5836,50 @@ document.getElementById('ab-analisar').addEventListener('click',analisarBaseSaip
 document.getElementById('ac-analisar').addEventListener('click',analisarCardapioSaipos);
 document.getElementById('ac-cancel').addEventListener('click',()=>closeModal('modal-atualizar-cardapio'));
 (function(){const bm=document.getElementById('ac-bookmarklet');if(bm)bm.href='javascript:'+encodeURIComponent(SAIPOS_CARD_SNIPPET);})();
+
+// ── v86: sincronização automática do cardápio (Cloud Function sincronizarCardapioManual) ──
+let __ultimaPlanilhaCard=null;
+async function atualizarCardapioAuto(){
+  const btn=document.getElementById('ac-auto');
+  const st=document.getElementById('ac-auto-status');
+  const dl=document.getElementById('ac-baixar-planilha');
+  if(!functionsSvc){if(st){st.style.color='#A32D2D';st.textContent='Função indisponível — use o método manual abaixo.';}return;}
+  if(dl)dl.style.display='none';
+  if(btn){btn.disabled=true;btn.style.opacity=.6;btn.style.cursor='wait';}
+  if(st){st.style.color='var(--tx2)';st.textContent='Sincronizando com o Saipos…';}
+  try{
+    const fn=functionsSvc.httpsCallable('sincronizarCardapioManual');
+    const res=await fn({});
+    const dd=(res&&res.data)||{};
+    if(!dd.ok)throw new Error('resposta inesperada');
+    __ultimaPlanilhaCard=Array.isArray(dd.planilha)?dd.planilha:null;
+    cardapioUpdatedAt=0;await sincronizarCardapio();
+    if(st){st.style.color='#27500A';st.textContent='✓ '+(dd.count||CARDAPIO.length)+' pratos atualizados agora.';}
+    if(dl&&__ultimaPlanilhaCard&&__ultimaPlanilhaCard.length)dl.style.display='block';
+    const info=document.getElementById('gd-cardapio-info');
+    if(info)info.textContent=CARDAPIO.length+' pratos · atualizado em '+new Date(cardapioUpdatedAt||Date.now()).toLocaleDateString('pt-BR');
+  }catch(e){
+    if(st){st.style.color='#A32D2D';st.textContent='Falha: '+((e&&e.message)||e);}
+  }finally{
+    if(btn){btn.disabled=false;btn.style.opacity=1;btn.style.cursor='pointer';}
+  }
+}
+function baixarPlanilhaCardapio(){
+  if(!__ultimaPlanilhaCard||!__ultimaPlanilhaCard.length)return;
+  const esc=s=>{s=String(s==null?'':s);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const linhas=[['Categoria','Item','Código Saipos','Preço','Ativo']];
+  __ultimaPlanilhaCard.forEach(r=>linhas.push([r.cat,r.nome,r.cod,(r.preco!=null?String(r.preco).replace('.',','):''),r.ativo]));
+  const csv='﻿'+linhas.map(l=>l.map(esc).join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='cardapio-saipos-'+hojeStr()+'.csv';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+}
+(function(){
+  const b=document.getElementById('ac-auto');if(b)b.addEventListener('click',atualizarCardapioAuto);
+  const dl=document.getElementById('ac-baixar-planilha');if(dl)dl.addEventListener('click',function(ev){ev.preventDefault();baixarPlanilhaCardapio();});
+})();
+
 carregarCardapioLocal();
 
 document.getElementById('ab-cancel').addEventListener('click',()=>closeModal('modal-atualizar-base'));
