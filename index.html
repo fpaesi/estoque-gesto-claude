@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estoque Gesto v87</title>
+<title>Estoque Gesto v88</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -306,7 +306,7 @@
   </div>
   <div class="content" id="home-cnt"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v87</span></span></div>
+    <div class="syncr"><div class="syncd"></div><span>Dados salvos localmente<span style="opacity:.45;margin-left:4px">v88</span></span></div>
   </div>
 </div>
 
@@ -401,6 +401,17 @@
   </div>
   <div class="content" id="dconf-cnt"></div>
   <div class="bbar" id="dconf-bbar"></div>
+</div>
+
+<!-- v87: Diário — produção (lista de cards igual à contagem) -->
+<div id="s-dprod" class="scr">
+  <div class="topbar">
+    <button class="tbtn" onclick="fecharDreg()"><i class="ti ti-arrow-left"></i></button>
+    <div style="text-align:center"><div class="tt">Produção</div><div class="ts">Insumos processados hoje</div></div>
+    <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit">🏠 Início</button>
+  </div>
+  <div class="content" id="dprod-cnt"></div>
+  <div class="bbar" id="dprod-bbar"></div>
 </div>
 
 <div class="modal-bg" id="modal-hist-detail">
@@ -1405,7 +1416,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v87';
+const APP_VERSION = 'v88';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4011,7 +4022,9 @@ let diarioHoje=[],diarioHojeDia=null;
 let diarioHist=[],diarioHistOpen=false,diarioHistDias=7;
 let filaPend=[];
 let dregTipo=null,dregItem=null,dregMotivo=null,dregDestino=null,dregBusca='',dregFotoBlob=null,dregFotoTipo='';
+let dregSpec=null,dregCntQty=0,dregDecVal=''; // v87: card de produção igual ao de contagem
 let dconfVals={};
+let dprodVals={}; // v87: quantidades da lista de produção (cod → count|string)
 let gdProcBusca='';
 
 const DIARIO_TIPOS={
@@ -4205,7 +4218,7 @@ function renderDiarioBody(c){
   c.innerHTML=h;
   c.querySelectorAll('[data-diario-acao]').forEach(el=>el.addEventListener('click',()=>{
     const tp=el.dataset.diarioAcao;
-    if(tp==='conferencia')abrirDconf();else abrirDreg(tp);
+    if(tp==='conferencia')abrirDconf();else if(tp==='producao')abrirDprod();else abrirDreg(tp);
   }));
   const bh=c.querySelector('#btn-diario-hist');
   if(bh)bh.addEventListener('click',async()=>{
@@ -4220,22 +4233,43 @@ function renderDiarioBody(c){
 // ── Formulário de registro (produção / erro / desperdício) ────────────────────
 function abrirDreg(tipo){
   dregTipo=tipo;dregItem=null;dregMotivo=null;dregDestino=null;dregBusca='';dregFotoBlob=null;
+  dregSpec=null;dregCntQty=0;dregDecVal='';
   const t=DIARIO_TIPOS[tipo];
   document.getElementById('dreg-title').textContent=t.label;
   document.getElementById('dreg-sub').textContent=tipo==='erro'?'Escolha o prato do cardápio':'Escolha o item da base';
   show('s-dreg');renderDreg();
 }
 function fecharDreg(){show('s-home');homeTab('diario');}
+// v87: Produção mostra apenas insumos beneficiados (grupos "Processados"),
+// filtrados pelo setor do usuário pelo próprio nome do grupo (Processados <Setor>).
+const PROC_GRUPOS=['Processados Cozinha','Processados Bar','Processados Forno'];
+function gruposProcessadosDoUsuario(){
+  if(isAdminRole()||!currentUserSetor)return new Set(PROC_GRUPOS); // gestor vê os três
+  const g='Processados '+currentUserSetor; // Cozinha/Bar/Forno; Salão não tem processados
+  return new Set(PROC_GRUPOS.includes(g)?[g]:[]);
+}
+// v87: acha a especificação de contagem do processado em qualquer local (prefere o do setor do usuário)
+function getSpecProducao(cod){
+  const setorLids=(!isAdminRole()&&currentUserSetor)?new Set(setorLocais(currentUserSetor)):null;
+  let fallback=null;
+  for(const lid in specs){
+    const s=specs[lid]&&specs[lid][cod];
+    if(s&&s.modo){
+      if(setorLids&&setorLids.has(lid))return s;
+      if(!fallback)fallback=s;
+    }
+  }
+  return fallback;
+}
 function dregLista(){
   if(dregTipo==='erro')return CARDAPIO.map(x=>({cod:x.cod,nome:x.nome,grupo:x.cat||'',unidade:'UN'}));
+  if(dregTipo==='producao'){
+    const grupos=gruposProcessadosDoUsuario();
+    return CATALOGO.filter(x=>grupos.has(x.grupo)); // vale também durante a busca
+  }
   let lista=CATALOGO;
   const allowed=codsDoSetor();
   if(allowed)lista=lista.filter(x=>allowed.has(x.cod));
-  if(dregTipo==='producao'&&diarioCfg.processados&&diarioCfg.processados.length&&!dregBusca){
-    const pset=new Set(diarioCfg.processados);
-    const proc=lista.filter(x=>pset.has(x.cod));
-    if(proc.length)return proc;
-  }
   return lista;
 }
 function renderDreg(){
@@ -4252,24 +4286,47 @@ function renderDreg(){
       h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
         <div style="font-size:13px;color:#92400E">O cardápio ainda não foi carregado. ${isAdminRole()?'Vá em Gestão › Diário › Atualizar cardápio.':'Peça a um administrador para atualizar o cardápio.'}<br>Você também pode digitar o nome do prato e usar o texto digitado.</div></div>`;
     }
+    if(dregTipo==='producao'&&!lista.length){
+      h+=`<div class="wb"><i class="ti ti-info-circle" style="font-size:20px;color:#185FA5;flex-shrink:0"></i>
+        <div style="font-size:13px;color:#1E3A5F">${dregBusca?'Nenhum insumo processado encontrado com esse termo no seu setor.':(currentUserSetor&&!PROC_GRUPOS.includes('Processados '+currentUserSetor)?'O setor '+esc(currentUserSetor)+' não tem insumos processados para registrar produção.':'Nenhum insumo processado disponível. Verifique se a base foi atualizada (grupos Processados Cozinha/Bar/Forno).')}</div></div>`;
+    }
     h+=lista.slice(0,40).map(x=>`<div class="row" data-dreg-cod="${esc(x.cod)}" data-dreg-nome="${esc(x.nome)}" data-dreg-un="${esc(x.unidade)}" data-dreg-gr="${esc(x.grupo)}">
       <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
       <div style="font-size:11.5px;color:var(--tx2)">${esc(x.grupo)}${x.unidade?' · '+esc(x.unidade):''}</div></div>
       <i class="ti ti-chevron-right" style="color:var(--tx2)"></i></div>`).join('');
-    if(dregBusca&&dregBusca.trim().length>=3)h+=`<div class="row" id="dreg-manual" style="border-style:dashed">
+    if(dregTipo!=='producao'&&dregBusca&&dregBusca.trim().length>=3)h+=`<div class="row" id="dreg-manual" style="border-style:dashed">
       <i class="ti ti-pencil" style="font-size:18px;color:var(--tx2);width:28px;text-align:center"></i>
       <div style="flex:1"><div style="font-size:14px;font-weight:500">Usar texto digitado</div>
       <div style="font-size:11.5px;color:var(--tx2)">"${esc(dregBusca.trim())}"</div></div></div>`;
     bb.innerHTML='';
   }else{
+    if(dregTipo==='producao'&&dregItem.cod){dregSpec=getSpecProducao(dregItem.cod);}else{dregSpec=null;}
+    const pbadge=(dregTipo==='producao'&&dregSpec)?(dregSpec.modo==='contador'
+        ?`<div style="margin-top:5px"><span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${esc(dregSpec.embalagem)} · ×${dregSpec.fator} ${esc(dregItem.unidade||'')}</span></div>`
+        :`<div style="margin-top:5px"><span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${esc(dregItem.unidade||'')}</span></div>`):'';
     h+=`<div class="pcard" style="border-color:${t.cor}"><div style="display:flex;align-items:center;gap:10px">
       <i class="ti ${t.icon}" style="font-size:22px;color:${t.cor}"></i>
       <div style="flex:1"><div style="font-size:15px;font-weight:500">${esc(dregItem.nome)}</div>
-      <div style="font-size:12px;color:var(--tx2)">${dregItem.cod?'cod '+esc(dregItem.cod)+' · ':''}${esc(dregItem.grupo||'')}</div></div>
+      <div style="font-size:12px;color:var(--tx2)">${dregItem.cod?'cod '+esc(dregItem.cod)+' · ':''}${esc(dregItem.grupo||'')}</div>${pbadge}</div>
       <button class="zb" id="dreg-trocar">Trocar</button></div></div>`;
-    h+=`<div class="decb"><div class="decl">Quantidade (${esc(dregItem.unidade||'UN')})</div>
-      <div class="decr"><input id="dreg-qtd" class="deci" type="text" inputmode="decimal" placeholder="0" value="${dregTipo==='erro'?'1':''}"/>
-      <span class="decu">${esc(dregItem.unidade||'UN')}</span></div></div>`;
+    if(dregTipo==='producao'){
+      if(dregSpec&&dregSpec.modo==='contador'){
+        const v=(parseFloat(dregCntQty)||0)*(dregSpec.fator||1);
+        h+=`<div class="cntb"><div class="cnt-row">
+          <button class="cbt" id="dreg-minus">−</button>
+          <div class="cctr" id="dreg-cctr" title="Toque para digitar"><div class="cv" id="dreg-cv">${dregCntQty||0}</div><div class="cu">${esc(dregSpec.unidContagem||dregSpec.embalagem)}</div></div>
+          <button class="cbt" id="dreg-plus">+</button></div>
+          <div class="ccv">${dregSpec.fator!==1?`= ${fmtNum(v)} ${esc(dregItem.unidade||'')}`:`${fmtNum(v)} ${esc(dregItem.unidade||'')}`}</div></div>`;
+      }else{
+        h+=`<div class="decb"><div class="decl">Quantidade em ${esc(dregItem.unidade||'UN')}</div>
+          <div class="decr"><input id="dreg-dec" class="deci" type="text" inputmode="decimal" placeholder="0,000" value="${esc(dregDecVal)}"/>
+          <span class="decu">${esc(dregItem.unidade||'UN')}</span></div></div>`;
+      }
+    }else{
+      h+=`<div class="decb"><div class="decl">Quantidade (${esc(dregItem.unidade||'UN')})</div>
+        <div class="decr"><input id="dreg-qtd" class="deci" type="text" inputmode="decimal" placeholder="0" value="${dregTipo==='erro'?'1':''}"/>
+        <span class="decu">${esc(dregItem.unidade||'UN')}</span></div></div>`;
+    }
     if(dregTipo==='erro'){
       h+='<div class="fl" style="margin-top:4px">Motivo</div><div class="chips" style="flex-wrap:wrap">'+
         MOTIVOS_ERRO.map(m=>`<span class="chip${dregMotivo===m?' on':''}" data-dreg-motivo="${esc(m)}">${esc(m)}</span>`).join('')+'</div>';
@@ -4296,12 +4353,26 @@ function renderDreg(){
   }
   c.querySelectorAll('[data-dreg-cod]').forEach(el=>el.addEventListener('click',()=>{
     dregItem={cod:el.dataset.dregCod,nome:el.dataset.dregNome,unidade:el.dataset.dregUn,grupo:el.dataset.dregGr};
+    dregCntQty=0;dregDecVal='';
     renderDreg();
   }));
   const man=c.querySelector('#dreg-manual');
   if(man)man.addEventListener('click',()=>{dregItem={cod:null,nome:dregBusca.trim(),unidade:'UN',grupo:'(digitado manualmente)'};renderDreg();});
   const tr=c.querySelector('#dreg-trocar');
   if(tr)tr.addEventListener('click',()=>{dregItem=null;renderDreg();});
+  // v87: contador de produção (igual ao card de contagem)
+  const dmn=c.querySelector('#dreg-minus'),dpl=c.querySelector('#dreg-plus'),dct=c.querySelector('#dreg-cctr');
+  if(dmn)dmn.addEventListener('click',()=>{dregCntQty=Math.max(0,(parseInt(dregCntQty)||0)-1);renderDreg();});
+  if(dpl)dpl.addEventListener('click',()=>{dregCntQty=(parseInt(dregCntQty)||0)+1;renderDreg();});
+  if(dct)dct.addEventListener('click',()=>{
+    dct.innerHTML=`<input id="dreg-cv-inp" class="qty-input-inline" type="number" inputmode="numeric" min="0" step="1" value="${dregCntQty||0}"/><div class="cu">${esc((dregSpec&&(dregSpec.unidContagem||dregSpec.embalagem))||'')}</div>`;
+    const inp=dct.querySelector('#dreg-cv-inp');inp.focus();inp.select();
+    const commit=()=>{dregCntQty=Math.max(0,parseInt(inp.value)||0);renderDreg();};
+    inp.addEventListener('blur',commit);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  });
+  const ddc=c.querySelector('#dreg-dec');
+  if(ddc)ddc.addEventListener('input',()=>{dregDecVal=ddc.value;});
   c.querySelectorAll('[data-dreg-motivo]').forEach(el=>el.addEventListener('click',()=>{dregMotivo=el.dataset.dregMotivo;
     c.querySelectorAll('[data-dreg-motivo]').forEach(x=>x.classList.toggle('on',x.dataset.dregMotivo===dregMotivo));}));
   c.querySelectorAll('[data-dreg-destino]').forEach(el=>el.addEventListener('click',()=>{dregDestino=el.dataset.dregDestino;
@@ -4321,7 +4392,12 @@ function renderDreg(){
 }
 async function salvarDreg(){
   const st=document.getElementById('dreg-status');
-  const qtd=parseQtdDiario(document.getElementById('dreg-qtd').value);
+  let qtd;
+  if(dregTipo==='producao'){
+    qtd=(dregSpec&&dregSpec.modo==='contador')?((parseFloat(dregCntQty)||0)*(dregSpec.fator||1)):parseQtdDiario(dregDecVal);
+  }else{
+    qtd=parseQtdDiario(document.getElementById('dreg-qtd').value);
+  }
   if(!isFinite(qtd)||qtd<=0){st.textContent='Informe a quantidade.';return;}
   if((dregTipo==='erro'||dregTipo==='desperdicio')&&!dregMotivo){st.textContent='Escolha o motivo.';return;}
   if(dregTipo==='erro'&&!dregDestino){st.textContent='Escolha o destino.';return;}
@@ -4413,6 +4489,115 @@ async function salvarDconf(){
   }catch(e){
     st.style.color='#ff3b30';st.textContent='Erro: '+e.message;
     btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Salvar conferência';
+  }
+}
+
+// ── Produção (lista de cards igual à contagem — v87) ──────────────────────────
+function dprodItens(){
+  const grupos=gruposProcessadosDoUsuario();
+  return CATALOGO.filter(x=>grupos.has(x.grupo));
+}
+function abrirDprod(){dprodVals={};show('s-dprod');renderDprod();}
+function renderDprod(){
+  const c=document.getElementById('dprod-cnt');
+  const bb=document.getElementById('dprod-bbar');
+  const itens=dprodItens();
+  if(!itens.length){
+    c.innerHTML=`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-tools-kitchen-2" style="font-size:28px;opacity:.5"></i></div>
+      <div class="empty-title">Nenhum processado para o seu setor</div>
+      <div class="empty-sub">${currentUserSetor&&!PROC_GRUPOS.includes('Processados '+currentUserSetor)?'O setor '+esc(currentUserSetor)+' não tem insumos processados.':'Verifique se a base foi atualizada (grupos Processados Cozinha/Bar/Forno).'}</div></div>`;
+    bb.innerHTML='';return;
+  }
+  let lastG=null,h='<div class="sec">Quanto foi produzido hoje de cada item?</div>';
+  itens.forEach(x=>{
+    if(x.grupo!==lastG){h+=`<div class="gsep">${esc(x.grupo)}</div>`;lastG=x.grupo;}
+    const spec=getSpecProducao(x.cod);
+    const badge=(spec&&spec.modo==='contador')
+      ?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${esc(spec.embalagem)} · ×${spec.fator} ${esc(x.unidade)}</span>`
+      :`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${esc(x.unidade)}</span>`;
+    let ei;
+    if(spec&&spec.modo==='contador'){
+      const qty=parseInt(dprodVals[x.cod])||0;const v=qty*(spec.fator||1);
+      ei=`<div class="cntb"><div class="cnt-row">
+        <button class="cbt dprod-minus" data-cod="${esc(x.cod)}">−</button>
+        <div class="cctr dprod-cctr" data-cod="${esc(x.cod)}" title="Toque para digitar"><div class="cv" id="dprod-cv-${esc(x.cod)}">${qty}</div><div class="cu">${esc(spec.unidContagem||spec.embalagem)}</div></div>
+        <button class="cbt dprod-plus" data-cod="${esc(x.cod)}">+</button></div>
+        <div class="ccv" id="dprod-conv-${esc(x.cod)}">${spec.fator!==1?`= ${fmtNum(v)} ${esc(x.unidade)}`:`${fmtNum(v)} ${esc(x.unidade)}`}</div></div>`;
+    }else{
+      const dv=dprodVals[x.cod]!=null?dprodVals[x.cod]:'';
+      ei=`<div class="decb"><div class="decl">Quantidade em ${esc(x.unidade)}</div>
+        <div class="decr"><input class="deci dprod-dec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" placeholder="0,000" value="${esc(dv)}"/>
+        <span class="decu">${esc(x.unidade)}</span></div></div>`;
+    }
+    h+=`<div class="pcard" id="dprod-pc-${esc(x.cod)}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+        <div style="font-size:11px;color:var(--tx2);margin-top:1px">COD ${esc(x.cod)}</div>
+        <div style="margin-top:5px">${badge}</div></div>
+      </div>
+      ${ei}
+    </div>`;
+  });
+  c.innerHTML=h;
+  c.querySelectorAll('.dprod-minus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,-1)));
+  c.querySelectorAll('.dprod-plus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,1)));
+  c.querySelectorAll('.dprod-cctr').forEach(el=>el.addEventListener('click',()=>{
+    const cod=el.dataset.cod,spec=getSpecProducao(cod);
+    el.innerHTML=`<input class="qty-input-inline dprod-cv-inp" type="number" inputmode="numeric" min="0" step="1" value="${parseInt(dprodVals[cod])||0}"/><div class="cu">${esc((spec&&(spec.unidContagem||spec.embalagem))||'')}</div>`;
+    const inp=el.querySelector('.dprod-cv-inp');inp.focus();inp.select();
+    const commit=()=>{
+      const q=Math.max(0,parseInt(inp.value)||0);dprodVals[cod]=q;
+      el.innerHTML=`<div class="cv" id="dprod-cv-${cod}">${q}</div><div class="cu">${esc((spec&&(spec.unidContagem||spec.embalagem))||'')}</div>`;
+      dprodAtualizaConv(cod,q,spec);atualizarDprodBar();
+    };
+    inp.addEventListener('blur',commit);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  }));
+  c.querySelectorAll('.dprod-dec').forEach(el=>el.addEventListener('input',()=>{dprodVals[el.dataset.cod]=el.value;atualizarDprodBar();}));
+  bb.innerHTML=`<button class="bp" id="dprod-salvar" style="background:${DIARIO_TIPOS.producao.cor}"><i class="ti ti-check"></i> Registrar produção</button>
+    <div id="dprod-status" style="font-size:12px;color:var(--tx2);text-align:center;min-height:14px"></div>`;
+  document.getElementById('dprod-salvar').addEventListener('click',salvarDprod);
+  atualizarDprodBar();
+}
+function dprodStep(cod,delta){
+  const spec=getSpecProducao(cod);
+  const q=Math.max(0,(parseInt(dprodVals[cod])||0)+delta);
+  dprodVals[cod]=q;
+  const cv=document.getElementById('dprod-cv-'+cod);if(cv)cv.textContent=q;
+  dprodAtualizaConv(cod,q,spec);atualizarDprodBar();
+}
+function dprodAtualizaConv(cod,q,spec){
+  const it=CATALOGO.find(p=>p.cod===cod);const un=it?it.unidade:'';
+  const v=q*((spec&&spec.fator)||1);
+  const el=document.getElementById('dprod-conv-'+cod);
+  if(el)el.textContent=(spec&&spec.fator!==1)?`= ${fmtNum(v)} ${un}`:`${fmtNum(v)} ${un}`;
+}
+function atualizarDprodBar(){
+  const itens=dprodItens();let n=0;
+  itens.forEach(x=>{const spec=getSpecProducao(x.cod);const val=dprodVals[x.cod];
+    if(spec&&spec.modo==='contador'){if((parseInt(val)||0)>0)n++;}
+    else{const q=parseQtdDiario(val);if(String(val??'').trim()!==''&&isFinite(q)&&q>0)n++;}});
+  const st=document.getElementById('dprod-status');
+  if(st)st.textContent=n?n+' item'+(n>1?'s':'')+' com produção':'Preencha ao menos um item.';
+}
+async function salvarDprod(){
+  const itens=dprodItens();const regs=[];
+  itens.forEach(x=>{
+    const spec=getSpecProducao(x.cod);const val=dprodVals[x.cod];
+    let qtd;
+    if(spec&&spec.modo==='contador')qtd=(parseInt(val)||0)*(spec.fator||1);
+    else qtd=parseQtdDiario(val);
+    if(isFinite(qtd)&&qtd>0)regs.push({tipo:'producao',item:{cod:x.cod,nome:x.nome,unidade:x.unidade,grupo:x.grupo},qtd});
+  });
+  const st=document.getElementById('dprod-status');
+  if(!regs.length){st.style.color='#ff3b30';st.textContent='Preencha ao menos um item.';return;}
+  const btn=document.getElementById('dprod-salvar');btn.disabled=true;btn.textContent='Salvando…';
+  try{
+    for(const r of regs)await salvarRegistroDiario(r);
+    fecharDreg();
+  }catch(e){
+    st.style.color='#ff3b30';st.textContent='Erro: '+e.message;
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Registrar produção';
   }
 }
 
