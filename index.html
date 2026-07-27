@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v98</title>
+<title>Gesto Operação v99</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -382,7 +382,7 @@
   <!-- v92: topbar da home removida (redundante) — conta acessível pelo avatar no cabeçalho do Início -->
   <div class="content" id="home-cnt" style="padding-top:12px"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v98</span></span></div>
+    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v99</span></span></div>
   </div>
   <!-- v90 (4A) → v91: app modular — Início (atividades) · Estoque · Diário · Gestão -->
   <div class="ntabs bnav">
@@ -523,7 +523,36 @@
       <div style="flex:1"><div class="fl">Setor</div><select id="rt-setor" class="fi" style="width:100%"><option>Todos</option></select></div>
       <div style="width:120px"><div class="fl">Horário limite</div><input id="rt-hora" class="fi" type="time" style="width:100%"/></div>
     </div>
-    <div><div class="fl">Dias da semana</div><div id="rt-dias" style="display:flex;gap:5px"></div></div>
+    <div><div class="fl">Repetição</div>
+      <div class="mto" id="rt-freq">
+        <button type="button" class="mo on" data-f="semanal">Semanal</button>
+        <button type="button" class="mo" data-f="mensal">Mensal / períodos longos</button>
+      </div>
+    </div>
+    <div id="rt-sem-wrap"><div class="fl">Dias da semana</div><div id="rt-dias" style="display:flex;gap:5px"></div></div>
+    <div id="rt-men-wrap" style="display:none;flex-direction:column;gap:10px">
+      <div><div class="fl">Quando no mês</div>
+        <div style="display:flex;gap:6px">
+          <select id="rt-msemana" class="fi" style="flex:1">
+            <option value="1">1ª</option><option value="2">2ª</option><option value="3">3ª</option><option value="4">4ª</option>
+            <option value="-1" selected>Última</option><option value="dia">Dia fixo</option>
+          </select>
+          <select id="rt-mdow" class="fi" style="flex:1.3">
+            <option value="0">domingo</option><option value="1">segunda</option><option value="2">terça</option>
+            <option value="3">quarta</option><option value="4">quinta</option><option value="5">sexta</option><option value="6" selected>sábado</option>
+          </select>
+          <select id="rt-mdia" class="fi" style="flex:1.3;display:none"></select>
+        </div>
+      </div>
+      <div><div class="fl">Em quais meses</div>
+        <div id="rt-meses" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        <div style="display:flex;gap:12px;margin-top:5px;font-size:11.5px">
+          <button type="button" id="rt-meses-todos" style="background:none;border:none;color:var(--acc);cursor:pointer;font-family:inherit;padding:0">Todos</button>
+          <button type="button" id="rt-meses-limpar" style="background:none;border:none;color:var(--tx2);cursor:pointer;font-family:inherit;padding:0">Limpar</button>
+          <span style="color:var(--tx2)">Ex.: semestral = 2 meses · anual = 1 mês</span>
+        </div>
+      </div>
+    </div>
     <div><div class="fl">Subtarefas (uma por linha, opcional)</div>
       <textarea id="rt-itens" style="width:100%;height:84px;font-size:16px;padding:10px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);resize:none;outline:none;font-family:inherit" placeholder="Ligar equipamentos&#10;Conferir temperatura da câmara&#10;Repor estações"></textarea></div>
     <div><div class="fl">Vincular a um módulo (conclui sozinha)</div>
@@ -1564,7 +1593,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v98';
+const APP_VERSION = 'v99';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4400,11 +4429,51 @@ async function salvarRotinasCfg(){
   catch(e){showToast('Erro ao salvar rotinas: '+e.message,{type:'err'});setSyncState('error');}
 }
 function execsRotinaHoje(){return diarioHoje.filter(r=>r.tipo==='rotina');}
+// v99: uma rotina ocorre hoje? Suporta semanal (dias[]) e mensal (mDia | mSemana+mDow, meses[])
+function rotinaOcorreEm(r,d){
+  if((r.freq||'semanal')==='semanal')return (r.dias||[]).includes(d.getDay());
+  const meses=(Array.isArray(r.meses)&&r.meses.length)?r.meses:null; // null = todos os meses
+  if(meses&&!meses.includes(d.getMonth()))return false;
+  const ultimoDia=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  if(r.mDia!==undefined&&r.mDia!==null){
+    const alvo=r.mDia==='ultimo'?ultimoDia:Math.min(+r.mDia,ultimoDia);
+    return d.getDate()===alvo;
+  }
+  if(r.mDow!==undefined&&r.mDow!==null){
+    if(d.getDay()!==+r.mDow)return false;
+    if(+r.mSemana===-1)return d.getDate()+7>ultimoDia; // última ocorrência do dia no mês
+    return Math.ceil(d.getDate()/7)===+r.mSemana;
+  }
+  return false;
+}
+// Próxima ocorrência (para exibição na gestão); null se não achar em 400 dias
+function proximaOcorrencia(r){
+  const d=new Date();d.setHours(12,0,0,0);
+  for(let i=0;i<400;i++){
+    if(rotinaOcorreEm(r,d))return new Date(d);
+    d.setDate(d.getDate()+1);
+  }
+  return null;
+}
+const MESES_LBL=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+// Texto amigável da repetição
+function descRepeticao(r){
+  if((r.freq||'semanal')==='semanal'){
+    return (r.dias||[]).length===7?'Todos os dias':(r.dias||[]).map(d=>ROT_DIAS_LBL[d]).join(' ');
+  }
+  const DOW=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  let q;
+  if(r.mDia!==undefined&&r.mDia!==null)q=r.mDia==='ultimo'?'Último dia':'Dia '+r.mDia;
+  else q=(+r.mSemana===-1?'Última ':(r.mSemana+'ª '))+DOW[+r.mDow];
+  const meses=(Array.isArray(r.meses)&&r.meses.length)?r.meses:null;
+  const m=!meses||meses.length===12?'todo mês':meses.map(x=>MESES_LBL[x]).join('/');
+  return q+' · '+m;
+}
 // Rotinas agendadas para hoje, visíveis ao usuário (contador vê o próprio setor + "Todos")
 function rotinasDoDia(){
-  const dow=new Date().getDay();
+  const hoje=new Date();
   return rotinasCfg
-    .filter(r=>r.ativo!==false&&(r.dias||[]).includes(dow))
+    .filter(r=>r.ativo!==false&&rotinaOcorreEm(r,hoje))
     .filter(r=>{
       if(isAdminRole()||!currentUserSetor)return true;
       return !r.setor||r.setor==='Todos'||r.setor===currentUserSetor;
@@ -4793,8 +4862,9 @@ function renderGrLista(el){
   wireGrLista(el);
 }
 function _grItemHTML(r){
-    const dias=(r.dias||[]).length===7?'Todos os dias':(r.dias||[]).map(d=>ROT_DIAS_LBL[d]).join(' ');
+    const dias=descRepeticao(r);
     const tags=[];
+    if((r.freq||'semanal')==='mensal'){const px=proximaOcorrencia(r);if(px)tags.push('próx.: '+px.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));}
     if(r.hora)tags.push('até '+r.hora);
     if(r.vinculo)tags.push('vínculo: '+(r.vinculo==='producao'?'Produção':r.vinculo==='conferencia'?'Conferência':'Contagem'));
     if(r.exigeFoto)tags.push('foto');
@@ -4829,6 +4899,29 @@ function wireGrLista(el){
   }));
 }
 let rtDias=[1,2,3,4,5];
+// v99: estado do modo de repetição
+let rtFreq='semanal',rtMeses=[0,1,2,3,4,5,6,7,8,9,10,11];
+function renderRtFreq(){
+  document.querySelectorAll('#rt-freq .mo').forEach(b=>b.classList.toggle('on',b.dataset.f===rtFreq));
+  const sw=document.getElementById('rt-sem-wrap'),mw=document.getElementById('rt-men-wrap');
+  if(sw)sw.style.display=rtFreq==='semanal'?'':'none';
+  if(mw)mw.style.display=rtFreq==='mensal'?'flex':'none';
+}
+function renderRtMTipo(){
+  const t=document.getElementById('rt-msemana').value;
+  document.getElementById('rt-mdow').style.display=t==='dia'?'none':'';
+  document.getElementById('rt-mdia').style.display=t==='dia'?'':'none';
+}
+function renderRtMeses(){
+  const w=document.getElementById('rt-meses');
+  if(!w)return;
+  w.innerHTML=MESES_LBL.map((l,i)=>`<button type="button" class="dia-chip ${rtMeses.includes(i)?'on':''}" data-mes="${i}" style="width:auto;padding:0 9px;height:30px;border-radius:15px;font-size:11px">${l}</button>`).join('');
+  w.querySelectorAll('[data-mes]').forEach(b=>b.addEventListener('click',()=>{
+    const m=+b.dataset.mes;
+    rtMeses=rtMeses.includes(m)?rtMeses.filter(x=>x!==m):[...rtMeses,m];
+    renderRtMeses();
+  }));
+}
 function renderRtDias(){
   const w=document.getElementById('rt-dias');
   if(!w)return;
@@ -4861,7 +4954,27 @@ function abrirModalRotina(id){
   document.getElementById('rt-foto').checked=!!r?.exigeFoto;
   document.getElementById('rt-status').textContent='';
   rtDias=r?(r.dias||[]).slice():[1,2,3,4,5];
+  if(!rtDias.length)rtDias=[1,2,3,4,5];
   renderRtDias();
+  // v99: repetição mensal/períodos longos
+  rtFreq=(r?.freq)||'semanal';
+  rtMeses=(r&&Array.isArray(r.meses)&&r.meses.length)?r.meses.slice():[0,1,2,3,4,5,6,7,8,9,10,11];
+  const mdiaSel=document.getElementById('rt-mdia');
+  mdiaSel.innerHTML=Array.from({length:31},(_,i)=>`<option value="${i+1}">Dia ${i+1}</option>`).join('')+'<option value="ultimo">Último dia</option>';
+  if(r&&r.freq==='mensal'){
+    if(r.mDia!==undefined&&r.mDia!==null){
+      document.getElementById('rt-msemana').value='dia';
+      mdiaSel.value=String(r.mDia);
+    }else{
+      document.getElementById('rt-msemana').value=String(r.mSemana??-1);
+      document.getElementById('rt-mdow').value=String(r.mDow??6);
+    }
+  }else{
+    document.getElementById('rt-msemana').value='-1';
+    document.getElementById('rt-mdow').value='6';
+    mdiaSel.value='1';
+  }
+  renderRtFreq();renderRtMTipo();renderRtMeses();
   document.getElementById('modal-rotina').classList.add('on');
 }
 function salvarModalRotina(){
@@ -4869,15 +4982,26 @@ function salvarModalRotina(){
   const nome=document.getElementById('rt-nome').value.trim();
   const st=document.getElementById('rt-status');
   if(!nome){st.textContent='Dê um nome para a rotina.';return;}
-  if(!rtDias.length){st.textContent='Marque ao menos um dia da semana.';return;}
+  if(rtFreq==='semanal'&&!rtDias.length){st.textContent='Marque ao menos um dia da semana.';return;}
+  if(rtFreq==='mensal'&&!rtMeses.length){st.textContent='Marque ao menos um mês.';return;}
   const itens=document.getElementById('rt-itens').value.split('\n').map(s=>s.trim()).filter(Boolean).map((t,i)=>({id:'i'+i,texto:t}));
+  // v99: campos de repetição
+  const rep={freq:rtFreq};
+  if(rtFreq==='semanal'){rep.dias=rtDias.slice().sort();rep.meses=null;rep.mDia=null;rep.mSemana=null;rep.mDow=null;}
+  else{
+    rep.dias=[];
+    rep.meses=rtMeses.length===12?null:rtMeses.slice().sort((a,b)=>a-b);
+    const t=document.getElementById('rt-msemana').value;
+    if(t==='dia'){const v=document.getElementById('rt-mdia').value;rep.mDia=v==='ultimo'?'ultimo':+v;rep.mSemana=null;rep.mDow=null;}
+    else{rep.mDia=null;rep.mSemana=+t;rep.mDow=+document.getElementById('rt-mdow').value;}
+  }
   const rot={
     id:rtEditId||novaRotinaId(),
     nome,cat:document.getElementById('rt-cat').value||null,
     desc:document.getElementById('rt-desc').value.trim()||null,
     setor:document.getElementById('rt-setor').value||'Todos',
     hora:document.getElementById('rt-hora').value||null,
-    dias:rtDias.slice().sort(),
+    ...rep,
     itens,
     vinculo:document.getElementById('rt-vinculo').value||null,
     critico:document.getElementById('rt-critico').checked,
@@ -7025,6 +7149,11 @@ document.getElementById('im-cancel').addEventListener('click',()=>document.getEl
 document.getElementById('modal-item-menu').addEventListener('click',e=>{if(e.target.id==='modal-item-menu')e.target.classList.remove('on');});
 // v91: modal de rotina (Gestão)
 document.getElementById('rt-fechar').addEventListener('click',()=>closeModal('modal-rotina'));
+// v99: modo de repetição
+document.querySelectorAll('#rt-freq .mo').forEach(b=>b.addEventListener('click',()=>{rtFreq=b.dataset.f;renderRtFreq();}));
+document.getElementById('rt-msemana').addEventListener('change',renderRtMTipo);
+document.getElementById('rt-meses-todos').addEventListener('click',()=>{rtMeses=[0,1,2,3,4,5,6,7,8,9,10,11];renderRtMeses();});
+document.getElementById('rt-meses-limpar').addEventListener('click',()=>{rtMeses=[];renderRtMeses();});
 document.getElementById('rt-cancelar').addEventListener('click',()=>closeModal('modal-rotina'));
 document.getElementById('modal-rotina').addEventListener('click',e=>{if(e.target.id==='modal-rotina')closeModal('modal-rotina');});
 document.getElementById('rt-salvar').addEventListener('click',salvarModalRotina);
