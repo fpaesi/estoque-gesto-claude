@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v109</title>
+<title>Gesto Operação v110</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -382,7 +382,7 @@
   <!-- v92: topbar da home removida (redundante) — conta acessível pelo avatar no cabeçalho do Início -->
   <div class="content" id="home-cnt" style="padding-top:12px"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v109</span></span></div>
+    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v110</span></span></div>
   </div>
   <!-- v90 (4A) → v91: app modular — Início (atividades) · Estoque · Diário · Gestão -->
   <div class="ntabs bnav">
@@ -1607,7 +1607,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v109';
+const APP_VERSION = 'v110';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -3793,7 +3793,7 @@ function renderGestao(c){
     ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:none;padding-left:13px;padding-right:13px;white-space:nowrap">${tabLabel[t]}</div>`).join('')}</div>`;
   const gTab=gestaoTabId==='estoque'?gestaoEstTabId:gestaoTabId;
   if(gestaoTabId==='estoque'){
-    const estAbas=[['locais','Locais','ti-map-pin'],['specs','Specs','ti-tag'],['base','Base','ti-database'],['backup','Backup','ti-shield-check']];
+    const estAbas=[['locais','Locais','ti-map-pin'],['specs','Specs','ti-tag'],['base','Base','ti-database']]; // v110: Backup escondido (acesso pelo link em Locais)
     h+=`<div class="seg" style="margin-top:2px">${estAbas.map(([id,l,ic])=>`<button data-action="gestao-est-tab" data-est="${id}" class="${gestaoEstTabId===id?'on':''}"><i class="ti ${ic}" style="font-size:14px"></i>${l}</button>`).join('')}</div>`;
   }
 
@@ -3903,6 +3903,8 @@ function renderGestao(c){
         <button class="btn-criar-local" id="btn-add-local"><i class="ti ti-check" style="font-size:15px"></i>Criar local</button>
       </div>`:''}
     </div>`;
+    // v110: entrada discreta para as ferramentas raras (ex-sub-aba Backup)
+    h+=`<button class="bg_" id="btn-est-avancado" style="font-size:12px;padding:10px 0">Ferramentas avançadas: backup manual · reiniciar contagem →</button>`;
   } else if(gTab==='specs'){
     h+=`<div class="sec">Selecione o local</div>
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
@@ -3997,7 +3999,9 @@ function renderGestao(c){
   } else if(gestaoTabId==='diario'){
     h+=renderGestaoDiario();
   } else {
-    h+=`<div class="sec">Contagem atual</div>
+    h+=`<button class="bg_" id="btn-est-voltar" style="text-align:left;padding:6px 0;font-size:13px;color:var(--acc)">← Voltar aos Locais</button>
+      <div class="sec">Ferramentas avançadas</div>
+      <div class="sec">Contagem atual</div>
       <button class="bbtn" id="btn-reset-contagem" style="border-color:#ff3b30;background:#fff5f5">
         <i class="ti ti-rotate" style="font-size:22px;color:#ff3b30;flex-shrink:0"></i>
         <div><div style="font-size:14px;font-weight:500;color:#ff3b30">Reiniciar contagem do zero</div>
@@ -4094,6 +4098,11 @@ function renderGestao(c){
   c.querySelectorAll('.btn-edit-spec').forEach(el=>el.addEventListener('click',()=>editSpec(el.dataset.lid,el.dataset.cod)));
   const btnExpSpecs=c.querySelector('#btn-exportar-specs');if(btnExpSpecs)btnExpSpecs.addEventListener('click',exportarEspecsCSV);
   if(gTab==='sistema')wireGestaoBackup(c); // v105→v107: snapshots do app inteiro
+  // v110: acesso discreto às ferramentas avançadas do estoque (sub-aba Backup escondida)
+  const bAv=c.querySelector('#btn-est-avancado');
+  if(bAv)bAv.addEventListener('click',()=>{gestaoEstTabId='backup';renderHome();});
+  const bVo=c.querySelector('#btn-est-voltar');
+  if(bVo)bVo.addEventListener('click',()=>{gestaoEstTabId='locais';renderHome();});
   const btnExp=c.querySelector('#btn-exportar');if(btnExp)btnExp.addEventListener('click',exportarBackup);
   const btnReset=c.querySelector('#btn-reset-contagem');if(btnReset)btnReset.addEventListener('click',reiniciarContagemZero);
   const btnImpF=c.querySelector('#btn-importar-file');if(btnImpF)btnImpF.addEventListener('click',()=>document.getElementById('backup-file-input').click());
