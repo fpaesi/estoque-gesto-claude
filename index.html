@@ -7,8 +7,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v110</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
+<title>Gesto Operação v111</title>
+<!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -382,7 +383,7 @@
   <!-- v92: topbar da home removida (redundante) — conta acessível pelo avatar no cabeçalho do Início -->
   <div class="content" id="home-cnt" style="padding-top:12px"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v110</span></span></div>
+    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v111</span></span></div>
   </div>
   <!-- v90 (4A) → v91: app modular — Início (atividades) · Estoque · Diário · Gestão -->
   <div class="ntabs bnav">
@@ -1524,54 +1525,13 @@ const CONFIG_DOC='cfg_config'; // configuração global: locais, sublocais, vín
 // 4. Copie o objeto firebaseConfig e cole abaixo, substituindo os valores
 // 5. No Firebase Console: ative Authentication → Email/Password
 // 6. No Firebase Console: ative Firestore Database (modo produção)
-// 7. Em Firestore → Regras, cole:
-//    rules_version = '2';
-//    service cloud.firestore {
-//      match /databases/{database}/documents {
-//        match /perfis/{uid} {
-//          allow read: if request.auth != null;
-//          allow write: if request.auth != null && (
-//            request.auth.uid == uid ||
-//            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin'
-//          );
-//        }
-//        match /usuarios/{userId} {
-//          allow read, write: if request.auth != null && request.auth.uid == userId;
-//        }
-//        match /contagem_ativa/{docId} {
-//          allow read: if request.auth != null;
-//          // v72: docs de configuração global só podem ser escritos por admin
-//          allow write: if request.auth != null && (
-//            !(docId in ['cfg_config','cfg_specs','cfg_catalogo','cfg_fechamento','cfg_cardapio','cfg_diario']) ||
-//            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin'
-//          );
-//        }
-//        match /historico/{id} {
-//          allow read, write: if request.auth != null;
-//        }
-//        // v85: diário (produção, conferência, erros, desperdícios)
-//        match /diario/{id} {
-//          allow read: if request.auth != null;
-//          allow create: if request.auth != null &&
-//            request.resource.data.uid == request.auth.uid;
-//          // só admin muda status (lançado/ignorado); ninguém apaga
-//          allow update: if request.auth != null &&
-//            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin';
-//          allow delete: if false;
-//        }
-//        // v80: log de acessos (logins). Só admin lê. Cada usuário pode criar o
-//        // próprio registro de sucesso; falhas são gravadas pela Cloud Function
-//        // (Admin SDK, ignora regras). Ninguém edita/apaga pelo app.
-//        match /acessos/{id} {
-//          allow read: if request.auth != null &&
-//            get(/databases/$(database)/documents/perfis/$(request.auth.uid)).data.role == 'admin';
-//          allow create: if request.auth != null &&
-//            request.resource.data.success == true &&
-//            request.resource.data.uid == request.auth.uid;
-//          allow update, delete: if false;
-//        }
-//      }
-//    }
+// 7. Em Firestore → Regras: o conteúdo está versionado em `firestore.rules`,
+//    na raiz deste repositório. Esse arquivo é a fonte da verdade — cole o
+//    conteúdo dele no console e publique. Não edite as regras só pelo console:
+//    qualquer alteração feita lá deve voltar para o arquivo e ser commitada.
+//    (v111: fechadas as brechas de auto-promoção a admin em `perfis`,
+//     de DELETE em `historico`, de `cfg_rotinas` desprotegido e de `disabled`
+//     checado só no cliente.)
 // 8. No Firebase Storage → Regras, libere imagens autenticadas:
 //    rules_version = '2';
 //    service firebase.storage {
@@ -1607,7 +1567,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v110';
+const APP_VERSION = 'v111';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2642,14 +2602,16 @@ if(firebaseReady){
           currentUserSetoresG=Array.isArray(perf.setores)&&perf.setores.length?perf.setores.slice():null; // v101
           mustChange=!!perf.mustChangePassword; // v80
         }else{
-          // Primeiro acesso — cria perfil admin automaticamente
-          currentUserRole='admin';
+          // v111: conta sem documento em `perfis` NÃO vira mais admin sozinha.
+          // Antes, qualquer conta órfã (ex.: criarUsuario falhando entre o create do Auth
+          // e o set do perfil) se autopromovia a admin no login seguinte.
+          // Agora cai no perfil de menor privilégio; quem libera acesso é um admin,
+          // em Gestão › Usuários. Para criar o PRIMEIRO admin de um projeto novo,
+          // adicione o documento perfis/<uid> com role:'admin' pelo console do Firebase.
+          console.warn('Usuário autenticado sem perfil em `perfis` — acesso mínimo aplicado.');
+          currentUserRole='contador_conferente';
           currentUserNome=user.displayName||user.email;
-          currentUserTabs=null;currentUserSetor=null;currentUserSetoresG=null; // admin vê todas
-          await db.collection('perfis').doc(user.uid).set({
-            nome:currentUserNome,email:user.email,role:'admin',tabs:[],
-            disabled:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()
-          });
+          currentUserTabs=null;currentUserSetor=null;currentUserSetoresG=null;
         }
       }catch(e){
         console.warn('Erro ao carregar perfil:',e);
@@ -2822,12 +2784,46 @@ function setVinculo(lid,cod,slId){if(!isAdminRole())return;if(!vinculos[lid])vin
 function getSpec(lid,cod){return(specs[lid]||{})[cod]||null;}
 function hasSpec(lid,cod){const s=getSpec(lid,cod);return !!(s&&s.modo);}
 // Item resolvido para fins de finalização: foi contado (touched) OU já possui especificação (não preenchido = zero).
-function itemResolvido(lid,cod){return !!(counts[lid]?.[cod]?.touched)||hasSpec(lid,cod);}
+// v111: item só conta como contado se alguém o tocou.
+// Antes havia "||hasSpec(lid,cod)": como todo item cadastrado tem unidade, allDone
+// dava true num local intocado e "Finalizar contagem" aparecia como botão primário
+// com 0 de 118 contados. hasSpec indica que o item está PRONTO para ser contado, não contado.
+function itemContado(lid,cod){return !!(counts[lid]?.[cod]?.touched);}
+// Progresso de contagem do local: {contados, total, pendentes}
+function progressoLocal(lid){
+  const prods=getProdsLocal(lid);
+  const contados=prods.filter(p=>itemContado(lid,p.cod)).length;
+  return {contados,total:prods.length,pendentes:prods.length-contados};
+}
+// Confirmação obrigatória quando o fechamento vai lançar itens não contados como zero.
+function confirmarFinalizacaoParcial(lid,onOk){
+  const {contados,total,pendentes}=progressoLocal(lid);
+  if(contados===0)return; // botão fica desabilitado nesse caso; guarda extra
+  if(pendentes===0){onOk();return;}
+  appConfirm(
+    `${contados} de ${total} itens contados. Os ${pendentes} itens não contados entram no fechamento com quantidade 0 e viram baixa de estoque no Saipos.`,
+    {title:'Finalizar com pendências?',okText:`Finalizar assim mesmo`,cancelText:'Voltar e contar',danger:true},
+    onOk
+  );
+}
 function setSpec(lid,cod,spec){if(!specs[lid])specs[lid]={};if(!spec)delete specs[lid][cod];else specs[lid][cod]=spec;salvar();}
 function calcV(lid,cod,qty){const s=getSpec(lid,cod);if(!s)return qty;if(s.modo==='decimal')return pf(qty)||0;return(parseFloat(qty)||0)*(s.fator||1);}
 function fmtNum(n){return parseFloat(n.toFixed(4)).toString();}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function pf(v){return parseFloat(String(v??'').replace(',','.'));}
+// v111: parser decimal único do app (contagem e Diário usavam regras diferentes).
+// Antes, pf() trocava só a 1ª vírgula e não removia pontos: "1.250,5" virava 1,25 — erro de 1.000×.
+// Regra: se há vírgula, ela é o separador decimal e todo ponto é milhar.
+// Sem vírgula, o ponto só é milhar quando forma grupos de 3 dígitos ("1.250"),
+// senão continua sendo decimal ("12.5" = 12,5) — não quebra quem digita ponto.
+function parseNumBR(v){
+  let s=String(v??'').trim();
+  if(!s)return NaN;
+  if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
+  const n=parseFloat(s);
+  return isFinite(n)?n:NaN;
+}
+function pf(v){return parseNumBR(v);}
 function fotoSrc(foto){return typeof foto==='string'?foto:(foto?.url||'');}
 function fotoIsStoragePath(path){return typeof path==='string'&&path.startsWith('contagem-fotos/');}
 function fotoExt(file){return file.type==='image/png'?'png':'jpg';}
@@ -3300,17 +3296,23 @@ function renderPlano(lid){
   const btnGestao=document.getElementById('btn-ir-gestao');
   if(btnGestao)btnGestao.addEventListener('click',()=>{homeTab('gestao');show('s-home');});
   const bbar=document.getElementById('plano-bbar');
-  const allDone=getProdsLocal(lid).every(p=>itemResolvido(lid,p.cod));
-  if(allDone&&totalProds>0){
+  // v111: finalizar só é oferecido a partir de 1 item contado; parcial exige confirmação.
+  const prog=progressoLocal(lid);
+  const allDone=prog.total>0&&prog.pendentes===0;
+  const finalizar=()=>{salvarHistorico();renderSaved();show('s-saved');};
+  if(allDone){
     bbar.innerHTML=`<button id="btn-salvar-plano" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button>
       <button id="btn-revisar-plano" class="bs">Revisar</button>`;
-    document.getElementById('btn-salvar-plano').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
+    document.getElementById('btn-salvar-plano').addEventListener('click',finalizar);
     document.getElementById('btn-revisar-plano').addEventListener('click',()=>abrirEtapa(lid,subs[0]?.id||null));
   } else {
     const proxSl=subs[proximoIdx]||subs[0];
-    bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp"><i class="ti ti-player-play"></i> ${totalDone>0?`Continuar · ${esc(proxSl?.nome||'')}`:`Iniciar · ${esc(proxSl?.nome||'')}`}</button>
+    const semContagem=prog.contados===0;
+    bbar.innerHTML=`<button id="btn-iniciar-plano" class="bp"><i class="ti ti-player-play"></i> ${semContagem?`Iniciar · ${esc(proxSl?.nome||'')}`:`Continuar · ${esc(proxSl?.nome||'')}`}</button>
+      <button id="btn-salvar-plano" class="bs" ${semContagem?'disabled style="opacity:.4"':''}>Finalizar contagem · ${prog.contados} de ${prog.total}</button>
       <button id="btn-pausar-plano" class="bg_">Pausar e sair</button>`;
     document.getElementById('btn-iniciar-plano').addEventListener('click',()=>abrirEtapa(lid,proxSl?.id||null));
+    if(!semContagem)document.getElementById('btn-salvar-plano').addEventListener('click',()=>confirmarFinalizacaoParcial(lid,finalizar));
     document.getElementById('btn-pausar-plano').addEventListener('click',()=>{show('s-home');renderHome();});
   }
 }
@@ -3581,7 +3583,8 @@ function runPreFinishAudit(onConfirm,scope='sublocal'){
 function renderCountBbar(prods,done){
   const steps=getCountNavSteps(aLocal);const curIdx=steps.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<steps.length-1?steps[curIdx+1]:null;
   const bbar=document.getElementById('count-bbar');
-  const allDone=getProdsLocal(aLocal).every(p=>itemResolvido(aLocal,p.cod));
+  const progL=progressoLocal(aLocal); // v111
+  const allDone=progL.total>0&&progL.pendentes===0;
   const slAtual=steps.find(s=>s.id===aSublocal)||getContableSubs(aLocal).find(s=>s.id===aSublocal);
   const slNomeAtual=slAtual?(slAtual._parentNome?`${slAtual._parentNome} › ${slAtual.nome}`:slAtual.nome):(aSublocal==='__todos__'?getLocal(aLocal).nome:aSublocal);
   if(allDone){
@@ -3756,10 +3759,13 @@ function goFinish(){
   document.getElementById('fin-cnt').innerHTML=h;
   const subs=getCountNavSteps(aLocal);const curIdx=subs.findIndex(s=>s.id===aSublocal);const nextSl=curIdx>=0&&curIdx<subs.length-1?subs[curIdx+1]:null;
   const bbar=document.getElementById('fin-bbar');
-  const allDone=getProdsLocal(aLocal).every(p=>itemResolvido(aLocal,p.cod));
+  // v111: mesma regra do roteiro — contado é contado, spec não conta.
+  const progF=progressoLocal(aLocal);
+  const allDone=progF.total>0&&progF.pendentes===0;
+  const finalizarF=()=>{salvarHistorico();renderSaved();show('s-saved');};
   if(allDone){
     bbar.innerHTML='<button id="btn-fin-salvar" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button><button id="btn-fin-rev" class="bs">Revisar</button>';
-    document.getElementById('btn-fin-salvar').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
+    document.getElementById('btn-fin-salvar').addEventListener('click',finalizarF);
     document.getElementById('btn-fin-rev').addEventListener('click',backCount);
   } else if(nextSl){
     bbar.innerHTML=`<button id="btn-fin-next" class="bp"><i class="ti ti-arrow-right"></i> Próximo: ${esc(nextSl.nome)}</button>
@@ -3768,8 +3774,12 @@ function goFinish(){
     document.getElementById('btn-fin-cont').addEventListener('click',backCount);
     document.getElementById('btn-fin-plano').addEventListener('click',voltarAoPlano);
   } else {
-    bbar.innerHTML='<button id="btn-fin-salvar2" class="bp"><i class="ti ti-device-floppy"></i> Finalizar contagem</button><button id="btn-fin-cont2" class="bs">Continuar aqui</button>';
-    document.getElementById('btn-fin-salvar2').addEventListener('click',()=>{salvarHistorico();renderSaved();show('s-saved');});
+    // v111: sem nenhum item contado não há o que finalizar — o botão fica desabilitado
+    // e o primário passa a ser voltar para a contagem. Com contagem parcial, pede confirmação.
+    const semContagem=progF.contados===0;
+    bbar.innerHTML=`<button id="btn-fin-cont2" class="${semContagem?'bp':'bs'}">Continuar aqui</button>
+      <button id="btn-fin-salvar2" class="${semContagem?'bs':'bp'}" ${semContagem?'disabled style="opacity:.4"':''}>${semContagem?'<i class="ti ti-device-floppy"></i> Finalizar contagem · 0 contados':`<i class="ti ti-device-floppy"></i> Finalizar contagem · ${progF.contados} de ${progF.total}`}</button>`;
+    if(!semContagem)document.getElementById('btn-fin-salvar2').addEventListener('click',()=>confirmarFinalizacaoParcial(aLocal,finalizarF));
     document.getElementById('btn-fin-cont2').addEventListener('click',backCount);
   }
   show('s-finish');
@@ -4398,7 +4408,7 @@ const MOTIVOS_DESP=['Vencido','Estragado','Queda / quebra','Erro de preparo','Ou
 function hojeStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function diaStrOffset(n){const d=new Date();d.setDate(d.getDate()-n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function dnorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
-function parseQtdDiario(v){const n=parseFloat(String(v??'').replace(/\./g,'').replace(',','.'));return isFinite(n)?n:NaN;}
+function parseQtdDiario(v){return parseNumBR(v);} // v111: delega ao parser único (ver parseNumBR)
 function fmtQtdDiario(n){return Number(n).toLocaleString('pt-BR',{maximumFractionDigits:3});}
 
 // ── Setores ────────────────────────────────────────────────────────────────────

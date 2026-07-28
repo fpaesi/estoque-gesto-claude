@@ -1,0 +1,110 @@
+rules_version = '2';
+
+// Gesto Operação — regras do Firestore
+// Projeto: gesto-estoque
+//
+// v111 (28/07/2026) — fechamento das brechas encontradas na revisão:
+//   1. perfis: o usuário podia escrever o PRÓPRIO documento inteiro, inclusive `role`.
+//      Um contador se promovia a admin pelo console do navegador.
+//   2. historico: `allow write` para qualquer autenticado incluía DELETE — dava para
+//      apagar o fechamento que alimenta o CSV do Saipos.
+//   3. cfg_rotinas ficou de fora da whitelist de documentos de configuração protegidos.
+//   4. `disabled` (conta desativada) só era checado no cliente.
+//
+// Publicação: Firebase Console → Firestore Database → Regras → colar → Publicar.
+// Este arquivo é a fonte da verdade; qualquer alteração no console deve voltar para cá.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── helpers ────────────────────────────────────────────────────────────
+    function perfil(uid) {
+      return get(/databases/$(database)/documents/perfis/$(uid)).data;
+    }
+    function perfilExiste(uid) {
+      return exists(/databases/$(database)/documents/perfis/$(uid));
+    }
+    // Usuário válido: autenticado, com perfil e não desativado.
+    function ativo() {
+      return request.auth != null
+        && perfilExiste(request.auth.uid)
+        && perfil(request.auth.uid).get('disabled', false) == false;
+    }
+    function isAdmin() {
+      return ativo() && perfil(request.auth.uid).role == 'admin';
+    }
+    // Campos que o próprio usuário nunca pode alterar em si mesmo.
+    function naoMexeEmCampoProtegido() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['role', 'tabs', 'setor', 'setores', 'disabled', 'login']);
+    }
+
+    // ── perfis ─────────────────────────────────────────────────────────────
+    // Leitura: o próprio documento sempre (senão o login não consegue nem descobrir
+    // que o perfil não existe); os demais, só usuário ativo.
+    // Criação: só admin. O primeiro admin é criado à mão no console do Firebase —
+    // o app não cria mais perfil sozinho no primeiro acesso (era auto-promoção a admin).
+    // Atualização: o próprio usuário mexe em nome/avatar/mustChangePassword,
+    // mas nunca em role, setor, tabs, login ou disabled. Admin pode tudo.
+    match /perfis/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || ativo());
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (ativo() && request.auth.uid == uid && naoMexeEmCampoProtegido());
+      allow delete: if isAdmin();
+    }
+
+    // ── usuarios (dados privados de cada um) ────────────────────────────────
+    match /usuarios/{userId} {
+      allow read, write: if ativo() && request.auth.uid == userId;
+    }
+    match /usuarios/{userId}/{sub=**} {
+      allow read, write: if ativo() && request.auth.uid == userId;
+    }
+
+    // ── contagem_ativa (rascunhos + documentos de configuração) ─────────────
+    // Os cfg_* são configuração global da loja e só admin escreve.
+    // cfg_rotinas entrou na lista em v111.
+    match /contagem_ativa/{docId} {
+      allow read: if ativo();
+      allow write: if ativo() && (
+        !(docId in ['cfg_config','cfg_specs','cfg_catalogo','cfg_fechamento',
+                    'cfg_cardapio','cfg_diario','cfg_rotinas'])
+        || isAdmin()
+      );
+    }
+
+    // ── historico (contagens fechadas) ─────────────────────────────────────
+    // Append-only: grava-se uma vez, nunca se edita nem se apaga pelo app.
+    // Correção de fechamento é feita por admin direto no console, com rastro.
+    match /historico/{id} {
+      allow read: if ativo();
+      allow create: if ativo();
+      allow update, delete: if false;
+    }
+
+    // ── diario (produção, conferência, erros, desperdícios) ─────────────────
+    match /diario/{id} {
+      allow read: if ativo();
+      allow create: if ativo() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin();   // só admin muda status (lançado/ignorado)
+      allow delete: if false;
+    }
+
+    // ── acessos (log de login) ─────────────────────────────────────────────
+    // Falhas de login são gravadas pela Cloud Function (Admin SDK, ignora regras).
+    // Aqui o próprio usuário só registra o próprio sucesso. Ninguém edita nem apaga.
+    match /acessos/{id} {
+      allow read: if isAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.success == true
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ── negar o resto por padrão ───────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
