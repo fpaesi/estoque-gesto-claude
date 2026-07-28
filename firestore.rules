@@ -30,8 +30,16 @@ service cloud.firestore {
         && perfilExiste(request.auth.uid)
         && perfil(request.auth.uid).get('disabled', false) == false;
     }
+    // ATENÇÃO: os tipos de perfil do app são dinâmicos (Gestão › Usuários grava em
+    // cfg_diario.rolesLista), mas as regras não leem essa configuração. Hoje só existe
+    // um tipo Gestor: 'admin'. Se você criar OUTRO tipo marcado como "Gestor" no app,
+    // adicione o id dele na lista abaixo e republique — senão esse usuário terá a
+    // interface de gestor mas o servidor vai recusar as escritas dele.
+    function rolesGestores() {
+      return ['admin'];
+    }
     function isAdmin() {
-      return ativo() && perfil(request.auth.uid).role == 'admin';
+      return ativo() && perfil(request.auth.uid).role in rolesGestores();
     }
     // Campos que o próprio usuário nunca pode alterar em si mesmo.
     function naoMexeEmCampoProtegido() {
