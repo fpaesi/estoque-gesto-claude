@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v100</title>
+<title>Gesto Operação v101</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/tabler-icons.min.css">
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -382,7 +382,7 @@
   <!-- v92: topbar da home removida (redundante) — conta acessível pelo avatar no cabeçalho do Início -->
   <div class="content" id="home-cnt" style="padding-top:12px"></div>
   <div class="bbar" id="home-bbar">
-    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v100</span></span></div>
+    <div class="syncr"><span class="sync-pill local"><i class="ti ti-device-mobile"></i> Salvo no aparelho<span style="opacity:.5;margin-left:5px">v101</span></span></div>
   </div>
   <!-- v90 (4A) → v91: app modular — Início (atividades) · Estoque · Diário · Gestão -->
   <div class="ntabs bnav">
@@ -789,6 +789,11 @@
       <div class="fl">Setor</div>
       <select id="nu-setor" class="fi" style="width:100%"><option value="">Todos os setores</option></select>
       <div style="font-size:11px;color:var(--tx2);margin-top:4px">Contador com setor vê apenas os locais e itens do seu setor. Gestores veem tudo.</div>
+    </div>
+    <div id="nu-setorg-wrap" style="display:none">
+      <div class="fl">Setores do gestor (rotinas próprias)</div>
+      <div id="nu-setorg" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:4px">As rotinas desses setores aparecem nas atividades do dia do gestor. Nenhum marcado = vê as rotinas de todos. O painel da equipe mostra sempre todos os setores.</div>
     </div>
     <div id="nu-tabs-wrap">
       <div class="fl">Abas liberadas para este contador</div>
@@ -1435,6 +1440,7 @@ const ACCESS_TABS=[
   {id:'historico',label:'Histórico'},
 ];
 let currentUserSetor=null; // v85: setor do colaborador — null = todos
+let currentUserSetoresG=null; // v101: setores do GESTOR (array) — filtram só as rotinas próprias dele no Início; null/[] = todas
 let currentUserTabs=null; // abas liberadas para o usuário logado (array de ids) ou null = todas
 let nuRole='contador_conferente'; // role selecionado no modal novo usuário
 let nuTabs=ACCESS_TABS.map(t=>t.id); // abas marcadas no modal novo usuário
@@ -1595,7 +1601,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v100';
+const APP_VERSION = 'v101';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2627,12 +2633,13 @@ if(firebaseReady){
           currentUserNome=perf.nome||user.email;
           currentUserTabs=normalizeTabs(perf.tabs); // v80
           currentUserSetor=perf.setor||null; // v85
+          currentUserSetoresG=Array.isArray(perf.setores)&&perf.setores.length?perf.setores.slice():null; // v101
           mustChange=!!perf.mustChangePassword; // v80
         }else{
           // Primeiro acesso — cria perfil admin automaticamente
           currentUserRole='admin';
           currentUserNome=user.displayName||user.email;
-          currentUserTabs=null;currentUserSetor=null; // admin vê todas
+          currentUserTabs=null;currentUserSetor=null;currentUserSetoresG=null; // admin vê todas
           await db.collection('perfis').doc(user.uid).set({
             nome:currentUserNome,email:user.email,role:'admin',tabs:[],
             disabled:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -2662,7 +2669,7 @@ if(firebaseReady){
       // v80: se o admin definiu uma senha temporária, obriga a troca antes de seguir
       if(mustChange)abrirTrocaSenha(true);
     }else{
-      currentUser=null;currentUserRole=null;currentUserNome=null;currentUserTabs=null;currentUserSetor=null;
+      currentUser=null;currentUserRole=null;currentUserNome=null;currentUserTabs=null;currentUserSetor=null;currentUserSetoresG=null;
       setSyncState('local');
       show('s-login');
     }
@@ -2965,6 +2972,23 @@ function renderNuTabs(){
   if(tabsWrap)tabsWrap.style.display=roleGestor(nuRole)?'none':'';
   const setorWrap=document.getElementById('nu-setor-wrap');
   if(setorWrap)setorWrap.style.display=roleGestor(nuRole)?'none':'';
+  // v101: gestor escolhe os próprios setores (multi)
+  const setorgWrap=document.getElementById('nu-setorg-wrap');
+  if(setorgWrap)setorgWrap.style.display=roleGestor(nuRole)?'':'none';
+}
+// v101: chips multi-seleção de setores (usado p/ gestor no Novo Usuário e Gerenciar Usuário)
+function renderSetorChips(elId,selecionados,onToggle){
+  const w=document.getElementById(elId);
+  if(!w)return;
+  w.innerHTML=SETORES.map(s=>`<button type="button" class="chip ${selecionados.includes(s)?'on':''}" data-sg="${esc(s)}" style="padding:7px 13px">${esc(s)}</button>`).join('')||'<span style="font-size:12px;color:var(--tx2)">Nenhum setor cadastrado.</span>';
+  w.querySelectorAll('[data-sg]').forEach(b=>b.addEventListener('click',()=>onToggle(b.dataset.sg)));
+}
+let nuSetoresG=[];
+function renderNuSetoresG(){
+  renderSetorChips('nu-setorg',nuSetoresG,s=>{
+    nuSetoresG=nuSetoresG.includes(s)?nuSetoresG.filter(x=>x!==s):[...nuSetoresG,s];
+    renderNuSetoresG();
+  });
 }
 // v95: botões de tipo de perfil no modal Novo Usuário
 function renderNuRoles(){
@@ -2996,8 +3020,10 @@ function abrirNovoUsuario(){
   document.getElementById('nu-status').textContent='';
   nuRole='contador_conferente';
   nuTabs=ACCESS_TABS.map(t=>t.id);
+  nuSetoresG=[];
   renderNuRoles();
   renderNuTabs();
+  renderNuSetoresG();
   document.getElementById('modal-novo-usuario').classList.add('on');
   setTimeout(()=>document.getElementById('nu-nome').focus(),100);
 }
@@ -4490,16 +4516,23 @@ function descRepeticao(r){
   const m=!meses||meses.length===12?'todo mês':meses.map(x=>MESES_LBL[x]).join('/');
   return q+' · '+m;
 }
-// Rotinas agendadas para hoje, visíveis ao usuário (contador vê o próprio setor + "Todos")
-function rotinasDoDia(){
+// v101: todas as rotinas que ocorrem hoje (sem filtro de usuário) — base do painel da equipe
+function rotinasDoDiaGeral(){
   const hoje=new Date();
   return rotinasCfg
     .filter(r=>r.ativo!==false&&rotinaOcorreEm(r,hoje))
-    .filter(r=>{
-      if(isAdminRole()||!currentUserSetor)return true;
-      return !r.setor||r.setor==='Todos'||r.setor===currentUserSetor;
-    })
     .sort((a,b)=>(a.hora||'99:99').localeCompare(b.hora||'99:99')||(a.ordem||0)-(b.ordem||0));
+}
+// Rotinas de HOJE do usuário logado (contador: setor dele + "Todos"; gestor: setores dele + "Todos", ou todas se não tiver setores)
+function rotinasDoDia(){
+  return rotinasDoDiaGeral().filter(r=>{
+    if(isAdminRole()){
+      if(!currentUserSetoresG||!currentUserSetoresG.length)return true;
+      return !r.setor||r.setor==='Todos'||currentUserSetoresG.includes(r.setor);
+    }
+    if(!currentUserSetor)return true;
+    return !r.setor||r.setor==='Todos'||r.setor===currentUserSetor;
+  });
 }
 // Status derivado: concluída (exec de hoje ou registro vinculado) / atrasada / pendente
 function statusRotina(r){
@@ -4556,7 +4589,7 @@ function renderInicioBody(c){
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
       <div>
         <div class="oi">${saudacao()}${nome?', '+esc(nome):''}</div>
-        <div class="dt">${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}${currentUserSetor&&!isAdminRole()?' · '+esc(currentUserSetor):''}</div>
+        <div class="dt">${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}${currentUserSetor&&!isAdminRole()?' · '+esc(currentUserSetor):''}${isAdminRole()&&currentUserSetoresG&&currentUserSetoresG.length?' · '+esc(currentUserSetoresG.join(' / ')):''}</div>
       </div>
       <button id="btn-conta" title="Minha conta" aria-label="Minha conta" style="width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">${esc(initials)}</button>
     </div>
@@ -4616,11 +4649,13 @@ function renderInicioBody(c){
     });
   }
 
-  // Painel da equipe (admin): rotinas do dia por setor
-  if(isAdminRole()&&rots.length){
+  // Painel da equipe (admin): TODAS as rotinas do dia por setor (v101: mesmo que o gestor tenha setores próprios)
+  const rotsG=isAdminRole()?rotinasDoDiaGeral():[];
+  if(isAdminRole()&&rotsG.length){
     h+=`<div class="sec">Equipe hoje</div>`;
+    const stsG=rotsG.map(r=>({r,st:statusRotina(r)}));
     const porSetor={};
-    sts.forEach(x=>{const s=x.r.setor||'Todos';(porSetor[s]=porSetor[s]||[]).push(x);});
+    stsG.forEach(x=>{const s=x.r.setor||'Todos';(porSetor[s]=porSetor[s]||[]).push(x);});
     ['Todos',...SETORES].filter(s=>porSetor[s]).forEach(s=>{
       const lst=porSetor[s];
       const cc=lst.filter(x=>x.st.estado==='concluida').length;
@@ -6658,7 +6693,7 @@ function getSecondaryAuth(){
   return secondaryAuthApp.auth();
 }
 
-async function criarUsuario(nome,login,tempPwd,role,tabs,setor){
+async function criarUsuario(nome,login,tempPwd,role,tabs,setor,setoresG){
   const loginLimpo=cleanLogin(login);
   const email=loginToEmail(loginLimpo);
   const secAuth=getSecondaryAuth();
@@ -6671,6 +6706,7 @@ async function criarUsuario(nome,login,tempPwd,role,tabs,setor){
       nome,email,login:emailToLogin(email),internalLogin:isInternalEmail(email),role,disabled:false,
       tabs:roleGestor(role)?[]:(Array.isArray(tabs)?tabs:[]), // v80: abas liberadas
       setor:roleGestor(role)?null:(setor||null), // v85: setor do colaborador
+      setores:roleGestor(role)&&Array.isArray(setoresG)&&setoresG.length?setoresG:null, // v101: setores do gestor
       mustChangePassword:true, // v80: força troca da senha temporária no 1º acesso
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -6773,8 +6809,8 @@ async function renderUsuarios(c){
       const ini=(p.nome||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
       const isMe=p.uid===currentUser?.uid;
       const disOp=p.disabled?'opacity:.45':'';
-      // v89: mostra o setor vinculado direto no card (gestor vê tudo; contador sem setor = todos)
-      const setorTxt=roleGestor(p.role)?'':(p.setor||'Todos os setores');
+      // v89→v101: setor no card (contador: setor único; gestor: setores próprios se tiver)
+      const setorTxt=roleGestor(p.role)?((p.setores||[]).join(', ')):(p.setor||'Todos os setores');
       const setorChip=setorTxt?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--tx2);font-weight:500;margin-top:3px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="ti ti-map-pin" style="font-size:11px"></i>${setorTxt}</span>`:'';
       h+=`<div class="row" data-uid="${p.uid}" style="${disOp}">
         <div class="av" style="flex-shrink:0;width:38px;height:38px;font-size:13px;border-radius:50%">${ini}</div>
@@ -6827,7 +6863,7 @@ function renderSetoresUI(c,perfis){
   const el=c.querySelector('#set-lista');
   if(!el)return;
   el.innerHTML=SETORES.map(s=>{
-    const nUsers=(perfis||[]).filter(p=>p.setor===s).length;
+    const nUsers=(perfis||[]).filter(p=>p.setor===s||(Array.isArray(p.setores)&&p.setores.includes(s))).length;
     const nRot=rotinasCfg.filter(r=>r.setor===s).length;
     const nLocais=(diarioCfg.setores&&diarioCfg.setores[s]||[]).length;
     const usos=[nUsers?nUsers+' usuário'+(nUsers>1?'s':''):null,nRot?nRot+' rotina'+(nRot>1?'s':''):null,nLocais?nLocais+' loca'+(nLocais>1?'is':'l'):null].filter(Boolean).join(' · ')||'sem vínculos';
@@ -6901,7 +6937,14 @@ async function renomearSetor(old,novo,perfis){
     try{await db.collection('perfis').doc(p.uid).update({setor:novo});}
     catch(e){console.warn('renomear setor perfil:',e);showToast('Falha ao atualizar o usuário '+(p.nome||'')+': '+e.message,{type:'err'});}
   }
+  // v101: setores múltiplos dos gestores
+  for(const p of (perfis||[]).filter(p=>Array.isArray(p.setores)&&p.setores.includes(old))){
+    const novos=p.setores.map(x=>x===old?novo:x);
+    try{await db.collection('perfis').doc(p.uid).update({setores:novos});p.setores=novos;}
+    catch(e){console.warn('renomear setores gestor:',e);}
+  }
   if(currentUserSetor===old)currentUserSetor=novo;
+  if(Array.isArray(currentUserSetoresG)&&currentUserSetoresG.includes(old))currentUserSetoresG=currentUserSetoresG.map(x=>x===old?novo:x);
 }
 async function excluirSetor(s,perfis){
   SETORES=SETORES.filter(x=>x!==s);
@@ -6915,7 +6958,14 @@ async function excluirSetor(s,perfis){
     try{await db.collection('perfis').doc(p.uid).update({setor:null});}
     catch(e){console.warn('excluir setor perfil:',e);showToast('Falha ao atualizar o usuário '+(p.nome||'')+': '+e.message,{type:'err'});}
   }
+  // v101: setores múltiplos dos gestores
+  for(const p of (perfis||[]).filter(p=>Array.isArray(p.setores)&&p.setores.includes(s))){
+    const novos=p.setores.filter(x=>x!==s);
+    try{await db.collection('perfis').doc(p.uid).update({setores:novos.length?novos:null});p.setores=novos.length?novos:null;}
+    catch(e){console.warn('excluir setores gestor:',e);}
+  }
   if(currentUserSetor===s)currentUserSetor=null;
+  if(Array.isArray(currentUserSetoresG)){currentUserSetoresG=currentUserSetoresG.filter(x=>x!==s);if(!currentUserSetoresG.length)currentUserSetoresG=null;}
 }
 
 // ── v95: gestão de tipos de perfil (Gestão › Usuários) ───────────────────────
@@ -7034,6 +7084,10 @@ function abrirGerenciarUsuario(perf){
       <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Setor do colaborador:</div>
       <select id="gu-setor" class="fi" style="width:100%">${setorOpts}</select>
     </div>
+    <div id="gu-sec-setorg" style="margin:10px 0 8px;padding-top:10px;border-top:.5px solid var(--bd3);display:none">
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Setores do gestor (rotinas próprias no Início; nenhum = todas):</div>
+      <div id="gu-setorg" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
     <button class="bs" id="gu-toggle" style="margin:6px 0 12px;width:100%">
       <i class="ti ti-${perf.disabled?'user-check':'user-off'}"></i> ${perf.disabled?'Reativar usuário':'Desativar usuário'}
     </button>
@@ -7058,9 +7112,17 @@ function abrirGerenciarUsuario(perf){
     const g=roleGestor(guRoleSel.value);
     const t=document.getElementById('gu-sec-tabs');if(t)t.style.display=g?'none':'';
     const s=document.getElementById('gu-sec-setor');if(s)s.style.display=g?'none':'';
+    const sg=document.getElementById('gu-sec-setorg');if(sg)sg.style.display=g?'':'none';
   };
   guRoleSel.addEventListener('change',guSyncSections);
   guSyncSections();
+  // v101: setores do gestor (multi)
+  let guSetoresG=Array.isArray(perf.setores)?perf.setores.slice():[];
+  const renderGuSetoresG=()=>renderSetorChips('gu-setorg',guSetoresG,s=>{
+    guSetoresG=guSetoresG.includes(s)?guSetoresG.filter(x=>x!==s):[...guSetoresG,s];
+    renderGuSetoresG();
+  });
+  renderGuSetoresG();
 
   document.getElementById('gu-reset')?.addEventListener('click',async()=>{
     const r=await resetarSenha(perf.email);
@@ -7084,10 +7146,11 @@ function abrirGerenciarUsuario(perf){
     st.style.color='var(--tx2)';st.textContent='Salvando...';
     try{
       const upd={role:roleV};
-      if(g){upd.tabs=[];upd.setor=null;}
-      else{upd.tabs=guTabs.slice();upd.setor=document.getElementById('gu-setor')?.value||null;}
+      if(g){upd.tabs=[];upd.setor=null;upd.setores=guSetoresG.length?guSetoresG.slice():null;}
+      else{upd.tabs=guTabs.slice();upd.setor=document.getElementById('gu-setor')?.value||null;upd.setores=null;}
       await db.collection('perfis').doc(perf.uid).update(upd);
-      perf.role=roleV;perf.tabs=upd.tabs;perf.setor=upd.setor;
+      perf.role=roleV;perf.tabs=upd.tabs;perf.setor=upd.setor;perf.setores=upd.setores;
+      if(perf.uid===currentUser?.uid)currentUserSetoresG=upd.setores; // vale já para o próprio gestor
       if(internal&&nova){
         const r=await definirSenhaUsuarioInterno(perf.uid,nova);
         if(!r.success)throw new Error('Senha: '+r.error);
@@ -7171,7 +7234,7 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
   const btn=document.getElementById('nu-criar');
   btn.disabled=true;btn.textContent='Criando...';
   const nuSetorEl=document.getElementById('nu-setor');
-  const r=await criarUsuario(nome,login,tempPwd,nuRole,tabsSel,nuSetorEl?(nuSetorEl.value||null):null);
+  const r=await criarUsuario(nome,login,tempPwd,nuRole,tabsSel,nuSetorEl?(nuSetorEl.value||null):null,nuSetoresG.slice());
   btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Criar usuário';
   if(r.success){
     closeModal('modal-novo-usuario');
