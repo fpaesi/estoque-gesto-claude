@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v112</title>
+<title>Gesto Operação v113</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -296,7 +296,7 @@
 .atv-cta{font-size:12px;font-weight:600;color:var(--acc);white-space:nowrap}
 .dia-head{background:linear-gradient(135deg,var(--acc),#2E7BC4);border-radius:var(--r1);padding:16px;color:#fff}
 .dia-head .oi{font-size:19px;font-weight:700;letter-spacing:-.01em}
-.dia-head .dt{font-size:12px;opacity:.85;margin-top:2px;text-transform:capitalize}
+.dia-head .dt{font-size:12px;opacity:.85;margin-top:2px;text-transform:capitalize}.dia-head .dt .ver-tag{text-transform:none;opacity:.6;margin-left:5px}
 .dia-prog{margin-top:12px;display:flex;align-items:center;gap:10px}
 .dia-prog .bar{flex:1;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden}
 .dia-prog .fill{height:100%;background:#fff;border-radius:3px;transition:width .4s}
@@ -1566,7 +1566,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v112';
+const APP_VERSION = 'v113';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4655,7 +4655,7 @@ function renderInicioBody(c){
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
       <div>
         <div class="oi">${saudacao()}${nome?', '+esc(nome):''}</div>
-        <div class="dt">${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}${currentUserSetor&&!isAdminRole()?' · '+esc(currentUserSetor):''}${isAdminRole()&&currentUserSetoresG&&currentUserSetoresG.length?' · '+esc(currentUserSetoresG.join(' / ')):''}</div>
+        <div class="dt">${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}${currentUserSetor&&!isAdminRole()?' · '+esc(currentUserSetor):''}${isAdminRole()&&currentUserSetoresG&&currentUserSetoresG.length?' · '+esc(currentUserSetoresG.join(' / ')):''}<span class="ver-tag">· ${APP_VERSION}</span></div>
       </div>
       <button id="btn-conta" title="Minha conta" aria-label="Minha conta" style="width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">${esc(initials)}</button>
     </div>
