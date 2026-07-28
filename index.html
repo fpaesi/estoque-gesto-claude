@@ -3600,7 +3600,9 @@ function renderCountBbar(prods,done){
   } else {
     const isTodos=aSublocal==='__todos__';
     // Sem próxima etapa: dentro de um escopo volta ao roteiro; senão finaliza o local.
-    const finBtnTxt=nextSl?(aScope?'Próxima prateleira':'Finalizar este sublocal'):(aScope?'Voltar ao roteiro':'Finalizar contagem');
+    // v111: sem próxima etapa este botão leva ao RESUMO, não grava nada — o texto
+    // "Finalizar contagem" fazia parecer que o toque já fechava o local.
+    const finBtnTxt=nextSl?(aScope?'Próxima prateleira':'Finalizar este sublocal'):(aScope?'Voltar ao roteiro':'Ver resumo e finalizar');
     bbar.innerHTML=`<div class="progr"><div class="progt"><div class="progf" id="pbar" style="width:0%"></div></div><div class="progp" id="ppct">0%</div></div>
       <button id="btn-cb-fin" class="bp">${finBtnTxt}</button>
       <button id="btn-cb-vp" class="bg_">Ver roteiro</button>`;
