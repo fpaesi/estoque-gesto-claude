@@ -1,0 +1,13 @@
+#!/bin/sh
+# Hook de pre-push do Gesto Operação.
+# Instale uma vez por clone com:  git config core.hooksPath tools/githooks
+#
+# Bloqueia o push se o app não passar na verificação (sintaxe, versão, ícones,
+# parser decimal, fechamento). Para pular num caso excepcional: git push --no-verify
+
+echo "Verificando o app antes de publicar..."
+if ! node "$(git rev-parse --show-toplevel)/tools/check.mjs"; then
+  echo "Push abortado. Corrija os erros acima (ou use --no-verify se souber o que está fazendo)."
+  exit 1
+fi
+exit 0
