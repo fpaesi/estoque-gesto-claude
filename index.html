@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v114</title>
+<title>Gesto Operação v115</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1540,13 +1540,23 @@ function espelharCountsLocal(){
   if(espelhoTimer)clearTimeout(espelhoTimer);
   espelhoTimer=setTimeout(gravarEspelhoCounts,400);
 }
+// `counts` é populado a partir da coleção contagem_ativa, que mistura rascunhos de
+// locais com os documentos de configuração (cfg_catalogo, cfg_rotinas, cfg_diario…).
+// O espelho só deve conter locais de verdade — senão guarda lixo e a tela de
+// recuperação chega a citar "cfg_rotinas" como se fosse um local.
+function ehLocalValido(lid){return !!(locais||[]).find(l=>l.id===lid);}
+function countsSomenteLocais(obj){
+  const out={};
+  Object.entries(obj||{}).forEach(([lid,ps])=>{if(ehLocalValido(lid))out[lid]=ps;});
+  return out;
+}
 function gravarEspelhoCounts(){
   espelhoTimer=null;
   try{
     localStorage.setItem(SK_COUNTS,JSON.stringify({
       uid:currentUser?currentUser.uid:null,
       ts:new Date().toISOString(),
-      counts
+      counts:countsSomenteLocais(counts)
     }));
   }catch(e){console.warn('Não foi possível espelhar a contagem no aparelho:',e);}
 }
@@ -1584,6 +1594,7 @@ function totalTocadosEm(obj){
 function diffEspelho(espelho){
   const faltando={};let n=0;
   Object.entries(espelho||{}).forEach(([lid,ps])=>{
+    if(!ehLocalValido(lid))return; // ignora cfg_* que vieram junto de contagem_ativa
     Object.entries(ps||{}).forEach(([cod,d])=>{
       if(!d||!d.touched)return;
       const naNuvem=counts[lid]&&counts[lid][cod];
@@ -1680,7 +1691,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v114';
+const APP_VERSION = 'v115';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -1952,6 +1963,7 @@ function restaurarEspelhoOffline(){
   const n=totalTocadosEm(esp.counts);
   if(!n)return;
   Object.entries(esp.counts).forEach(([lid,ps])=>{
+    if(!ehLocalValido(lid))return;
     if(!counts[lid])counts[lid]={};
     Object.entries(ps||{}).forEach(([cod,d])=>{
       if(counts[lid][cod]===undefined)counts[lid][cod]=d;
