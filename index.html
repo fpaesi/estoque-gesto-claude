@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v115</title>
+<title>Gesto Operação v116</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -275,11 +275,13 @@
   #print-area tbody tr{page-break-inside:avoid}
   #print-area .pa-sub{font-weight:600}
   #print-area .pa-conf{height:24px}
-  #print-area .col-sub{width:16%}
-  #print-area .col-cat{width:16%}
-  #print-area .col-item{width:34%}
-  #print-area .col-un{width:18%}
-  #print-area .col-conf{width:16%}
+  #print-area .col-sub{width:15%}
+  #print-area .col-cat{width:14%}
+  #print-area .col-item{width:31%}
+  #print-area .col-un{width:25%}
+  #print-area .col-conf{width:15%}
+  #print-area .pa-un-forte{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.25}
+  #print-area .pa-un-det{font-size:9.5px;color:#444;line-height:1.3;margin-top:1px}
   #print-area .pa-grp{font-size:10px;font-weight:700;text-transform:uppercase;background:#f3f3f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 /* ===== v91: Início — atividades do dia (estilo checklist operacional) ===== */
@@ -1482,9 +1484,46 @@ function rebuildCatIndex(){
   CAT_BY_COD=new Map(CATALOGO.map(p=>[String(p.cod),p]));
 }
 function getProd(cod){return CAT_BY_COD.get(String(cod))||null;}
+
+// ── v116: unidades de medida ───────────────────────────────────────────────────
+// A função sincronizarBaseManual grava o id_unit_measure cru do Saipos (4, 1, 111)
+// quando não consegue resolver a sigla, e o número vazava para a tela e para a
+// impressão ("Digitar em 111", "×15 4"). unidSigla() traduz na entrada do catálogo,
+// então todo o resto do app já recebe KG/UN/L. Fonte: Saipos /unit_measures.
+const UNIT_ID_SIGLA={'1':'UN','4':'KG','5':'L','111':'PÇ'};
+const UNIT_EXTENSO={
+  'UN':['unidade','unidades'],'PÇ':['peça','peças'],'PC':['peça','peças'],
+  'KG':['quilo','quilos'],'G':['grama','gramas'],
+  'L':['litro','litros'],'ML':['mililitro','mililitros'],
+  'CX':['caixa','caixas'],'DZ':['dúzia','dúzias'],'PACOTE':['pacote','pacotes'],
+};
+function unidSigla(u){
+  const s=String(u==null?'':u).trim();
+  if(!s)return '';
+  return /^\d+$/.test(s)?(UNIT_ID_SIGLA[s]||s):s;
+}
+// Escreve a unidade por extenso; qtd decide singular/plural.
+function unidExtenso(u,qtd){
+  const sig=unidSigla(u);
+  const e=UNIT_EXTENSO[sig.toUpperCase()];
+  if(!e)return sig;
+  return Math.abs(Number(qtd))===1?e[0]:e[1];
+}
+// Plural pt-BR suficiente para nomes de embalagem (caixa, saco, galão, fardo…).
+function pluralPT(w){
+  const s=String(w||'').trim();
+  if(!s)return '';
+  if(/[sxz]$/i.test(s))return s;
+  if(/ão$/i.test(s))return s.slice(0,-2)+'ões';
+  if(/m$/i.test(s))return s.slice(0,-1)+'ns';
+  if(/(al|el|ol|ul|il)$/i.test(s))return s.slice(0,-1)+'is';
+  if(/r$/i.test(s))return s+'es';
+  return s+'s';
+}
+
 function aplicarCatalogo(arr,meta,updatedAt){
   if(Array.isArray(arr)&&arr.length){
-    CATALOGO=arr.map(x=>({cod:String(x.cod),nome:x.nome||'',grupo:x.grupo||'',unidade:x.unidade||''}));
+    CATALOGO=arr.map(x=>({cod:String(x.cod),nome:x.nome||'',grupo:x.grupo||'',unidade:unidSigla(x.unidade)}));
   }
   rebuildCatIndex();
   catalogoMeta=meta||{};
@@ -1691,7 +1730,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v115';
+const APP_VERSION = 'v116';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2382,11 +2421,25 @@ function salvarContagemFinal(nome,quando){
 // Gera a lista de conferência (em branco) de um local para impressão/PDF (v77).
 // Colunas: Sublocal · Item · Un. Contagem · Conferência (vazia para preencher à mão).
 // O Título (nome do Local) fica no <thead>, então repete no topo de cada página impressa.
-function unidContagemLabel(lid,p){
+// v116: unidade de contagem por extenso na impressão, em 2 linhas.
+//   forte   → o que contar, em caixa alta ("CAIXAS", "QUILOS")
+//   detalhe → embalagem física e a equivalência ("Caixa 6x2,5kg — cada caixa vale 15 quilos")
+// Sem especificação cai no mesmo texto do modo decimal: só a unidade Saipos, sem alerta.
+function unidContagemPartes(lid,p){
   const spec=getSpec(lid,p.cod);
-  if(!spec)return `Unidade Saipos · ${p.unidade}`;
-  if(spec.modo==='contador')return `${spec.embalagem||'Unidade'} · ×${spec.fator||1} ${p.unidade}`;
-  return `Digitar em ${p.unidade}`;
+  const sig=(unidSigla(p.unidade)||'').toUpperCase();
+  if(!spec||spec.modo!=='contador'){
+    const forte=(unidExtenso(sig,2)||sig||'—').toUpperCase();
+    let detalhe='Anotar a quantidade (aceita decimal)';
+    if(sig==='KG'||sig==='G')detalhe='Pesar na balança e anotar o peso (aceita decimal)';
+    else if(sig==='L'||sig==='ML')detalhe='Medir e anotar o volume (aceita decimal)';
+    return {forte,detalhe};
+  }
+  const base=String(spec.unidContagem||spec.embalagem||'unidade').trim().split(/\s+/)[0].toLowerCase();
+  const fator=Number(spec.fator)||1;
+  const emb=(spec.embalagem||'').trim();
+  const equiv=`cada ${base} vale ${fmtNum(fator)} ${unidExtenso(sig,fator)}`;
+  return {forte:pluralPT(base).toUpperCase(),detalhe:emb?`${emb} — ${equiv}`:equiv};
 }
 function exportarListaLocalPDF(lid){
   const l=getLocal(lid);
@@ -2402,7 +2455,7 @@ function exportarListaLocalPDF(lid){
     const semSub=isItemSemSublocalEfetivo(lid,p.cod);
     const subNome=semSub?'Sem Sublocal':getSublocNome(lid,slId);
     const subOrd=semSub?Number.MAX_SAFE_INTEGER:(ordem.has(slId)?ordem.get(slId):Number.MAX_SAFE_INTEGER-1);
-    return {subNome,subOrd,grupo:p.grupo||'',nome:p.nome||'',un:unidContagemLabel(lid,p)};
+    return {subNome,subOrd,grupo:p.grupo||'',nome:p.nome||'',un:unidContagemPartes(lid,p)};
   });
   rows.sort((a,b)=>a.subOrd-b.subOrd
     ||a.subNome.localeCompare(b.subNome,'pt-BR')
@@ -2418,7 +2471,7 @@ function exportarListaLocalPDF(lid){
       <td class="pa-sub">${subCell}</td>
       <td>${esc(r.grupo)}</td>
       <td>${esc(r.nome)}</td>
-      <td>${esc(r.un)}</td>
+      <td><div class="pa-un-forte">${esc(r.un.forte)}</div>${r.un.detalhe?`<div class="pa-un-det">${esc(r.un.detalhe)}</div>`:''}</td>
       <td class="pa-conf"></td>
     </tr>`;
   });
@@ -2433,7 +2486,7 @@ function exportarListaLocalPDF(lid){
         <th class="pa-th col-sub">Sublocal</th>
         <th class="pa-th col-cat">Categoria</th>
         <th class="pa-th col-item">Item</th>
-        <th class="pa-th col-un">Un. Contagem</th>
+        <th class="pa-th col-un">Como contar</th>
         <th class="pa-th col-conf">Conferência</th>
       </tr>
     </thead>
@@ -2549,7 +2602,8 @@ function exportarContagemFinalCSV(entry){
   const cabecalho=['Contagem','Data de Fim','COD_SAIPOS','Item','Quantidade','Unidade','Situação'];
   const linhas=itens.map(i=>{
     const sit=i.total>0?'Com estoque':(('t' in i)?(i.t?'Sem estoque (contado)':'Não contado'):'Zerado / não contado');
-    return [entry.nome||'Contagem final',dataStr,i.cod,i.nome,fmtNum(i.total).replace('.',','),i.unidade,sit];
+    // v116: snapshots antigos foram gravados com o id de unidade; traduz na leitura.
+    return [entry.nome||'Contagem final',dataStr,i.cod,i.nome,fmtNum(i.total).replace('.',','),unidSigla(i.unidade),sit];
   });
   const csv=[cabecalho,...linhas]
     .map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';'))
@@ -5439,7 +5493,7 @@ function regLinhaHTML(r,admin){
     desc='Conferência · '+(r.items?r.items.length:0)+' itens';
     sub=(r.userNome||'')+' · '+hora+(r.setor?' · '+esc(r.setor):'');
   }else{
-    desc=esc((r.item&&r.item.nome)||'?')+(r.qtd!=null?' · '+fmtQtdDiario(r.qtd)+' '+esc((r.item&&r.item.unidade)||''):'');
+    desc=esc((r.item&&r.item.nome)||'?')+(r.qtd!=null?' · '+fmtQtdDiario(r.qtd)+' '+esc(unidSigla(r.item&&r.item.unidade)):''); // v116: registros antigos do diário guardam o id
     sub=[t.label,r.motivo?esc(r.motivo):null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
   }
   const stBadge=r.tipo==='conferencia'?'' :
@@ -6208,7 +6262,9 @@ function analisarBaseSaipos(){
   try{arr=JSON.parse(document.getElementById('ab-json').value.trim());}
   catch(e){st.style.color='#ff3b30';st.textContent='JSON inválido: '+e.message;return;}
   if(!Array.isArray(arr)||!arr.length){st.style.color='#ff3b30';st.textContent='Cole um JSON de lista (array) válido.';return;}
-  const norm=arr.map(x=>({cod:String(x.cod),nome:(x.nome||'').trim(),grupo:(x.grupo||'').trim(),unidade:(x.unidade||'').trim()})).filter(x=>x.cod&&x.cod!=='undefined');
+  // v116: unidSigla aqui também — aplicarBaseSaipos grava CATALOGO direto, sem passar
+  // por aplicarCatalogo, então o id cru entraria pelo fluxo manual de colar JSON.
+  const norm=arr.map(x=>({cod:String(x.cod),nome:(x.nome||'').trim(),grupo:(x.grupo||'').trim(),unidade:unidSigla(x.unidade)})).filter(x=>x.cod&&x.cod!=='undefined');
   const isDesc=g=>/^descontinuad/i.test(g||'');
   const ativos=norm.filter(x=>!isDesc(x.grupo));
   const descSet=new Set(norm.filter(x=>isDesc(x.grupo)).map(x=>x.cod));
