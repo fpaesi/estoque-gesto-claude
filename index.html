@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v132</title>
+<title>Gesto Operação v133</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1808,7 +1808,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v132';
+const APP_VERSION = 'v133';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4792,7 +4792,7 @@ let dregTipo=null,dregItem=null,dregMotivo=null,dregDestino=null,dregBusca='',dr
 let dregSpec=null,dregCntQty=0,dregDecVal=''; // v87: card de produção igual ao de contagem
 let dconfVals={};
 let dprodVals={}; // v87: quantidades da lista de produção (cod → count|string)
-let gdProcBusca='';
+
 
 const DIARIO_TIPOS={
   producao:{label:'Produção',icon:'ti-tools-kitchen-2',cor:'#0F6E56',bg:'#E1F5EE',verbo:'Registrar produção'},
@@ -6062,12 +6062,14 @@ async function salvarDreg(){
 }
 
 // ── Conferência de processados ─────────────────────────────────────────────────
+// v133: a lista da Conferência deixou de ser curada à mão e passou a sair da
+// MESMA fonte da Produção — os grupos "Processados <Setor>" do catálogo, que a
+// sincronização diária mantém em dia. Antes eram duas definições para a mesma
+// coisa (grupo aqui, lista de códigos ali), e a de Gestão envelhecia sozinha:
+// item novo no Saipos aparecia na Produção e sumia da Conferência.
 function dconfItens(){
-  const pset=new Set(diarioCfg.processados||[]);
-  let lista=CATALOGO.filter(x=>pset.has(x.cod));
-  const allowed=codsDoSetor();
-  if(allowed)lista=lista.filter(x=>allowed.has(x.cod));
-  return lista;
+  const grupos=gruposProcessadosDoUsuario();
+  return CATALOGO.filter(x=>grupos.has(x.grupo));
 }
 function abrirDconf(){dconfVals={};show('s-dconf');renderDconf();}
 function renderDconf(){
@@ -6076,8 +6078,8 @@ function renderDconf(){
   const itens=dconfItens();
   if(!itens.length){
     c.innerHTML=`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-clipboard-check" style="font-size:28px;opacity:.5"></i></div>
-      <div class="empty-title">Nenhum processado configurado</div>
-      <div class="empty-sub">${isAdminRole()?'Defina a lista de insumos processados em Gestão › Diário.':'Peça a um administrador para configurar a lista de processados (Gestão › Diário).'}</div></div>`;
+      <div class="empty-title">Nenhum processado para o seu setor</div>
+      <div class="empty-sub">${currentUserSetor&&!PROC_GRUPOS.includes('Processados '+currentUserSetor)?'O setor '+esc(currentUserSetor)+' não tem insumos processados.':'Verifique se a base foi atualizada (grupos Processados Cozinha/Bar/Forno).'}</div></div>`;
     bb.innerHTML='';return;
   }
   const jaHoje=diarioHoje.some(r=>r.tipo==='conferencia'&&r.uid===(currentUser&&currentUser.uid));
@@ -6287,10 +6289,10 @@ async function salvarDprod(){
 
 // ── Gestão › Diário: fila Saipos + configurações ──────────────────────────────
 function renderGestaoDiario(){
+  // v133: a lista de processados saiu daqui — ela é derivada do catálogo
+  // (grupos "Processados …"), não mais mantida à mão.
   return `<div class="sec">Fila de lançamento no Saipos</div>
   <div id="gd-fila"><div class="empty" style="padding:16px"><span>Carregando fila…</span></div></div>
-  <div class="sec">Conferência — lista de processados</div>
-  <div id="gd-proc"></div>
   <div class="sec">Cardápio (pratos p/ erro de prato)</div>
   <button class="bbtn" id="gd-cardapio-btn">
     <i class="ti ti-tools-kitchen-2" style="font-size:22px;color:var(--acc);flex-shrink:0"></i>
@@ -6299,7 +6301,6 @@ function renderGestaoDiario(){
 }
 function wireGestaoDiario(c){
   ensureDiarioCfg().then(()=>{
-    renderGdProc(c.querySelector('#gd-proc'));
     const info=c.querySelector('#gd-cardapio-info');
     if(info)info.textContent=CARDAPIO.length?CARDAPIO.length+' pratos · atualizado em '+new Date(cardapioUpdatedAt).toLocaleDateString('pt-BR'):'Nunca carregado';
     carregarFila().then(()=>{const el=c.querySelector('#gd-fila');if(el)renderFilaLista(el);});
@@ -6369,34 +6370,6 @@ function montarPacoteFila(){
 }
 
 // Config: lista de processados p/ conferência
-function renderGdProc(el){
-  if(!el)return;
-  const pset=new Set(diarioCfg.processados||[]);
-  const sel=CATALOGO.filter(x=>pset.has(x.cod));
-  let h='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">';
-  h+=sel.map(x=>`<span class="chip on" data-gd-rem="${esc(x.cod)}" title="Remover">${esc(x.nome)} ×</span>`).join('')||'<span style="font-size:12px;color:var(--tx2)">Nenhum item na lista ainda.</span>';
-  h+='</div>';
-  h+=`<input id="gd-proc-busca" class="srch" placeholder="Buscar item para adicionar..." value="${esc(gdProcBusca)}" autocomplete="off"/>`;
-  if(gdProcBusca.trim().length>=2){
-    const q=dnorm(gdProcBusca);
-    const res=CATALOGO.filter(x=>!pset.has(x.cod)&&(dnorm(x.nome).includes(q)||dnorm(x.grupo).includes(q))).slice(0,12);
-    h+=res.map(x=>`<div class="row" data-gd-add="${esc(x.cod)}" style="padding:9px 12px">
-      <div style="flex:1"><div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
-      <div style="font-size:11px;color:var(--tx2)">${esc(x.grupo)} · ${esc(x.unidade)}</div></div>
-      <i class="ti ti-plus" style="color:var(--acc)"></i></div>`).join('');
-  }
-  el.innerHTML=h;
-  const bi=el.querySelector('#gd-proc-busca');
-  if(bi)bi.addEventListener('input',()=>{gdProcBusca=bi.value;renderGdProc(el);
-    const e2=el.querySelector('#gd-proc-busca');if(e2){e2.focus();e2.setSelectionRange(e2.value.length,e2.value.length);}});
-  el.querySelectorAll('[data-gd-add]').forEach(b=>b.addEventListener('click',()=>{
-    diarioCfg.processados=[...(diarioCfg.processados||[]),b.dataset.gdAdd];gdProcBusca='';salvarDiarioCfg();renderGdProc(el);
-  }));
-  el.querySelectorAll('[data-gd-rem]').forEach(b=>b.addEventListener('click',()=>{
-    diarioCfg.processados=(diarioCfg.processados||[]).filter(c=>c!==b.dataset.gdRem);salvarDiarioCfg();renderGdProc(el);
-  }));
-}
-
 // Config: mapeamento setor → locais
 function renderGdSetores(el){
   if(!el)return;
