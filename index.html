@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v116</title>
+<title>Gesto Operação v117</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -161,6 +161,8 @@
 /* Login: botão loading */
 .btn-spinner{width:16px;height:16px;border:2px solid rgba(230,241,251,.35);border-top-color:#E6F1FB;border-radius:50%;animation:spin-v19 .7s linear infinite;flex-shrink:0}
 @keyframes spin-v19{to{transform:rotate(360deg)}}
+/* v117: spinner da tela de partida (fundo claro — o .btn-spinner é claro demais aqui) */
+.boot-spinner{width:22px;height:22px;border:2px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:spin-v19 .7s linear infinite;flex-shrink:0}
 
 /* Tabs com ícone (home) */
 .ntab-icon{display:block;font-size:16px;margin-bottom:2px}
@@ -356,8 +358,27 @@
 <body>
 <div id="app">
 
+<!-- v117: Tela de partida ────────────────────────────────────────────────────
+     A sessão do Firebase fica salva no aparelho e é restaurada de forma
+     assíncrona (~4 s: SDK + IndexedDB + perfil no Firestore). Até a v116 a tela
+     de LOGIN era a que nascia visível, então quem recarregava via um formulário
+     de senha por 4 segundos e depois entrava sozinho — pedindo uma senha que
+     não era necessária e passando a impressão de app instável.
+     Agora nasce esta tela neutra; o formulário de login só aparece quando a
+     verificação termina SEM usuário (ramo `else` do onAuthStateChanged). -->
+<div id="s-boot" class="scr on" style="background:var(--bg1)">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:20px">
+    <div class="login-logo-wrap"><i class="ti ti-building-store"></i></div>
+    <div style="text-align:center">
+      <div style="font-size:22px;font-weight:600;color:var(--tx1)">Gesto Operação</div>
+      <div id="boot-msg" style="font-size:14px;color:var(--tx2);margin-top:8px;line-height:1.5">Verificando sessão…</div>
+    </div>
+    <span class="boot-spinner" aria-hidden="true"></span>
+  </div>
+</div>
+
 <!-- Tela de Login -->
-<div id="s-login" class="scr on" style="background:var(--bg1)">
+<div id="s-login" class="scr" style="background:var(--bg1)">
   <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:24px">
     <div class="login-logo-wrap"><i class="ti ti-building-store"></i></div>
     <div style="text-align:center">
@@ -1730,7 +1751,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v116';
+const APP_VERSION = 'v117';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2837,7 +2858,9 @@ if(firebaseReady){
       ajustarTabsPorRole();
       // Carrega dados e mostra home
       await carregarNuvem();
-      if(document.getElementById('s-login').classList.contains('on'))show('s-home');
+      // v117: sai da tela de partida OU do login (antes só olhava o login, então a
+      // tela de partida ficaria presa para quem já tinha sessão salva no aparelho)
+      if(document.getElementById('s-login').classList.contains('on')||document.getElementById('s-boot').classList.contains('on'))show('s-home');
       renderHome();
       // v80: se o admin definiu uma senha temporária, obriga a troca antes de seguir
       if(mustChange)abrirTrocaSenha(true);
@@ -2847,7 +2870,18 @@ if(firebaseReady){
       show('s-login');
     }
   });
+  // v117: rede de segurança — se o SDK não responder (offline na 1ª carga, CDN
+  // bloqueado, IndexedDB indisponível), não deixa ninguém preso na tela de
+  // partida: passa para o login depois de 10 s.
+  setTimeout(()=>{
+    const boot=document.getElementById('s-boot');
+    if(boot&&boot.classList.contains('on')&&!currentUser&&!(auth&&auth.currentUser))show('s-login');
+  },10000);
 }
+// v117: sem Firebase configurado o onAuthStateChanged nunca roda. Quem tira a
+// tela de partida nesse caso é o modo local do fim do arquivo
+// (`if(!firebaseReady){show('s-home');renderHome();}`) — não repetir aqui, senão
+// pisca login antes de cair no modo local.
 
 function exportarBackup(){
   if(!isAdminRole()){showToast('Apenas administradores podem exportar backup.',{type:'err'});return;}
