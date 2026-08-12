@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v122</title>
+<title>Gesto Operação v123</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1762,7 +1762,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v122';
+const APP_VERSION = 'v123';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5963,12 +5963,12 @@ function dprodCardHTML(x){
       <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
       <div style="font-size:11px;color:var(--tx2);margin-top:1px">COD ${esc(x.cod)}</div>
       <div style="margin-top:5px">${y
-        ? `<span class="sb-cnt"><i class="ti ti-scale" style="font-size:10px"></i>1 receita = ${fmtNum(y)} ${esc(x.unidade)}</span>`
+        ? `<span class="sb-cnt"><i class="ti ti-scale" style="font-size:10px"></i>1 receita = ${fmtNum(y)} ${esc(unidExtenso(x.unidade,y))}</span>`
         : `<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Sem ficha — digitar em ${esc(x.unidade)}</span>`}</div></div>
     </div>`;
   if(!y){ // fallback: item sem rendimento sincronizado — modo antigo, quantidade na unidade base
     const dv=v.val!=null?v.val:'';
-    return cab+`<div class="decb"><div class="decl">Quantidade em ${esc(x.unidade)}</div>
+    return cab+`<div class="decb"><div class="decl">Quantidade em ${esc(unidExtenso(x.unidade,2))}</div>
       <div class="decr"><input class="deci dprod-dec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" placeholder="0,000" value="${esc(dv)}"/>
       <span class="decu">${esc(x.unidade)}</span></div></div>`;
   }
@@ -5978,17 +5978,17 @@ function dprodCardHTML(x){
       <button class="cbt dprod-minus" data-cod="${esc(x.cod)}">−</button>
       <div class="cctr" style="cursor:default"><div class="cv">${fmtNum(rec)}</div><div class="cu">${rec===1?'receita':'receitas'}</div></div>
       <button class="cbt dprod-plus" data-cod="${esc(x.cod)}">+</button></div>
-      <div class="ccv">${rec>0?`esperado ${fmtNum(esperado)} ${esc(x.unidade)}`:`meia em meia receita`}</div></div>`;
+      ${rec>0?`<div class="ccv">esperado ${fmtNum(esperado)} ${esc(unidExtenso(x.unidade,esperado))}</div>`:''}</div>`;
   if(rec<=0)return cab+stepper;
   const real=dprodReal(x.cod);
   const dif=real-esperado;
   const pct=esperado>0?(dif/esperado*100):0;
   const alerta=Math.abs(dif)<1e-9?`<div style="font-size:11px;color:#3B6D11;margin-top:6px"><i class="ti ti-check" style="font-size:12px"></i> bateu com a ficha</div>`
-    :`<div style="font-size:11px;color:${dif<0?'#92400E':'#1D4ED8'};margin-top:6px"><i class="ti ti-alert-triangle" style="font-size:12px"></i> ${dif>0?'+':'−'}${fmtNum(Math.abs(dif))} ${esc(x.unidade)} (${dif>0?'+':'−'}${Math.abs(pct).toFixed(0)}%) em relação à ficha</div>`;
+    :`<div style="font-size:11px;color:${dif<0?'#92400E':'#1D4ED8'};margin-top:6px"><i class="ti ti-alert-triangle" style="font-size:12px"></i> ${dif>0?'+':'−'}${fmtNum(Math.abs(dif))} ${esc(unidExtenso(x.unidade,Math.abs(dif)))} (${dif>0?'+':'−'}${Math.abs(pct).toFixed(0)}%) em relação à ficha</div>`;
   const conf=`<div class="decb" style="margin-top:8px;border-color:var(--acc-bd)">
       <div class="decl">${ehContavel(x.unidade)?'Quantas saíram?':'Quanto rendeu?'}</div>
       <div class="decr"><input class="deci dprod-real" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${esc(v.real!=null&&String(v.real).trim()!==''?v.real:fmtNum(esperado))}"/>
-      <span class="decu">${esc(x.unidade)}</span></div>${alerta}</div>`;
+      <span class="decu">${esc(unidExtenso(x.unidade,real))}</span></div>${alerta}</div>`;
   return cab+stepper+conf;
 }
 function rerenderDprodCard(cod){
@@ -6002,9 +6002,13 @@ function rerenderDprodCard(cod){
 function wireDprodCards(root){
   root.querySelectorAll('.dprod-minus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,-0.5)));
   root.querySelectorAll('.dprod-plus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,0.5)));
-  root.querySelectorAll('.dprod-dec').forEach(el=>el.addEventListener('input',()=>{dprodVal(el.dataset.cod).val=el.value;atualizarDprodBar();}));
+  // v123: o teclado numérico do celular entrega ponto; a casa escreve com vírgula.
+  // Trocamos na hora, preservando a posição do cursor. O parser já aceitava os dois,
+  // isto é só para o que aparece na tela não contrariar o que se pede na digitação.
+  const virgula=el=>{const p=el.selectionStart;el.value=el.value.replace(/\./g,',');try{el.setSelectionRange(p,p);}catch(e){}};
+  root.querySelectorAll('.dprod-dec').forEach(el=>el.addEventListener('input',()=>{virgula(el);dprodVal(el.dataset.cod).val=el.value;atualizarDprodBar();}));
   root.querySelectorAll('.dprod-real').forEach(el=>{
-    el.addEventListener('input',()=>{const v=dprodVal(el.dataset.cod);v.real=el.value;v.realTocado=true;atualizarDprodBar();});
+    el.addEventListener('input',()=>{virgula(el);const v=dprodVal(el.dataset.cod);v.real=el.value;v.realTocado=true;atualizarDprodBar();});
     // o desvio só é recalculado ao sair do campo — atualizar a cada tecla faria
     // o aviso piscar no meio da digitação ("2" antes de "25")
     el.addEventListener('blur',()=>rerenderDprodCard(el.dataset.cod));
