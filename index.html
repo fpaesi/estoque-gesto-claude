@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v133</title>
+<title>Gesto Operação v134</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1808,7 +1808,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v133';
+const APP_VERSION = 'v134';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6127,9 +6127,18 @@ async function salvarDconf(){
 }
 
 // ── Produção (lista de cards igual à contagem — v87) ──────────────────────────
+// v134: o catálogo vem ordenado por nome, então os grupos se intercalavam na
+// tela (Bar, Cozinha, Forno, Bar de novo…). Agora ordena por grupo e, dentro
+// dele, por nome — e respeita o filtro de grupos escolhido no topo.
+let dprodFiltro=new Set(); // vazio = todos
+function dprodGruposDisponiveis(){
+  const g=gruposProcessadosDoUsuario();
+  return CATALOGO.reduce((acc,x)=>{if(g.has(x.grupo)&&!acc.includes(x.grupo))acc.push(x.grupo);return acc;},[]).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
 function dprodItens(){
   const grupos=gruposProcessadosDoUsuario();
-  return CATALOGO.filter(x=>grupos.has(x.grupo));
+  return CATALOGO.filter(x=>grupos.has(x.grupo)&&(!dprodFiltro.size||dprodFiltro.has(x.grupo)))
+    .slice().sort((a,b)=>a.grupo.localeCompare(b.grupo,'pt-BR')||a.nome.localeCompare(b.nome,'pt-BR'));
 }
 // ══ v121: PRODUÇÃO POR RECEITA ═══════════════════════════════════════════════
 // Quem produz não pensa "fiz 27 peças", pensa "fiz uma receita de almôndega".
@@ -6154,23 +6163,38 @@ function dprodReal(cod){const v=dprodVal(cod);
   const q=parseQtdDiario(v.real);return isFinite(q)?q:dprodEsperado(cod);}
 function ehContavel(un){return ['PÇ','UN','PC'].includes(String(un||'').toUpperCase());}
 
-function abrirDprod(){dprodVals={};show('s-dprod');renderDprod();}
+function abrirDprod(){dprodVals={};dprodFiltro=new Set();show('s-dprod');renderDprod();}
 function renderDprod(){
   const c=document.getElementById('dprod-cnt');
   const bb=document.getElementById('dprod-bbar');
   const itens=dprodItens();
+  if(!itens.length&&dprodFiltro.size){dprodFiltro.clear();return renderDprod();}
   if(!itens.length){
     c.innerHTML=`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-tools-kitchen-2" style="font-size:28px;opacity:.5"></i></div>
       <div class="empty-title">Nenhum processado para o seu setor</div>
       <div class="empty-sub">${currentUserSetor&&!PROC_GRUPOS.includes('Processados '+currentUserSetor)?'O setor '+esc(currentUserSetor)+' não tem insumos processados.':'Verifique se a base foi atualizada (grupos Processados Cozinha/Bar/Forno).'}</div></div>`;
     bb.innerHTML='';return;
   }
-  let lastG=null,h='<div class="sec">Quantas receitas foram feitas hoje?</div>';
+  const gDisp=dprodGruposDisponiveis();
+  let h='';
+  if(gDisp.length>1){ // gestor e administrador veem os três setores
+    h+=`<div class="chips" id="dprod-chips" style="padding:2px 0 4px">
+      <span class="chip ${dprodFiltro.size?'':'on'}" data-dpg="">Todos</span>
+      ${gDisp.map(g=>`<span class="chip ${dprodFiltro.has(g)?'on':''}" data-dpg="${esc(g)}">${esc(g.replace(/^Processados\s*/i,''))}</span>`).join('')}</div>`;
+  }
+  let lastG=null;h+='<div class="sec">Quantas receitas foram feitas hoje?</div>';
   itens.forEach(x=>{
     if(x.grupo!==lastG){h+=`<div class="gsep">${esc(x.grupo)}</div>`;lastG=x.grupo;}
     h+=`<div class="pcard" id="dprod-pc-${esc(x.cod)}">${dprodCardHTML(x)}</div>`;
   });
   c.innerHTML=h;
+  c.querySelectorAll('[data-dpg]').forEach(el=>el.addEventListener('click',()=>{
+    const g=el.dataset.dpg;
+    if(!g)dprodFiltro.clear();
+    else if(dprodFiltro.has(g))dprodFiltro.delete(g);
+    else dprodFiltro.add(g);
+    renderDprod(); // o que já foi digitado fica em dprodVals e volta ao trocar o filtro
+  }));
   wireDprodCards(c);
   bb.innerHTML=`<button class="bp" id="dprod-salvar" style="background:${DIARIO_TIPOS.producao.cor}"><i class="ti ti-check"></i> Registrar produção</button>
     <div id="dprod-status" style="font-size:12px;color:var(--tx2);text-align:center;min-height:14px"></div>`;
