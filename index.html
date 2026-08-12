@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v136</title>
+<title>Gesto Operação v137</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1808,7 +1808,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v136';
+const APP_VERSION = 'v137';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5091,6 +5091,25 @@ function renderInicioBody(c){
       <div style="flex:1;min-width:0"><div class="atv-nome">Fila de lançamento no Saipos</div><div class="atv-sub">${filaPend.length} registro${filaPend.length>1?'s':''} aguardando</div></div>
       <span class="atv-cta">Abrir →</span></div>`);
   }
+  // v137: sugestão de produção — para o setor, o gestor e o administrador
+  const sug=sugestoesProducao();
+  if(sug.length){
+    const linhas=sug.slice(0,5).map(x=>{
+      const alvo=x.yield?`${fmtNum(x.rec)} receita${x.rec>1?'s':''} · ${fmtNum(x.rec*x.yield)} ${esc(unidExtenso(x.unidade,x.rec*x.yield))}`:`${fmtNum(x.rec)} receita${x.rec>1?'s':''}`;
+      return `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:3px 0">
+        <div style="min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.nome)}</div>
+        <div style="font-size:11px;color:var(--tx2)">${fmtNum(x.saldo)} de mínimo ${fmtNum(x.min)}${confSetoresVisiveis().length>1?' · '+esc(x.setor):''}</div></div>
+        <div style="font-size:11.5px;color:#854F0B;white-space:nowrap">${alvo}</div></div>`;
+    }).join('');
+    autos.push(`<div class="atv" data-auto="produzir" style="border-color:#FCD34D;background:#FEF9E7;align-items:stretch;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="atv-ico" style="background:var(--bg1)"><i class="ti ti-chef-hat" style="font-size:18px;color:#854F0B"></i></div>
+        <div style="flex:1;min-width:0"><div class="atv-nome">Sugestão de produção · ${sug.length} ite${sug.length>1?'ns':'m'}</div>
+        <div class="atv-sub">abaixo do mínimo do congelador</div></div>
+        <span class="atv-cta">Produzir →</span></div>
+      <div style="border-top:.5px solid #FCD34D;padding-top:4px">${linhas}${sug.length>5?`<div style="font-size:11px;color:var(--tx2);padding-top:3px">e mais ${sug.length-5}…</div>`:''}</div>
+    </div>`);
+  }
   if(autos.length)h+=`<div class="sec">Agora</div>`+autos.join('');
 
   // Atividades do dia (rotinas) — v98: agrupadas por categoria
@@ -5155,6 +5174,7 @@ function renderInicioBody(c){
   c.querySelectorAll('[data-auto]').forEach(el=>el.addEventListener('click',()=>{
     if(el.dataset.auto==='contagem'&&meuLocal)goToLocal(meuLocal.id);
     else if(el.dataset.auto==='fila'){gestaoTabId='diario';homeTab('gestao');}
+    else if(el.dataset.auto==='produzir'){abrirDprod();}
   }));
   c.querySelectorAll('.eq-head').forEach(el=>el.addEventListener('click',()=>{
     const b=document.getElementById('eqb-'+el.dataset.eq);
@@ -6106,13 +6126,41 @@ async function salvarDreg(){
 const SALDOS_DOC='saldos_conferencia'; // fora do prefixo cfg_: todo usuário ativo escreve
 let saldos={},dconfEdit=false,dconfBuscaAdd='';
 
+// v137: cada item da lista pode ter MÍNIMO e RECEITAS sugeridas.
+// Guardado como {cod,min,rec}; entradas antigas (só o código) continuam válidas.
+function confNormItem(x){
+  if(x&&typeof x==='object')return {cod:String(x.cod),min:Number(x.min)||0,rec:Number(x.rec)||1};
+  return {cod:String(x),min:0,rec:1};
+}
+function confListaSetor(setor){return ((diarioCfg&&diarioCfg.conferencia)||{})[setor]||[];}
+function confItensDoSetor(setor){return confListaSetor(setor).map(confNormItem);}
+function confSetoresVisiveis(){
+  if(currentUserSetor)return [currentUserSetor];
+  if(currentUserSetoresG&&currentUserSetoresG.length)return currentUserSetoresG.slice();
+  return Object.keys((diarioCfg&&diarioCfg.conferencia)||{});
+}
 function confListaCods(){
-  const cfg=(diarioCfg&&diarioCfg.conferencia)||{};
-  const setor=currentUserSetor||null;
-  if(setor)return cfg[setor]||[];
-  // gestor/admin sem setor: junta as listas de todos os setores, sem repetir
-  const out=[];Object.keys(cfg).forEach(k=>(cfg[k]||[]).forEach(c=>{if(!out.includes(c))out.push(c);}));
+  const out=[];
+  confSetoresVisiveis().forEach(st=>confItensDoSetor(st).forEach(i=>{if(!out.includes(i.cod))out.push(i.cod);}));
   return out;
+}
+// ── v137: sugestão de produção ─────────────────────────────────────────────
+// Regra simples e explicável, do jeito que a cozinha pensa: "quando cair abaixo
+// do mínimo, produza N receitas". Nada de média móvel enquanto não houver
+// histórico — o app está começando a coletar consumo agora.
+function sugestoesProducao(){
+  const out=[];
+  confSetoresVisiveis().forEach(setor=>{
+    confItensDoSetor(setor).forEach(it=>{
+      if(!(it.min>0))return;
+      const p=getProd(it.cod);if(!p)return;
+      const saldo=saldoDe(it.cod);
+      if(saldo>=it.min)return;
+      const y=rendimentoDe(it.cod);
+      out.push({setor,cod:it.cod,nome:p.nome,unidade:p.unidade,saldo,min:it.min,rec:it.rec||1,yield:y});
+    });
+  });
+  return out.sort((a,b)=>(a.saldo/a.min)-(b.saldo/b.min));
 }
 function confSetorAlvo(){return currentUserSetor||(SETORES[0]||'Cozinha');}
 function dconfItens(){
@@ -6153,10 +6201,19 @@ function renderDconf(){
   document.getElementById('dconf-salvar').addEventListener('click',salvarDconf);
   atualizarDconfBar();
 }
+function confMinimoDe(cod){
+  for(const st of confSetoresVisiveis()){
+    const it=confItensDoSetor(st).find(i=>i.cod===String(cod));
+    if(it&&it.min>0)return it;
+  }
+  return null;
+}
 function dconfCardHTML(x){
   const saldo=saldoDe(x.cod);
   const usado=dconfPendente(x.cod);
   const restante=saldo-usado;
+  const mi=confMinimoDe(x.cod);
+  const abaixo=mi&&restante<mi.min;
   const un=unidExtenso(x.unidade,restante);
   return `<div style="display:flex;align-items:center;gap:8px">
       <div style="flex:1;min-width:0">
@@ -6172,7 +6229,8 @@ function dconfCardHTML(x){
       <button class="cbt dconf-menos" data-cod="${esc(x.cod)}">−</button>
       <div class="cctr dconf-ctr" data-cod="${esc(x.cod)}" title="Toque para digitar"><div class="cv">${usado?fmtNum(usado):'0'}</div><div class="cu">usado</div></div>
       <button class="cbt dconf-mais" data-cod="${esc(x.cod)}">+</button></div>
-      ${restante<0?'<div class="ccv" style="color:#B91C1C">mais do que havia no saldo</div>':''}</div>`;
+      ${restante<0?'<div class="ccv" style="color:#B91C1C">mais do que havia no saldo</div>'
+        :abaixo?`<div class="ccv" style="color:#854F0B">abaixo do mínimo (${fmtNum(mi.min)}) — produzir ${fmtNum(mi.rec)} receita${mi.rec>1?'s':''}</div>`:''}</div>`;
 }
 function renderDconfLista(){
   const el=document.getElementById('dconf-lista');
@@ -6243,14 +6301,26 @@ async function ajustarSaldo(cod,delta){
 // ── Editar a lista do setor (gestor) ───────────────────────────────────────
 function renderDconfEdit(c,bb){
   const setor=confSetorAlvo();
-  const cods=confListaCods();
+  const itensCfg=confItensDoSetor(setor);
+  const cods=itensCfg.map(i=>i.cod);
   const sel=cods.map(x=>getProd(x)).filter(Boolean).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  let h=`<div class="tipb">Itens que este setor conta no congelador. Pode incluir o que não é produzido aqui — sorvete comprado, por exemplo.</div>`;
+  let h=`<div class="tipb">Itens que este setor conta no congelador. Pode incluir o que não é produzido aqui — sorvete comprado, por exemplo.<br><br><b>Avisar abaixo de</b>: quando o saldo cair desse número, aparece a sugestão de produção no Início — para o setor, o gestor e o administrador. Deixe vazio para não avisar.</div>`;
   h+=`<div class="sec">${esc(setor)} · ${sel.length} itens</div>`;
-  h+=sel.map(x=>`<div class="row" style="cursor:default">
-    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
-    <div style="font-size:11px;color:var(--tx2)">${esc(x.grupo)} · ${esc(x.unidade)}</div></div>
-    <button class="zb dconf-rem" data-cod="${esc(x.cod)}" style="color:#B91C1C;border-color:#FCA5A5">Remover</button></div>`).join('')
+  h+=sel.map(x=>{
+    const it=itensCfg.find(i=>i.cod===String(x.cod))||{min:0,rec:1};
+    const y=rendimentoDe(x.cod);
+    return `<div class="pcard" style="gap:8px">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
+        <div style="font-size:11px;color:var(--tx2)">${esc(x.grupo)} · ${esc(unidExtenso(x.unidade,2))}${y?' · 1 receita = '+fmtNum(y)+' '+esc(unidExtenso(x.unidade,y)):''}</div></div>
+        <button class="zb dconf-rem" data-cod="${esc(x.cod)}" style="color:#B91C1C;border-color:#FCA5A5">Remover</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div style="flex:1"><div class="fl">Avisar abaixo de</div>
+          <input class="fi dconf-min" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${it.min?esc(fmtNum(it.min)):''}" placeholder="sem aviso"/></div>
+        <div style="flex:1"><div class="fl">Produzir</div>
+          <input class="fi dconf-rec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${esc(fmtNum(it.rec||1))}" placeholder="1"/></div>
+      </div></div>`;}).join('')
     ||'<div class="empty" style="padding:16px"><span>Nenhum item ainda.</span></div>';
   h+=`<div class="sec">Adicionar</div>
     <input id="dconf-add-busca" class="srch" placeholder="Buscar item na base…" autocomplete="off" value="${esc(dconfBuscaAdd)}"/>
@@ -6267,20 +6337,31 @@ function renderDconfEdit(c,bb){
       <div style="font-size:11px;color:var(--tx2)">${esc(x.grupo)} · ${esc(x.unidade)}</div></div>
       <i class="ti ti-plus" style="color:var(--acc)"></i></div>`).join('')
       ||'<div style="font-size:11.5px;color:var(--tx2)">Nada encontrado.</div>';
-    el.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>salvarConfLista(setor,[...cods,b.dataset.add])));
+    el.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>salvarConfLista(setor,[...itensCfg,{cod:String(b.dataset.add),min:0,rec:1}])));
   };
   const bi=c.querySelector('#dconf-add-busca');
   bi.addEventListener('input',()=>{dconfBuscaAdd=bi.value;pintarRes();});
   pintarRes();
-  c.querySelectorAll('.dconf-rem').forEach(b=>b.addEventListener('click',()=>salvarConfLista(setor,cods.filter(x=>String(x)!==String(b.dataset.cod)))));
+  c.querySelectorAll('.dconf-rem').forEach(b=>b.addEventListener('click',()=>salvarConfLista(setor,itensCfg.filter(i=>i.cod!==String(b.dataset.cod)))));
+  const commitCampo=(el,campo)=>{
+    const cod=String(el.dataset.cod);
+    const v=parseQtdDiario(el.value);
+    const novos=itensCfg.map(i=>i.cod===cod?{...i,[campo]:(isFinite(v)&&v>0?v:(campo==='rec'?1:0))}:i);
+    salvarConfLista(setor,novos,true);
+  };
+  c.querySelectorAll('.dconf-min').forEach(el=>el.addEventListener('blur',()=>commitCampo(el,'min')));
+  c.querySelectorAll('.dconf-rec').forEach(el=>el.addEventListener('blur',()=>commitCampo(el,'rec')));
   bb.innerHTML=`<button class="bp" id="dconf-fim"><i class="ti ti-check"></i> Concluir</button>`;
   document.getElementById('dconf-fim').addEventListener('click',()=>{dconfEdit=false;dconfBuscaAdd='';renderDconf();});
 }
-async function salvarConfLista(setor,cods){
+// silencioso = não re-renderiza (usado no blur dos campos, para não roubar o foco
+// do próximo toque nem piscar a lista inteira)
+async function salvarConfLista(setor,itens,silencioso){
   if(!isAdminRole())return;
-  diarioCfg.conferencia={...(diarioCfg.conferencia||{}),[setor]:cods.map(String)};
+  const norm=itens.map(confNormItem);
+  diarioCfg.conferencia={...(diarioCfg.conferencia||{}),[setor]:norm};
   await salvarDiarioCfg();
-  renderDconf();
+  if(!silencioso)renderDconf();
 }
 
 // v134: o catálogo vem ordenado por nome, então os grupos se intercalavam na
