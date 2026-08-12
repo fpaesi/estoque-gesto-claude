@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v130</title>
+<title>Gesto Operação v131</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -242,6 +242,10 @@
 .sd-x{border:none;background:none;font-size:15px;color:var(--tx2);padding:6px 8px;cursor:pointer;line-height:1;font-family:inherit}
 .sd-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 14px;flex:1 1 auto;overscroll-behavior:contain}
 .sd-foot{flex-shrink:0;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));border-top:.5px solid var(--bd3);background:var(--bg1);display:flex;flex-direction:column;gap:8px}
+/* Folha sem ação que compromete (só opções): o ✕ do cabeçalho é a saída — botão
+   "Fechar" no rodapé seria a mesma coisa duas vezes. Aí quem encerra a folha é o
+   próprio corpo, que absorve a área segura do aparelho. */
+.sd-body-fim{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
 .bs-title{padding:10px 16px 12px;font-size:13px;font-weight:500;color:var(--tx2);text-align:center;border-bottom:.5px solid var(--bd3)}
 .bs-btn{width:100%;padding:15px 16px;text-align:left;font-size:15px;cursor:pointer;border:none;border-bottom:.5px solid var(--bd3);background:none;color:var(--tx1);display:flex;align-items:center;gap:12px;font-family:inherit}
 .bs-btn:active{background:var(--bg2)}
@@ -1798,7 +1802,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v130';
+const APP_VERSION = 'v131';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5624,8 +5628,8 @@ function abrirSheetDin(titulo,corpoHTML,acoesHTML){
       <div class="bs-handle"></div>
       <div class="sd-head"><div class="sd-title">${esc(titulo)}</div>
         <button class="sd-x sheet-x" aria-label="Fechar">✕</button></div>
-      <div class="sd-body">${corpoHTML}</div>
-      <div class="sd-foot">${acoesHTML||'<button class="bs sheet-x">Fechar</button>'}</div>
+      <div class="sd-body${acoesHTML?'':' sd-body-fim'}">${corpoHTML}</div>
+      ${acoesHTML?`<div class="sd-foot">${acoesHTML}</div>`:''}
     </div>`;
   (document.getElementById('app')||document.body).appendChild(bg);
   bg.addEventListener('click',e=>{if(e.target===bg)fecharSheetDin();});
@@ -5651,10 +5655,10 @@ function abrirRegMenu(id){
     corpo+=`<div class="wb" style="margin-bottom:10px">Já lançado no Saipos. <b>Movimentação no Saipos não pode ser excluída</b>, então este registro não se edita nem se cancela — senão o app passaria a discordar do estoque de lá.<br><br>Dá para registrar uma <b>nota de correção</b>: um registro novo ligado a este, que não vai para o Saipos e serve para explicar a diferença na contagem.</div>
       <button class="bs reg-nota" data-reg="${r.id}">Registrar nota de correção</button>`;
   }else{
-    if(r.tipo!=='conferencia')corpo+=`<button class="bs reg-corrigir" data-reg="${r.id}" style="margin-bottom:8px">Corrigir</button>`;
-    corpo+=`<button class="bs reg-cancelar" data-reg="${r.id}" style="color:#B91C1C;border-color:#FCA5A5">Cancelar registro</button>`;
+    if(r.tipo!=='conferencia')corpo+=`<button class="bs reg-corrigir" data-reg="${r.id}" style="margin-bottom:8px;padding:13px">Corrigir</button>`;
+    corpo+=`<button class="bs reg-cancelar" data-reg="${r.id}" style="color:#B91C1C;border-color:#FCA5A5;padding:13px">Cancelar registro</button>`;
   }
-  const bg=abrirSheetDin('Registro',corpo,'<button class="bs sheet-x">Fechar</button>');
+  const bg=abrirSheetDin('Registro',corpo);
   const b1=bg.querySelector('.reg-corrigir');if(b1)b1.addEventListener('click',()=>{fecharSheetDin();abrirCorrigirReg(id,false);});
   const b2=bg.querySelector('.reg-cancelar');if(b2)b2.addEventListener('click',()=>{fecharSheetDin();abrirCancelarReg(id);});
   const b3=bg.querySelector('.reg-nota');if(b3)b3.addEventListener('click',()=>{fecharSheetDin();abrirCorrigirReg(id,true);});
@@ -5667,7 +5671,7 @@ function abrirCancelarReg(id){
     <div style="height:8px"></div>
     <input class="fi" id="cx-obs" type="text" placeholder="Detalhe (opcional)"/>`;
   const bg=abrirSheetDin('Cancelar registro',corpo,
-    '<button class="bp" id="cx-ok" style="background:#B91C1C">Cancelar registro</button><button class="bs sheet-x">Voltar</button>');
+    '<button class="bp" id="cx-ok" style="background:#B91C1C">Cancelar registro</button>');
   bg.querySelector('#cx-ok').addEventListener('click',async()=>{
     const mot=bg.querySelector('#cx-motivo').value;
     const obs=bg.querySelector('#cx-obs').value.trim();
@@ -5707,7 +5711,7 @@ function abrirCorrigirReg(id,nota){
   campos+=`<div style="height:8px"></div><div class="fl">Observação</div><input class="fi" id="cr-obs" type="text" value="${esc(r.obs||'')}"/>`;
   const aviso=nota?`<div class="wb" style="margin-bottom:10px">Isto cria um registro novo ligado ao original. O movimento que já foi para o Saipos continua lá — a nota serve para explicar a diferença na contagem.</div>`:'';
   const bg=abrirSheetDin(nota?'Nota de correção':'Corrigir registro', aviso+campos,
-    `<button class="bp" id="cr-ok">${nota?'Registrar nota':'Salvar correção'}</button><button class="bs sheet-x">Voltar</button>`);
+    `<button class="bp" id="cr-ok">${nota?'Registrar nota':'Salvar correção'}</button>`);
   bg.querySelector('#cr-ok').addEventListener('click',async()=>{
     const g=sel=>{const el=bg.querySelector(sel);return el?el.value:null;};
     const btn=bg.querySelector('#cr-ok');btn.disabled=true;btn.textContent='Salvando…';
