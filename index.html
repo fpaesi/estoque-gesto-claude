@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v126</title>
+<title>Gesto Operação v127</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1783,7 +1783,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v126';
+const APP_VERSION = 'v127';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5562,9 +5562,157 @@ async function salvarRegistroDiario(reg){
   reg.uid=currentUser?currentUser.uid:null;
   reg.userNome=currentUserNome||'';
   reg.setor=currentUserSetor||null;
-  reg.status=reg.tipo==='conferencia'?'na':'pendente';
+  // v127: quem chama pode fixar o status (nota de correção nasce 'na', fora da fila)
+  if(!reg.status)reg.status=reg.tipo==='conferencia'?'na':'pendente';
+  Object.keys(reg).forEach(k=>{if(reg[k]===undefined)delete reg[k];}); // Firestore recusa undefined
   const ref=await db.collection(DIARIO_COL).add(reg);
   return ref.id;
+}
+// ══ v127: CORRIGIR E CANCELAR REGISTRO (gestor e administrador) ═════════════
+// O Diário nasceu append-only, e isso não é purismo: o registro é a explicação
+// da quebra na contagem e, quando vira movimento, é a única prova do que foi
+// lançado no Saipos. Mas colaborador erra, e até aqui não havia conserto nenhum.
+//
+// A linha divisória é o Saipos:
+//   • ainda pendente → corrige em cima do próprio registro; nada saiu do app
+//   • já lançado     → NÃO se mexe. O movimento no Saipos não pode ser excluído;
+//                      apagar aqui faria o app mentir sobre o estoque de lá.
+//                      Em vez disso, registra-se uma NOTA DE CORREÇÃO: registro
+//                      novo, ligado ao original, que nunca vai para o Saipos —
+//                      documenta a realidade para o relatório de divergência sem
+//                      inventar um segundo movimento de estoque.
+//
+// "Excluir" é cancelar: sai das listas e dos totais, continua no histórico
+// riscado, com quem cancelou, quando e por quê. Nada é apagado de verdade —
+// as regras do Firestore negam `delete` no diário para todos, inclusive admin.
+const MOTIVOS_CANCEL=['Lançado em duplicidade','Item errado','Quantidade errada','Não aconteceu','Outro'];
+function regPorId(id){return diarioHoje.find(r=>r.id===id)||diarioHist.find(r=>r.id===id)||filaPend.find(r=>r.id===id)||null;}
+function fecharSheetDin(){document.querySelectorAll('.sheet-dinamico').forEach(el=>el.remove());}
+function abrirSheetDin(titulo,corpoHTML){
+  fecharSheetDin();
+  const bg=document.createElement('div');
+  bg.className='bs-modal-bg on sheet-dinamico';
+  bg.innerHTML=`<div class="bs-sheet" style="max-width:430px;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:15px;font-weight:600">${esc(titulo)}</div>
+      <button class="zb sheet-x" style="border:none;background:none;font-size:15px;color:var(--tx2)">✕</button></div>
+    ${corpoHTML}</div>`;
+  (document.getElementById('app')||document.body).appendChild(bg);
+  bg.addEventListener('click',e=>{if(e.target===bg)fecharSheetDin();});
+  bg.querySelector('.sheet-x').addEventListener('click',fecharSheetDin);
+  return bg;
+}
+function abrirRegMenu(id){
+  const r=regPorId(id);
+  if(!r||!isAdminRole())return;
+  const lancado=r.status==='lancado';
+  const cancelado=r.status==='cancelado';
+  const t=DIARIO_TIPOS[r.tipo]||{};
+  const nome=r.tipo==='conferencia'?'Conferência':((r.item&&r.item.nome)||'registro');
+  let corpo=`<div style="font-size:12px;color:var(--tx2);margin-bottom:10px">${esc(t.label||'')} · ${esc(nome)} · ${esc(r.userNome||'')}</div>`;
+  if(cancelado){
+    corpo+=`<div class="wb" style="margin-bottom:10px">Este registro já está cancelado${r.cancelMotivo?': '+esc(r.cancelMotivo):''}.</div>`;
+  }else if(lancado){
+    corpo+=`<div class="wb" style="margin-bottom:10px">Já lançado no Saipos. <b>Movimentação no Saipos não pode ser excluída</b>, então este registro não se edita nem se cancela — senão o app passaria a discordar do estoque de lá.<br><br>Dá para registrar uma <b>nota de correção</b>: um registro novo ligado a este, que não vai para o Saipos e serve para explicar a diferença na contagem.</div>
+      <button class="bs reg-nota" data-reg="${r.id}">Registrar nota de correção</button>`;
+  }else{
+    if(r.tipo!=='conferencia')corpo+=`<button class="bs reg-corrigir" data-reg="${r.id}" style="margin-bottom:8px">Corrigir</button>`;
+    corpo+=`<button class="bs reg-cancelar" data-reg="${r.id}" style="color:#B91C1C;border-color:#FCA5A5">Cancelar registro</button>`;
+  }
+  const bg=abrirSheetDin('Registro',corpo);
+  const b1=bg.querySelector('.reg-corrigir');if(b1)b1.addEventListener('click',()=>{fecharSheetDin();abrirCorrigirReg(id,false);});
+  const b2=bg.querySelector('.reg-cancelar');if(b2)b2.addEventListener('click',()=>{fecharSheetDin();abrirCancelarReg(id);});
+  const b3=bg.querySelector('.reg-nota');if(b3)b3.addEventListener('click',()=>{fecharSheetDin();abrirCorrigirReg(id,true);});
+}
+function abrirCancelarReg(id){
+  const r=regPorId(id);if(!r)return;
+  const corpo=`<div style="font-size:12.5px;color:var(--tx2);margin-bottom:10px">O registro sai das listas e dos totais, mas continua no histórico, riscado, com o seu nome.</div>
+    <div class="fl">Motivo</div>
+    <select class="fi" id="cx-motivo">${MOTIVOS_CANCEL.map(m=>`<option>${esc(m)}</option>`).join('')}</select>
+    <div style="height:8px"></div>
+    <input class="fi" id="cx-obs" type="text" placeholder="Detalhe (opcional)"/>
+    <div style="height:10px"></div>
+    <button class="bp" id="cx-ok" style="background:#B91C1C">Cancelar registro</button>`;
+  const bg=abrirSheetDin('Cancelar registro',corpo);
+  bg.querySelector('#cx-ok').addEventListener('click',async()=>{
+    const mot=bg.querySelector('#cx-motivo').value;
+    const obs=bg.querySelector('#cx-obs').value.trim();
+    const btn=bg.querySelector('#cx-ok');btn.disabled=true;btn.textContent='Cancelando…';
+    try{
+      await db.collection(DIARIO_COL).doc(id).update({status:'cancelado',
+        cancelMotivo:obs?mot+' — '+obs:mot,cancelPor:currentUserNome||'',cancelEm:Date.now()});
+      fecharSheetDin();
+      showToast('Registro cancelado.',{type:'ok'});
+      await recarregarDiarioTela();
+    }catch(e){btn.disabled=false;btn.textContent='Cancelar registro';showToast('Erro: '+e.message,{type:'err'});}
+  });
+}
+// nota=false → corrige o próprio registro (pendente)
+// nota=true  → cria um registro novo ligado ao original (já lançado no Saipos)
+function abrirCorrigirReg(id,nota){
+  const r=regPorId(id);if(!r)return;
+  const un=esc(unidSigla(r.item&&r.item.unidade));
+  const temReceita=r.receitas!=null&&(rendimentoDe(r.item&&r.item.cod)||r.rendimentoFicha);
+  let campos='';
+  if(temReceita){
+    const y=rendimentoDe(r.item.cod)||r.rendimentoFicha;
+    campos+=`<div class="fl">Receitas</div><input class="fi" id="cr-rec" type="text" inputmode="decimal" value="${esc(fmtNum(r.receitas))}"/>
+      <div style="font-size:11px;color:var(--tx2);margin-top:3px">1 receita = ${fmtNum(y)} ${esc(unidExtenso(r.item.unidade,y))}</div>
+      <div style="height:8px"></div>
+      <div class="fl">Quanto saiu de verdade</div><input class="fi" id="cr-real" type="text" inputmode="decimal" value="${esc(fmtNum(r.real!=null?r.real:(r.esperado||0)))}"/>`;
+  }else if(r.tipo!=='conferencia'){
+    campos+=`<div class="fl">Quantidade (${un})</div><input class="fi" id="cr-qtd" type="text" inputmode="decimal" value="${esc(fmtNum(r.qtd||0))}"/>`;
+  }
+  if(r.tipo==='desperdicio'||r.tipo==='erro'){
+    const lista=r.tipo==='erro'?MOTIVOS_ERRO:MOTIVOS_DESP;
+    campos+=`<div style="height:8px"></div><div class="fl">Motivo</div>
+      <select class="fi" id="cr-motivo">${lista.map(m=>`<option${m===r.motivo?' selected':''}>${esc(m)}</option>`).join('')}</select>`;
+    if(r.tipo==='erro')campos+=`<div style="height:8px"></div><div class="fl">Destino</div>
+      <select class="fi" id="cr-destino">${DESTINOS_ERRO.map(m=>`<option${m===r.destino?' selected':''}>${esc(m)}</option>`).join('')}</select>`;
+  }
+  campos+=`<div style="height:8px"></div><div class="fl">Observação</div><input class="fi" id="cr-obs" type="text" value="${esc(r.obs||'')}"/>`;
+  const aviso=nota?`<div class="wb" style="margin-bottom:10px">Isto cria um registro novo ligado ao original. O movimento que já foi para o Saipos continua lá — a nota serve para explicar a diferença na contagem.</div>`:'';
+  const bg=abrirSheetDin(nota?'Nota de correção':'Corrigir registro',
+    aviso+campos+`<div style="height:12px"></div><button class="bp" id="cr-ok">${nota?'Registrar nota':'Salvar correção'}</button>`);
+  bg.querySelector('#cr-ok').addEventListener('click',async()=>{
+    const g=sel=>{const el=bg.querySelector(sel);return el?el.value:null;};
+    const btn=bg.querySelector('#cr-ok');btn.disabled=true;btn.textContent='Salvando…';
+    try{
+      const upd={};
+      if(temReceita){
+        const y=rendimentoDe(r.item.cod)||r.rendimentoFicha;
+        const rec=parseQtdDiario(g('#cr-rec'));
+        const real=parseQtdDiario(g('#cr-real'));
+        if(!isFinite(rec)||rec<=0)throw new Error('informe as receitas');
+        upd.receitas=rec;upd.rendimentoFicha=y;upd.esperado=rec*y;
+        upd.real=isFinite(real)?real:rec*y;
+        upd.desvio=+(upd.real-upd.esperado).toFixed(4);
+        upd.qtd=upd.esperado;
+      }else if(g('#cr-qtd')!=null){
+        const q=parseQtdDiario(g('#cr-qtd'));
+        if(!isFinite(q)||q<=0)throw new Error('informe a quantidade');
+        upd.qtd=q;
+      }
+      if(g('#cr-motivo')!=null)upd.motivo=g('#cr-motivo');
+      if(g('#cr-destino')!=null)upd.destino=g('#cr-destino');
+      upd.obs=(g('#cr-obs')||'').trim();
+      if(nota){
+        const base={tipo:r.tipo,item:r.item,motivo:r.motivo,destino:r.destino};
+        await salvarRegistroDiario({...base,...upd,corrige:r.id,notaCorrecao:true,status:'na'});
+        await db.collection(DIARIO_COL).doc(r.id).update({corrigidoEm:Date.now(),corrigidoPor:currentUserNome||''});
+      }else{
+        upd.editadoEm=Date.now();upd.editadoPor=currentUserNome||'';
+        await db.collection(DIARIO_COL).doc(r.id).update(upd);
+      }
+      fecharSheetDin();
+      showToast(nota?'Nota de correção registrada.':'Registro corrigido.',{type:'ok'});
+      await recarregarDiarioTela();
+    }catch(e){btn.disabled=false;btn.textContent=nota?'Registrar nota':'Salvar correção';showToast('Erro: '+e.message,{type:'err'});}
+  });
+}
+async function recarregarDiarioTela(){
+  try{await carregarDiarioHoje();}catch(e){}
+  if(homeTabId==='diario'){const el=document.getElementById('home-cnt');if(el)renderDiarioBody(el);}
+  if(homeTabId==='gestao'&&gestaoTabId==='diario'){try{await carregarFila();}catch(e){}const el=document.getElementById('gd-fila');if(el)renderFilaLista(el);}
 }
 async function marcarRegistroDiario(id,status){
   if(!isAdminRole())return;
@@ -5584,7 +5732,7 @@ function renderDiario(c){
     if(el)renderDiarioBody(el);
   });
 }
-function diarioCountHoje(tipo){return diarioHoje.filter(r=>r.tipo===tipo).length;}
+function diarioCountHoje(tipo){return diarioHoje.filter(r=>r.tipo===tipo&&r.status!=='cancelado').length;}
 function regLinhaHTML(r,admin){
   const t=DIARIO_TIPOS[r.tipo]||DIARIO_TIPOS.producao;
   const hora=r.ts?new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
@@ -5596,16 +5744,21 @@ function regLinhaHTML(r,admin){
     desc=esc((r.item&&r.item.nome)||'?')+(r.qtd!=null?' · '+fmtQtdDiario(r.qtd)+' '+esc(unidSigla(r.item&&r.item.unidade)):''); // v116: registros antigos do diário guardam o id
     sub=[t.label,r.motivo?esc(r.motivo):null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
   }
-  const stBadge=r.tipo==='conferencia'?'' :
+  const cancelado=r.status==='cancelado';
+  const stBadge=cancelado?'<span class="bdg" style="background:var(--bg2);color:var(--tx2)">cancelado</span>' :
+    r.tipo==='conferencia'?'' :
     r.status==='lancado'?'<span class="bdg" style="background:#EAF3DE;color:#27500A">lançado</span>' :
     r.status==='ignorado'?'<span class="bdg" style="background:var(--bg2);color:var(--tx2)">ignorado</span>' :
     '<span class="bdg" style="background:#FAEEDA;color:#633806">pendente</span>';
+  // v127: gestor corrige ou cancela pelo menu "⋯" (rotina não entra: vive no Início)
+  const menu=(isAdminRole()&&r.tipo!=='rotina')?`<button class="zb reg-menu" data-reg="${r.id}" style="padding:4px 8px;border:none;background:none;color:var(--tx2);font-size:18px;line-height:1">⋯</button>`:'';
+  const risc=cancelado?'text-decoration:line-through;opacity:.55;':'';
   return `<div class="row" data-reg-id="${r.id}" style="cursor:default">
-    <i class="ti ${t.icon}" style="font-size:20px;color:${t.cor};width:28px;text-align:center;flex-shrink:0"></i>
+    <i class="ti ${t.icon}" style="font-size:20px;color:${cancelado?'var(--tx2)':t.cor};width:28px;text-align:center;flex-shrink:0"></i>
     <div style="flex:1;min-width:0">
-      <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${desc}</div>
-      <div style="font-size:11.5px;color:var(--tx2);margin-top:1px">${sub}${r.obs?' · '+esc(r.obs):''}</div>
-    </div>${stBadge}</div>`;
+      <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${risc}">${desc}</div>
+      <div style="font-size:11.5px;color:var(--tx2);margin-top:1px">${sub}${r.obs?' · '+esc(r.obs):''}${cancelado&&r.cancelMotivo?' · cancelado: '+esc(r.cancelMotivo)+(r.cancelPor?' ('+esc(r.cancelPor)+')':''):''}${r.editadoEm?' · corrigido':''}</div>
+    </div>${stBadge}${menu}</div>`;
 }
 function renderDiarioBody(c){
   const setorTxt=isAdminRole()?'Gestor · vê tudo':(currentUserSetor?'Setor: '+esc(currentUserSetor):'Sem setor definido');
@@ -5651,6 +5804,8 @@ function renderDiarioBody(c){
     const tp=el.dataset.diarioAcao;
     if(tp==='conferencia')abrirDconf();else if(tp==='producao')abrirDprod();else abrirDreg(tp);
   }));
+  // v127: menu de correção/cancelamento (só gestor vê o botão)
+  c.querySelectorAll('.reg-menu').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();abrirRegMenu(el.dataset.reg);}));
   const bh=c.querySelector('#btn-diario-hist');
   if(bh)bh.addEventListener('click',async()=>{
     diarioHistOpen=!diarioHistOpen;
