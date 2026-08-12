@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v125</title>
+<title>Gesto Operação v126</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -17,6 +17,15 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <style>*{box-sizing:border-box;margin:0;padding:0}:root{--bg1:#fff;--bg2:#f5f5f7;--bg3:#e8e8ed;--tx1:#1c1c1e;--tx2:#6c6c70;--bd3:#d1d1d6;--r1:12px;--r2:8px}@media(prefers-color-scheme:dark){:root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--tx1:#fff;--tx2:#98989d;--bd3:#38383a}}html,body{height:100%;background:var(--bg3);font-family:-apple-system,BlinkMacSystemFont,sans-serif}#app{max-width:430px;margin:0 auto;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;position:relative}.scr{display:none;flex-direction:column;flex:1;min-height:100vh}.scr.on{display:flex}.topbar{background:var(--bg1);border-bottom:.5px solid var(--bd3);padding:13px 16px 11px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}.tt{font-size:17px;font-weight:500;color:var(--tx1)}.ts{font-size:12px;color:var(--tx2);margin-top:1px}.tbtn{background:none;border:none;cursor:pointer;color:var(--tx2);font-size:22px;display:flex;align-items:center;padding:4px}.content{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.bbar{background:var(--bg1);border-top:.5px solid var(--bd3);padding:10px 14px 20px;display:flex;flex-direction:column;gap:7px;flex-shrink:0}.bp{width:100%;padding:13px;border-radius:var(--r1);background:var(--acc);color:#E6F1FB;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}.bp:active{opacity:.85}.bp:disabled{opacity:.4}.bs{width:100%;padding:10px;border-radius:var(--r1);background:var(--bg2);color:var(--tx1);border:.5px solid var(--bd3);font-size:14px;cursor:pointer}.bg_{width:100%;padding:10px;background:none;color:var(--tx2);border:none;font-size:14px;cursor:pointer}.sec{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 2px}.row{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}.row:active{background:var(--bg2)}.bdg{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}.bdone{background:#EAF3DE;color:#27500A}.bprog{background:#FAEEDA;color:#633806}.bpend{background:var(--bg2);color:var(--tx2)}.bwarn{background:#FEF3C7;color:#92400E}.ntabs{display:flex;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0}.ntab{flex:1;padding:11px 6px;font-size:12px;font-weight:500;color:var(--tx2);text-align:center;cursor:pointer;border-bottom:2px solid transparent}.ntab.on{color:var(--acc);border-bottom-color:var(--acc)}.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{display:inline-flex;align-items:center;padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx2);white-space:nowrap}.chip.on{background:var(--acc);color:#E6F1FB;border-color:var(--acc)}.srch{width:100%;font-size:16px;padding:9px 12px;border-radius:var(--r2);border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);outline:none}.srch:focus{border-color:var(--acc)}.pcard{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:10px}.pcard.done-card{border-color:#C0DD97}
+/* v126: a barra de ação fica congelada no rodapé nas telas de tarefa.
+   Antes ela era o último elemento do fluxo: numa lista de 51 processados, quem
+   registrava a produção tinha que rolar até o fim para achar o botão — e quem
+   preenchia um item só rolava a lista inteira à toa. `sticky` (não `fixed`)
+   mantém a barra no fluxo, então ela não cobre o último cartão ao fim da rolagem.
+   A Início fica de fora: lá o rodapé já é da navegação (.bnav, z-index 20), e as
+   duas empilhadas brigariam pelo mesmo espaço. */
+.scr:not(#s-home) .bbar{position:sticky;bottom:0;z-index:9;box-shadow:0 -2px 10px rgba(0,0,0,.06)}
+@media(prefers-color-scheme:dark){.scr:not(#s-home) .bbar{box-shadow:0 -2px 10px rgba(0,0,0,.35)}}
 /* v112 (P7-A): três estados do item. Verde = contado com estoque; âmbar = conferido
    e zerado de propósito; neutro com etiqueta = ninguém olhou ainda. */
 .pcard.zero-card{border-color:#FCD34D}
@@ -1774,7 +1783,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v125';
+const APP_VERSION = 'v126';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
