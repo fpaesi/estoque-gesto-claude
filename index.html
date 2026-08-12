@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v123</title>
+<title>Gesto Operação v124</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1512,11 +1512,19 @@ function getProd(cod){return CAT_BY_COD.get(String(cod))||null;}
 // impressão ("Digitar em 111", "×15 4"). unidSigla() traduz na entrada do catálogo,
 // então todo o resto do app já recebe KG/UN/L. Fonte: Saipos /unit_measures.
 const UNIT_ID_SIGLA={'1':'UN','4':'KG','5':'L','111':'PÇ'};
+// v124: conferido contra a tabela oficial do Saipos (GET /v1/unit_measures, 75 linhas).
+// PÇ e PC são unidades DIFERENTES e o app tratava as duas como "peça":
+//   id 111 · PÇ = Porção   ← é a que a GESTO usa nos beneficiados contáveis
+//   id  55 · PC = Peça
+// "1 receita = 27 porções" é o que a ficha realmente diz. GRAMA no Saipos é
+// escrito por extenso, não "G"; mantemos 'G' aqui porque a base antiga tem itens
+// gravados assim.
 const UNIT_EXTENSO={
-  'UN':['unidade','unidades'],'PÇ':['peça','peças'],'PC':['peça','peças'],
-  'KG':['quilo','quilos'],'G':['grama','gramas'],
+  'UN':['unidade','unidades'],'PÇ':['porção','porções'],'PC':['peça','peças'],
+  'KG':['quilo','quilos'],'G':['grama','gramas'],'GRAMA':['grama','gramas'],
   'L':['litro','litros'],'ML':['mililitro','mililitros'],
   'CX':['caixa','caixas'],'DZ':['dúzia','dúzias'],'PACOTE':['pacote','pacotes'],
+  'FARDO':['fardo','fardos'],'BANDEJA':['bandeja','bandejas'],'BALDE':['balde','baldes'],
 };
 function unidSigla(u){
   const s=String(u==null?'':u).trim();
@@ -1762,7 +1770,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v123';
+const APP_VERSION = 'v124';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
