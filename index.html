@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v118</title>
+<title>Gesto Operação v119</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1751,7 +1751,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v118';
+const APP_VERSION = 'v119';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -1863,8 +1863,8 @@ function resetarEstadoContagemLocal(){
 }
 
 async function reiniciarContagemZero(){
-  if(!isAdminRole()){
-    showToast('Apenas administradores podem reiniciar a contagem.',{type:'err'});
+  if(!isAdminPleno()){ // v119: gestor não apaga contagem
+    showToast('Apenas o administrador pode reiniciar a contagem.',{type:'err'});
     return;
   }
   const ok=await appConfirmAsync('Isso apaga contagens em andamento, locais finalizados e a data de fechamento atual. Cadastros, locais, sublocais, especificações e histórico antigo serão mantidos.\n\nA nova contagem começará sem nenhum item contado. Esta ação não pode ser desfeita.',{title:'Reiniciar a contagem do zero?',okText:'Zerar e começar de novo',danger:true});
@@ -2899,7 +2899,7 @@ function handleBackupFile(evt){
   r.readAsText(file);evt.target.value='';
 }
 function doImport(){
-  if(!isAdminRole()){showToast('Apenas administradores podem restaurar backup.',{type:'err'});return;}
+  if(!isAdminPleno()){showToast('Apenas o administrador pode restaurar backup.',{type:'err'});return;} // v119
   const txt=document.getElementById('import-txt').value.trim();
   const st=document.getElementById('import-status');
   if(!txt){st.textContent='Cole o JSON primeiro.';st.style.color='#92400E';return;}
@@ -3170,6 +3170,17 @@ function roleInfo(role){
 function roleLabel(role){return roleInfo(role).nome;}
 function roleGestor(role){return !!roleInfo(role).gestor;}
 function isAdminRole(){return roleGestor(currentUserRole);}
+// v119 — Gestor ≠ Administrador.
+// Até a v118 havia UM interruptor: quem tinha `gestor:true` no tipo de perfil podia
+// tudo, inclusive apagar contagens, restaurar backup e mexer em usuários e senhas.
+// Agora o irreversível e o sensível ficam com o administrador pleno (o tipo de id
+// 'admin', que pode ser renomeado mas não excluído); o gestor continua com a
+// operação inteira — rotinas, fila do Diário, base, cardápio, locais, specs,
+// vínculos, fechamento e exportações.
+// Reservado ao administrador pleno: aba Usuários (usuários, tipos de perfil,
+// setores), aba Acessos (log de login), aba Sistema (snapshots/restaurar) e as
+// Ferramentas avançadas (reiniciar contagem, importar backup).
+function isAdminPleno(){return normalizeRole(currentUserRole)==='admin';}
 function isContadorRole(){return normalizeRole(currentUserRole)==='contador_conferente';}
 // v80 — Controle de acesso por aba ------------------------------------------------
 // Normaliza o campo perfis/{uid}.tabs em uma lista válida. Vazio/ausente = todas as
@@ -3273,6 +3284,7 @@ function preencherSelectSetores(id,incluiTodosVazio,selecionado){
   if(!selecionado)sel.value=incluiTodosVazio?'':'Todos';
 }
 function abrirNovoUsuario(){
+  if(!isAdminPleno()){showToast('Apenas o administrador pode criar usuários.',{type:'err'});return;} // v119
   preencherSelectSetores('nu-setor',true,null);
   document.getElementById('nu-nome').value='';
   document.getElementById('nu-email').value='';
@@ -4109,7 +4121,10 @@ function renderGestao(c){
   if(!isAdminRole()){homeTab('inicio');return;}
   // v102→v105: Locais/Specs/Base/Backup agrupadas como sub-abas de Gestão › Estoque
   if(gestaoTabId==='locais'||gestaoTabId==='specs'||gestaoTabId==='base'||gestaoTabId==='backup'){gestaoEstTabId=gestaoTabId;gestaoTabId='estoque';}
-  const tabs=['rotinas','estoque','diario','usuarios','acessos','sistema'];
+  // v119: Usuários, Acessos e Sistema só para o administrador pleno
+  const tabs=isAdminPleno()?['rotinas','estoque','diario','usuarios','acessos','sistema']:['rotinas','estoque','diario'];
+  if(!tabs.includes(gestaoTabId)&&gestaoTabId!=='estoque')gestaoTabId='rotinas';
+  if(!isAdminPleno()&&gestaoEstTabId==='backup')gestaoEstTabId='locais';
   const tabLabel={rotinas:'Rotinas',estoque:'Estoque',diario:'Diário',usuarios:'Usuários',acessos:'Acessos',sistema:'Sistema'};
   let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);font-size:13px;overflow-x:auto;scrollbar-width:none">
     ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:none;padding-left:13px;padding-right:13px;white-space:nowrap">${tabLabel[t]}</div>`).join('')}</div>`;
@@ -4226,7 +4241,8 @@ function renderGestao(c){
       </div>`:''}
     </div>`;
     // v110: entrada discreta para as ferramentas raras (ex-sub-aba Backup)
-    h+=`<button class="bg_" id="btn-est-avancado" style="font-size:12px;padding:10px 0">Ferramentas avançadas: backup manual · reiniciar contagem →</button>`;
+    // v119: só o administrador pleno — é daqui que se apaga a contagem
+    if(isAdminPleno())h+=`<button class="bg_" id="btn-est-avancado" style="font-size:12px;padding:10px 0">Ferramentas avançadas: backup manual · reiniciar contagem →</button>`;
   } else if(gTab==='specs'){
     h+=`<div class="sec">Selecione o local</div>
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
@@ -6246,6 +6262,7 @@ async function wireGestaoBackup(c){
         </div>`;
       }).join('');
       lista.querySelectorAll('.bk-rest').forEach(btn=>btn.addEventListener('click',()=>{
+        if(!isAdminPleno()){showToast('Apenas o administrador pode restaurar snapshots.',{type:'err'});return;} // v119
         const b=bks.find(x=>x.id===btn.dataset.id);
         const quando=b&&b.ts?new Date(b.ts).toLocaleString('pt-BR'):btn.dataset.id;
         appConfirm(`Toda a configuração (estoque, rotinas, diário e cardápio) volta para como estava em ${quando}. O estado atual será fotografado antes ("pre-restore"), então dá para desfazer.`,{title:'Restaurar snapshot?',okText:'Restaurar',danger:true},async()=>{
@@ -7146,6 +7163,7 @@ function getSecondaryAuth(){
 }
 
 async function criarUsuario(nome,login,tempPwd,role,tabs,setor,setoresG){
+  if(!isAdminPleno())return{success:false,error:'Apenas o administrador pode criar usuários.'}; // v119
   const loginLimpo=cleanLogin(login);
   const email=loginToEmail(loginLimpo);
   const secAuth=getSecondaryAuth();
@@ -7513,6 +7531,7 @@ function renderRolesUI(c,perfis){
 }
 
 function abrirGerenciarUsuario(perf){
+  if(!isAdminPleno()){showToast('Apenas o administrador pode gerenciar usuários.',{type:'err'});return;} // v119
   document.getElementById('gu-nome').textContent=perf.nome||perf.email;
   const body=document.getElementById('gu-body');
   const login=perf.login||emailToLogin(perf.email);

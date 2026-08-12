@@ -31,15 +31,30 @@ service cloud.firestore {
         && perfil(request.auth.uid).get('disabled', false) == false;
     }
     // ATENÇÃO: os tipos de perfil do app são dinâmicos (Gestão › Usuários grava em
-    // cfg_diario.rolesLista), mas as regras não leem essa configuração. Hoje só existe
-    // um tipo Gestor: 'admin'. Se você criar OUTRO tipo marcado como "Gestor" no app,
-    // adicione o id dele na lista abaixo e republique — senão esse usuário terá a
-    // interface de gestor mas o servidor vai recusar as escritas dele.
+    // cfg_diario.rolesLista), mas as regras não leem essa configuração. Se você criar
+    // OUTRO tipo marcado como "Gestor" no app, adicione o id dele na lista abaixo e
+    // republique — senão esse usuário terá a interface de gestor mas o servidor vai
+    // recusar as escritas dele.
+    //
+    // v119 — DOIS NÍVEIS. `isAdmin()` = gestor: opera tudo (cfg_*, fila do Diário).
+    // `isAdminPleno()` = só o tipo 'admin': mexe em perfis e lê o log de acessos.
+    // O app espelha essa divisão escondendo Usuários, Acessos, Sistema e as
+    // Ferramentas avançadas de quem não é administrador pleno.
     function rolesGestores() {
-      return ['admin'];
+      // 12/08/2026 — 'rlms3m6k068y2' = "Gestor" (Jedison). O papel existia desde
+      // antes de 28/07 mas a lista de tipos de perfil (cfg_diario.rolesLista) se
+      // perdeu, então ele apontava para um tipo inexistente e caía em
+      // Contador/Conferente por fallback. A lista foi recriada com esse mesmo id
+      // marcado como Gestor — sem o id aqui, ele teria a interface de gestor e o
+      // servidor recusaria as escritas dele (cfg_*, fila do Diário, acessos).
+      return ['admin', 'rlms3m6k068y2'];
     }
     function isAdmin() {
       return ativo() && perfil(request.auth.uid).role in rolesGestores();
+    }
+    // Administrador pleno: o tipo de id 'admin' (pode ser renomeado no app, o id não).
+    function isAdminPleno() {
+      return ativo() && perfil(request.auth.uid).role == 'admin';
     }
     // Campos que o próprio usuário nunca pode alterar em si mesmo.
     function naoMexeEmCampoProtegido() {
@@ -56,10 +71,10 @@ service cloud.firestore {
     // mas nunca em role, setor, tabs, login ou disabled. Admin pode tudo.
     match /perfis/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || ativo());
-      allow create: if isAdmin();
-      allow update: if isAdmin()
+      allow create: if isAdminPleno();
+      allow update: if isAdminPleno()
         || (ativo() && request.auth.uid == uid && naoMexeEmCampoProtegido());
-      allow delete: if isAdmin();
+      allow delete: if isAdminPleno();
     }
 
     // ── usuarios (dados privados de cada um) ────────────────────────────────
@@ -73,11 +88,19 @@ service cloud.firestore {
     // ── contagem_ativa (rascunhos + documentos de configuração) ─────────────
     // Os cfg_* são configuração global da loja e só admin escreve.
     // cfg_rotinas entrou na lista em v111.
+    // cfg_alertas entrou em v113 (alerta de fator de conversão): a Cloud Function
+    // escreve por admin SDK e ignora estas regras, mas o campo `resolvidos` é
+    // marcado pelo app — e só gestor pode dar um alerta por resolvido.
+    // cfg_reservas entrou em 09/08/2026 (módulo Reservas): horários bloqueados,
+    // capacidade do 2º giro e tolerância de no-show. ATENÇÃO — esta lista é
+    // LITERAL, não um prefixo `cfg_`: documento novo que não entre aqui fica
+    // gravável por qualquer usuário ativo.
     match /contagem_ativa/{docId} {
       allow read: if ativo();
       allow write: if ativo() && (
         !(docId in ['cfg_config','cfg_specs','cfg_catalogo','cfg_fechamento',
-                    'cfg_cardapio','cfg_diario','cfg_rotinas'])
+                    'cfg_cardapio','cfg_diario','cfg_rotinas','cfg_alertas',
+                    'cfg_reservas'])
         || isAdmin()
       );
     }
@@ -103,11 +126,47 @@ service cloud.firestore {
     // Falhas de login são gravadas pela Cloud Function (Admin SDK, ignora regras).
     // Aqui o próprio usuário só registra o próprio sucesso. Ninguém edita nem apaga.
     match /acessos/{id} {
-      allow read: if isAdmin();
+      allow read: if isAdminPleno();
       allow create: if request.auth != null
         && request.resource.data.success == true
         && request.resource.data.uid == request.auth.uid;
       allow update, delete: if false;
+    }
+
+    // ── Reservas (módulo Reservas GESTO, 09/08/2026) ───────────────────────
+    // Escrita SEMPRE negada aqui: só as Cloud Functions do codebase `reservas`
+    // escrevem, via Admin SDK, que ignora estas regras. O site público não usa
+    // o SDK do Firestore — fala só com as functions. Logo nenhuma regra precisa
+    // aceitar escrita anônima.
+    // Leitura liberada para o painel (reservas.html) acompanhar a agenda ao
+    // vivo com onSnapshot — a hostess não pode ficar recarregando a página.
+    //
+    // Papéis: `admin` faz tudo; `hostess` opera a agenda mas não configura.
+    // `hostess` NÃO deve ser marcado como Gestor no app — é ficar de fora de
+    // rolesGestores() que a impede de escrever nos cfg_*.
+    function podeReservas() {
+      return ativo() && perfil(request.auth.uid).role in ['admin', 'hostess'];
+    }
+
+    match /reservas/{id} {
+      allow read: if podeReservas();
+      allow write: if false;
+    }
+
+    // Base de clientes do salão: é o CRM da casa (o do Saipos não é acessível
+    // por API — ver ACHADOS-API-CLIENTES.md). Mais sensível que a agenda, então
+    // fica no gate de reservas e não no `ativo()` geral: contador e cozinha não
+    // têm por que ler a base inteira de clientes.
+    match /clientes/{id} {
+      allow read: if podeReservas();
+      allow write: if false;
+    }
+
+    // Controle de abuso dos endpoints públicos. Ninguém lê pelo app.
+    // Configurar TTL no campo `expiraEm` (console do Firestore), senão cresce
+    // para sempre.
+    match /ratelimit/{id} {
+      allow read, write: if false;
     }
 
     // ── negar o resto por padrão ───────────────────────────────────────────
