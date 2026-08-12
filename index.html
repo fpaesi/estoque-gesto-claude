@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v128</title>
+<title>Gesto Operação v129</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1783,7 +1783,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v128';
+const APP_VERSION = 'v129';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5603,9 +5603,14 @@ function abrirSheetDin(titulo,corpoHTML){
   fecharSheetDin();
   const bg=document.createElement('div');
   bg.className='bs-modal-bg on sheet-dinamico';
-  bg.innerHTML=`<div class="bs-sheet" style="max-width:430px;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+  // v129: a folha encostava na borda de baixo e parecia cortada. Agora tem alça,
+  // teto de 85% da altura da tela com rolagem interna (a de "Corrigir" é alta) e
+  // rodapé generoso, somando a área segura do aparelho.
+  bg.innerHTML=`<div class="bs-sheet" style="max-width:430px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px))">
+      <div class="bs-handle" style="margin-bottom:6px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:sticky;top:0;background:var(--bg1);padding:6px 0 8px;z-index:1">
       <div style="font-size:15px;font-weight:600">${esc(titulo)}</div>
-      <button class="zb sheet-x" style="border:none;background:none;font-size:15px;color:var(--tx2)">✕</button></div>
+      <button class="zb sheet-x" style="border:none;background:none;font-size:15px;color:var(--tx2);padding:4px 8px">✕</button></div>
     ${corpoHTML}</div>`;
   (document.getElementById('app')||document.body).appendChild(bg);
   bg.addEventListener('click',e=>{if(e.target===bg)fecharSheetDin();});
