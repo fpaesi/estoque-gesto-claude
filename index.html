@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v117</title>
+<title>Gesto Operação v118</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1751,7 +1751,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v117';
+const APP_VERSION = 'v118';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4779,7 +4779,7 @@ function analisarCardapioSaipos(){
 async function ensureDiarioCfg(){
   if(diarioCfgLoaded||!firebaseReady||!currentUser)return;
   try{const doc=await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).get();
-    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null};
+    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null,diasUteis:Array.isArray(d.diasUteis)?d.diasUteis.slice():null};
       if(Array.isArray(d.setoresLista)&&d.setoresLista.length)SETORES=d.setoresLista.slice();
       if(Array.isArray(d.rolesLista)&&d.rolesLista.length)ROLES=d.rolesLista.slice();
       if(Array.isArray(d.rotCategorias)&&d.rotCategorias.length)ROT_CATS=d.rotCategorias.slice();
@@ -4787,8 +4787,23 @@ async function ensureDiarioCfg(){
   }catch(e){console.warn('cfg diario:',e);}
   diarioCfgLoaded=true;
 }
+// v118 — ESCRITA DE CONFIGURAÇÃO É SEMPRE PARCIAL.
+// Até a v117 esta função fazia `.set(diarioCfg)`: gravava o documento INTEIRO a
+// partir de um objeto que o ensureDiarioCfg montava com uma lista fixa de campos.
+// Tudo o que ele não enumerava era apagado em silêncio no primeiro salvamento de
+// qualquer outra configuração — foi assim que `diasUteis` sumiu (as rotinas de
+// "primeiro/último dia útil" passaram a usar o padrão sem ninguém perceber).
+// Agora: merge (só toca no que conhecemos), sem gravar null por cima do que já
+// existe, e com diasUteis sempre persistido a partir do estado vivo.
+// REGRA para campos novos: acrescente a chave no ensureDiarioCfg E confirme que
+// ela sobrevive a um salvamento vindo de OUTRA tela antes de publicar.
 async function salvarDiarioCfg(){
-  try{await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).set(diarioCfg);}
+  try{
+    const dados={};
+    Object.keys(diarioCfg||{}).forEach(k=>{const v=diarioCfg[k];if(v!==null&&v!==undefined)dados[k]=v;});
+    if(Array.isArray(DIAS_UTEIS)&&DIAS_UTEIS.length)dados.diasUteis=DIAS_UTEIS.slice();
+    await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).set(dados,{merge:true});
+  }
   catch(e){showToast('Erro ao salvar configuração: '+e.message,{type:'err'});}
 }
 
