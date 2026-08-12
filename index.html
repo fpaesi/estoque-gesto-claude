@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v120</title>
+<title>Gesto Operação v121</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1542,23 +1542,30 @@ function pluralPT(w){
   return s+'s';
 }
 
-function aplicarCatalogo(arr,meta,updatedAt){
+// v121: rendimento das fichas dos beneficiados — { cod: {yield, porcoes, ingredientes, atualizadoEm} }
+// Vem da sincronização diária da base (Cloud Function), que lê o `yield` da porção
+// no Saipos. Só o rendimento: a composição continua sendo lida ao vivo no lançamento.
+// Item sem rendimento aqui cai no modo antigo da Produção (quantidade na unidade base).
+let RENDIMENTOS={};
+function rendimentoDe(cod){const r=RENDIMENTOS[String(cod)];const y=r&&Number(r.yield);return (isFinite(y)&&y>0)?y:null;}
+function aplicarCatalogo(arr,meta,updatedAt,rend){
   if(Array.isArray(arr)&&arr.length){
     CATALOGO=arr.map(x=>({cod:String(x.cod),nome:x.nome||'',grupo:x.grupo||'',unidade:unidSigla(x.unidade)}));
   }
   rebuildCatIndex();
   catalogoMeta=meta||{};
+  if(rend&&typeof rend==='object')RENDIMENTOS=rend;
   if(updatedAt)catalogoUpdatedAt=updatedAt;
 }
 rebuildCatIndex(); // índice do catálogo embutido, antes de qualquer render
 function carregarCatalogoLocal(){
   try{
     const d=JSON.parse(localStorage.getItem(SK_CAT)||'null');
-    if(d&&Array.isArray(d.catalogo)&&d.catalogo.length)aplicarCatalogo(d.catalogo,d.catalogoMeta,d.updatedAt);
+    if(d&&Array.isArray(d.catalogo)&&d.catalogo.length)aplicarCatalogo(d.catalogo,d.catalogoMeta,d.updatedAt,d.rendimentos);
   }catch(e){}
 }
 function persistirCatalogoLocal(){
-  try{localStorage.setItem(SK_CAT,JSON.stringify({catalogo:CATALOGO,catalogoMeta,updatedAt:catalogoUpdatedAt}));}catch(e){}
+  try{localStorage.setItem(SK_CAT,JSON.stringify({catalogo:CATALOGO,catalogoMeta,updatedAt:catalogoUpdatedAt,rendimentos:RENDIMENTOS}));}catch(e){}
 }
 async function salvarCatalogoNuvem(){
   persistirCatalogoLocal();
@@ -1755,7 +1762,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v120';
+const APP_VERSION = 'v121';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -1970,7 +1977,7 @@ async function carregarNuvem(){
         const catDoc=await db.collection(RASCUNHO_COL).doc(CATALOGO_DOC).get();
         if(catDoc.exists){
           const cd=catDoc.data();
-          if(cd.catalogo&&cd.catalogo.length){aplicarCatalogo(cd.catalogo,cd.catalogoMeta,cd.updatedAt);persistirCatalogoLocal();}
+          if(cd.catalogo&&cd.catalogo.length){aplicarCatalogo(cd.catalogo,cd.catalogoMeta,cd.updatedAt,cd.rendimentos);persistirCatalogoLocal();}
         }
       }catch(e){console.warn('Erro ao carregar catálogo compartilhado:',e);}
       try{localStorage.setItem(SK,JSON.stringify({locais,sublocais,subsubs,vinculos,ajustes,specs,qtdsPadrao}));}catch(e){}
@@ -5897,6 +5904,29 @@ function dprodItens(){
   const grupos=gruposProcessadosDoUsuario();
   return CATALOGO.filter(x=>grupos.has(x.grupo));
 }
+// ══ v121: PRODUÇÃO POR RECEITA ═══════════════════════════════════════════════
+// Quem produz não pensa "fiz 27 peças", pensa "fiz uma receita de almôndega".
+// O campo é a RECEITA (de meia em meia); a quantidade é derivada do rendimento
+// da ficha (cfg_catalogo.rendimentos, sincronizado do Saipos).
+//
+// Ao final, a tela pede a CONFERÊNCIA DE RENDIMENTO — "quantas saíram?", já
+// pré-preenchida com o esperado. Quem bateu confirma com um toque; quem não
+// bateu corrige, e a diferença vira número no mesmo dia em vez de reaparecer
+// semanas depois como quebra sem explicação na contagem.
+//
+// O que vai para o Saipos é a receita inteira (esperado): os insumos foram
+// gastos de verdade. A falta do beneficiado é corrigida na contagem física, e
+// o desvio fica aqui, para o relatório de rendimento revisar a ficha técnica.
+//
+// dprodVals[cod] = { rec:number, real:string, realTocado:bool }   (com rendimento)
+//                = { rec:null, val:number|string }                (sem rendimento — modo antigo)
+function dprodVal(cod){if(!dprodVals[cod])dprodVals[cod]={};return dprodVals[cod];}
+function dprodEsperado(cod){const y=rendimentoDe(cod);const v=dprodVal(cod);return (y&&v.rec>0)?v.rec*y:0;}
+function dprodReal(cod){const v=dprodVal(cod);
+  if(v.real==null||String(v.real).trim()==='')return dprodEsperado(cod);
+  const q=parseQtdDiario(v.real);return isFinite(q)?q:dprodEsperado(cod);}
+function ehContavel(un){return ['PÇ','UN','PC'].includes(String(un||'').toUpperCase());}
+
 function abrirDprod(){dprodVals={};show('s-dprod');renderDprod();}
 function renderDprod(){
   const c=document.getElementById('dprod-cnt');
@@ -5908,89 +5938,114 @@ function renderDprod(){
       <div class="empty-sub">${currentUserSetor&&!PROC_GRUPOS.includes('Processados '+currentUserSetor)?'O setor '+esc(currentUserSetor)+' não tem insumos processados.':'Verifique se a base foi atualizada (grupos Processados Cozinha/Bar/Forno).'}</div></div>`;
     bb.innerHTML='';return;
   }
-  let lastG=null,h='<div class="sec">Quanto foi produzido hoje de cada item?</div>';
+  let lastG=null,h='<div class="sec">Quantas receitas foram feitas hoje?</div>';
   itens.forEach(x=>{
     if(x.grupo!==lastG){h+=`<div class="gsep">${esc(x.grupo)}</div>`;lastG=x.grupo;}
-    const spec=getSpecProducao(x.cod);
-    const badge=(spec&&spec.modo==='contador')
-      ?`<span class="sb-cnt"><i class="ti ti-tag" style="font-size:10px"></i>${esc(spec.embalagem)} · ×${spec.fator} ${esc(x.unidade)}</span>`
-      :`<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Digitar em ${esc(x.unidade)}</span>`;
-    let ei;
-    if(spec&&spec.modo==='contador'){
-      const qty=parseInt(dprodVals[x.cod])||0;const v=qty*(spec.fator||1);
-      ei=`<div class="cntb"><div class="cnt-row">
-        <button class="cbt dprod-minus" data-cod="${esc(x.cod)}">−</button>
-        <div class="cctr dprod-cctr" data-cod="${esc(x.cod)}" title="Toque para digitar"><div class="cv" id="dprod-cv-${esc(x.cod)}">${qty}</div><div class="cu">${esc(spec.unidContagem||spec.embalagem)}</div></div>
-        <button class="cbt dprod-plus" data-cod="${esc(x.cod)}">+</button></div>
-        <div class="ccv" id="dprod-conv-${esc(x.cod)}">${spec.fator!==1?`= ${fmtNum(v)} ${esc(x.unidade)}`:`${fmtNum(v)} ${esc(x.unidade)}`}</div></div>`;
-    }else{
-      const dv=dprodVals[x.cod]!=null?dprodVals[x.cod]:'';
-      ei=`<div class="decb"><div class="decl">Quantidade em ${esc(x.unidade)}</div>
-        <div class="decr"><input class="deci dprod-dec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" placeholder="0,000" value="${esc(dv)}"/>
-        <span class="decu">${esc(x.unidade)}</span></div></div>`;
-    }
-    h+=`<div class="pcard" id="dprod-pc-${esc(x.cod)}">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
-        <div style="font-size:11px;color:var(--tx2);margin-top:1px">COD ${esc(x.cod)}</div>
-        <div style="margin-top:5px">${badge}</div></div>
-      </div>
-      ${ei}
-    </div>`;
+    h+=`<div class="pcard" id="dprod-pc-${esc(x.cod)}">${dprodCardHTML(x)}</div>`;
   });
   c.innerHTML=h;
-  c.querySelectorAll('.dprod-minus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,-1)));
-  c.querySelectorAll('.dprod-plus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,1)));
-  c.querySelectorAll('.dprod-cctr').forEach(el=>el.addEventListener('click',()=>{
-    const cod=el.dataset.cod,spec=getSpecProducao(cod);
-    el.innerHTML=`<input class="qty-input-inline dprod-cv-inp" type="number" inputmode="numeric" min="0" step="1" value="${parseInt(dprodVals[cod])||0}"/><div class="cu">${esc((spec&&(spec.unidContagem||spec.embalagem))||'')}</div>`;
-    const inp=el.querySelector('.dprod-cv-inp');inp.focus();inp.select();
-    const commit=()=>{
-      const q=Math.max(0,parseInt(inp.value)||0);dprodVals[cod]=q;
-      el.innerHTML=`<div class="cv" id="dprod-cv-${cod}">${q}</div><div class="cu">${esc((spec&&(spec.unidContagem||spec.embalagem))||'')}</div>`;
-      dprodAtualizaConv(cod,q,spec);atualizarDprodBar();
-    };
-    inp.addEventListener('blur',commit);
-    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
-  }));
-  c.querySelectorAll('.dprod-dec').forEach(el=>el.addEventListener('input',()=>{dprodVals[el.dataset.cod]=el.value;atualizarDprodBar();}));
+  wireDprodCards(c);
   bb.innerHTML=`<button class="bp" id="dprod-salvar" style="background:${DIARIO_TIPOS.producao.cor}"><i class="ti ti-check"></i> Registrar produção</button>
     <div id="dprod-status" style="font-size:12px;color:var(--tx2);text-align:center;min-height:14px"></div>`;
   document.getElementById('dprod-salvar').addEventListener('click',salvarDprod);
   atualizarDprodBar();
 }
-function dprodStep(cod,delta){
-  const spec=getSpecProducao(cod);
-  const q=Math.max(0,(parseInt(dprodVals[cod])||0)+delta);
-  dprodVals[cod]=q;
-  const cv=document.getElementById('dprod-cv-'+cod);if(cv)cv.textContent=q;
-  dprodAtualizaConv(cod,q,spec);atualizarDprodBar();
+// Miolo do card. Fica separado porque a conferência de rendimento aparece e
+// some conforme o número de receitas — re-renderizamos só este card, nunca a
+// lista inteira (senão o teclado fecha e o scroll pula).
+function dprodCardHTML(x){
+  const y=rendimentoDe(x.cod);
+  const v=dprodVal(x.cod);
+  const cab=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:1px">COD ${esc(x.cod)}</div>
+      <div style="margin-top:5px">${y
+        ? `<span class="sb-cnt"><i class="ti ti-scale" style="font-size:10px"></i>1 receita = ${fmtNum(y)} ${esc(x.unidade)}</span>`
+        : `<span class="sb-dec"><i class="ti ti-pencil" style="font-size:10px"></i>Sem ficha — digitar em ${esc(x.unidade)}</span>`}</div></div>
+    </div>`;
+  if(!y){ // fallback: item sem rendimento sincronizado — modo antigo, quantidade na unidade base
+    const dv=v.val!=null?v.val:'';
+    return cab+`<div class="decb"><div class="decl">Quantidade em ${esc(x.unidade)}</div>
+      <div class="decr"><input class="deci dprod-dec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" placeholder="0,000" value="${esc(dv)}"/>
+      <span class="decu">${esc(x.unidade)}</span></div></div>`;
+  }
+  const rec=Number(v.rec)||0;
+  const esperado=rec*y;
+  const stepper=`<div class="cntb"><div class="cnt-row">
+      <button class="cbt dprod-minus" data-cod="${esc(x.cod)}">−</button>
+      <div class="cctr" style="cursor:default"><div class="cv">${fmtNum(rec)}</div><div class="cu">${rec===1?'receita':'receitas'}</div></div>
+      <button class="cbt dprod-plus" data-cod="${esc(x.cod)}">+</button></div>
+      <div class="ccv">${rec>0?`esperado ${fmtNum(esperado)} ${esc(x.unidade)}`:`meia em meia receita`}</div></div>`;
+  if(rec<=0)return cab+stepper;
+  const real=dprodReal(x.cod);
+  const dif=real-esperado;
+  const pct=esperado>0?(dif/esperado*100):0;
+  const alerta=Math.abs(dif)<1e-9?`<div style="font-size:11px;color:#3B6D11;margin-top:6px"><i class="ti ti-check" style="font-size:12px"></i> bateu com a ficha</div>`
+    :`<div style="font-size:11px;color:${dif<0?'#92400E':'#1D4ED8'};margin-top:6px"><i class="ti ti-alert-triangle" style="font-size:12px"></i> ${dif>0?'+':'−'}${fmtNum(Math.abs(dif))} ${esc(x.unidade)} (${dif>0?'+':'−'}${Math.abs(pct).toFixed(0)}%) em relação à ficha</div>`;
+  const conf=`<div class="decb" style="margin-top:8px;border-color:var(--acc-bd)">
+      <div class="decl">${ehContavel(x.unidade)?'Quantas saíram?':'Quanto rendeu?'}</div>
+      <div class="decr"><input class="deci dprod-real" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${esc(v.real!=null&&String(v.real).trim()!==''?v.real:fmtNum(esperado))}"/>
+      <span class="decu">${esc(x.unidade)}</span></div>${alerta}</div>`;
+  return cab+stepper+conf;
 }
-function dprodAtualizaConv(cod,q,spec){
-  const it=getProd(cod);const un=it?it.unidade:'';
-  const v=q*((spec&&spec.fator)||1);
-  const el=document.getElementById('dprod-conv-'+cod);
-  if(el)el.textContent=(spec&&spec.fator!==1)?`= ${fmtNum(v)} ${un}`:`${fmtNum(v)} ${un}`;
+function rerenderDprodCard(cod){
+  const el=document.getElementById('dprod-pc-'+cod);
+  const it=getProd(cod);
+  if(!el||!it)return;
+  el.innerHTML=dprodCardHTML(it);
+  wireDprodCards(el);
+  atualizarDprodBar();
+}
+function wireDprodCards(root){
+  root.querySelectorAll('.dprod-minus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,-0.5)));
+  root.querySelectorAll('.dprod-plus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,0.5)));
+  root.querySelectorAll('.dprod-dec').forEach(el=>el.addEventListener('input',()=>{dprodVal(el.dataset.cod).val=el.value;atualizarDprodBar();}));
+  root.querySelectorAll('.dprod-real').forEach(el=>{
+    el.addEventListener('input',()=>{const v=dprodVal(el.dataset.cod);v.real=el.value;v.realTocado=true;atualizarDprodBar();});
+    // o desvio só é recalculado ao sair do campo — atualizar a cada tecla faria
+    // o aviso piscar no meio da digitação ("2" antes de "25")
+    el.addEventListener('blur',()=>rerenderDprodCard(el.dataset.cod));
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}});
+  });
+}
+function dprodStep(cod,delta){
+  const v=dprodVal(cod);
+  const rec=Math.max(0,Math.round(((Number(v.rec)||0)+delta)*2)/2);
+  v.rec=rec;
+  if(!v.realTocado)v.real=null; // enquanto ninguém corrigiu, o real acompanha o esperado
+  rerenderDprodCard(cod);
+}
+function dprodPreenchidos(){
+  const out=[];
+  dprodItens().forEach(x=>{
+    const y=rendimentoDe(x.cod),v=dprodVals[x.cod];
+    if(!v)return;
+    if(y){ if((Number(v.rec)||0)>0)out.push({x,y,rec:Number(v.rec)}); }
+    else{ const q=parseQtdDiario(v.val); if(String(v.val??'').trim()!==''&&isFinite(q)&&q>0)out.push({x,y:null,qtd:q}); }
+  });
+  return out;
 }
 function atualizarDprodBar(){
-  const itens=dprodItens();let n=0;
-  itens.forEach(x=>{const spec=getSpecProducao(x.cod);const val=dprodVals[x.cod];
-    if(spec&&spec.modo==='contador'){if((parseInt(val)||0)>0)n++;}
-    else{const q=parseQtdDiario(val);if(String(val??'').trim()!==''&&isFinite(q)&&q>0)n++;}});
+  const n=dprodPreenchidos().length;
   const st=document.getElementById('dprod-status');
   if(st)st.textContent=n?n+' item'+(n>1?'s':'')+' com produção':'Preencha ao menos um item.';
 }
 async function salvarDprod(){
-  const itens=dprodItens();const regs=[];
-  itens.forEach(x=>{
-    const spec=getSpecProducao(x.cod);const val=dprodVals[x.cod];
-    let qtd;
-    if(spec&&spec.modo==='contador')qtd=(parseInt(val)||0)*(spec.fator||1);
-    else qtd=parseQtdDiario(val);
-    if(isFinite(qtd)&&qtd>0)regs.push({tipo:'producao',item:{cod:x.cod,nome:x.nome,unidade:x.unidade,grupo:x.grupo},qtd});
-  });
+  const preenchidos=dprodPreenchidos();
   const st=document.getElementById('dprod-status');
-  if(!regs.length){st.style.color='#ff3b30';st.textContent='Preencha ao menos um item.';return;}
+  if(!preenchidos.length){st.style.color='#ff3b30';st.textContent='Preencha ao menos um item.';return;}
+  const regs=preenchidos.map(p=>{
+    const base={tipo:'producao',item:{cod:p.x.cod,nome:p.x.nome,unidade:p.x.unidade,grupo:p.x.grupo}};
+    if(!p.y)return {...base,qtd:p.qtd}; // sem ficha: como antes
+    const esperado=p.rec*p.y;
+    const real=dprodReal(p.x.cod);
+    return {...base,
+      receitas:p.rec,            // fonte da verdade
+      rendimentoFicha:p.y,       // testemunha: o que a ficha dizia no dia
+      esperado, real,
+      desvio:+(real-esperado).toFixed(4),
+      qtd:esperado};             // o que vai para o Saipos: a receita inteira
+  });
   const btn=document.getElementById('dprod-salvar');btn.disabled=true;btn.textContent='Salvando…';
   try{
     for(const r of regs)await salvarRegistroDiario(r);
@@ -6313,7 +6368,7 @@ async function atualizarBaseAuto(){
     const catDoc=await db.collection(RASCUNHO_COL).doc(CATALOGO_DOC).get();
     if(catDoc.exists){
       const cd=catDoc.data();
-      if(cd.catalogo&&cd.catalogo.length){aplicarCatalogo(cd.catalogo,cd.catalogoMeta,cd.updatedAt);persistirCatalogoLocal();}
+      if(cd.catalogo&&cd.catalogo.length){aplicarCatalogo(cd.catalogo,cd.catalogoMeta,cd.updatedAt,cd.rendimentos);persistirCatalogoLocal();}
     }
     preencherStatusAtualizacao('ab-statuscard',CATALOGO.length,catalogoUpdatedAt||Date.now(),'itens na base');
     if(st){st.style.color='#27500A';st.textContent=`✓ ${dd.count} itens · ${dd.novos} novos · ${dd.removidos} removidos.`;}
