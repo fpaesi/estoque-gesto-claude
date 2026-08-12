@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v124</title>
+<title>Gesto Operação v125</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1511,7 +1511,11 @@ function getProd(cod){return CAT_BY_COD.get(String(cod))||null;}
 // quando não consegue resolver a sigla, e o número vazava para a tela e para a
 // impressão ("Digitar em 111", "×15 4"). unidSigla() traduz na entrada do catálogo,
 // então todo o resto do app já recebe KG/UN/L. Fonte: Saipos /unit_measures.
-const UNIT_ID_SIGLA={'1':'UN','4':'KG','5':'L','111':'PÇ'};
+// Fallback para bases antigas que gravaram o id numérico no lugar da sigla.
+// Conferido em 12/08/2026 contra GET /v1/unit_measures: 1=UN, 4=KG, 5=L, 111=PÇ.
+// A sincronização diária já resolve a sigla pela tabela oficial — este mapa só
+// existe para o que ficou gravado errado antes disso.
+const UNIT_ID_SIGLA={'1':'UN','4':'KG','5':'L','50':'ML','55':'PC','111':'PÇ'};
 // v124: conferido contra a tabela oficial do Saipos (GET /v1/unit_measures, 75 linhas).
 // PÇ e PC são unidades DIFERENTES e o app tratava as duas como "peça":
 //   id 111 · PÇ = Porção   ← é a que a GESTO usa nos beneficiados contáveis
@@ -1770,7 +1774,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v124';
+const APP_VERSION = 'v125';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6144,7 +6148,7 @@ function renderFilaLista(el){
 function montarPacoteFila(){
   return JSON.stringify({
     v:1,tipo:'pacote-diario-gesto',gerado:new Date().toISOString(),id_store:84869,
-    regras:{producao:'entrada por ajuste (id_movement_type 11) do processado + consumo dos insumos crus pela ficha técnica',
+    regras:{producao:'entrada por beneficiamento (id_movement_type 9) do processado + saídas por beneficiamento (10) dos insumos crus, expandidos pela ficha técnica',
             desperdicio:'perda (id_movement_type 6) do insumo',
             erro:'perda (id_movement_type 6) dos insumos do prato, decompostos pela ficha técnica'},
     lanc_cfg:diarioCfg.lanc||null,
