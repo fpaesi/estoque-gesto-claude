@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v121</title>
+<title>Gesto Operação v122</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1762,7 +1762,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v121';
+const APP_VERSION = 'v122';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -3077,7 +3077,10 @@ function confirmarFinalizacaoParcial(lid,onOk){
 }
 function setSpec(lid,cod,spec){if(!specs[lid])specs[lid]={};if(!spec)delete specs[lid][cod];else specs[lid][cod]=spec;salvar();}
 function calcV(lid,cod,qty){const s=getSpec(lid,cod);if(!s)return qty;if(s.modo==='decimal')return pf(qty)||0;return(parseFloat(qty)||0)*(s.fator||1);}
-function fmtNum(n){return parseFloat(n.toFixed(4)).toString();}
+// v121: exibição em pt-BR — o app pedia vírgula na digitação e devolvia ponto na
+// tela ("= 1.5 KG"). Só formatação: nada que volte a ser lido ou exportado passa
+// por aqui (o CSV faz a própria troca de separador).
+function fmtNum(n){return parseFloat(Number(n).toFixed(4)).toString().replace('.',',');}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 // v111: parser decimal único do app (contagem e Diário usavam regras diferentes).
 // Antes, pf() trocava só a 1ª vírgula e não removia pontos: "1.250,5" virava 1,25 — erro de 1.000×.
