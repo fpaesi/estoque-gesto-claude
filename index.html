@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v129</title>
+<title>Gesto Operação v130</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -227,6 +227,21 @@
 .bs-sheet{background:var(--bg1);border-radius:20px 20px 0 0;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
 .bs-modal-bg.on .bs-sheet{transform:translateY(0)}
 .bs-handle{width:36px;height:4px;border-radius:2px;background:var(--bd3);margin:10px auto 0}
+/* v130 — padrão das folhas de baixo (bottom sheet).
+   O que fazia a janela parecer cortada não era falta de espaçamento: era a
+   ação ficar no fim de uma área rolável que termina na borda da tela. Sem um
+   rodapé que encerre visualmente, o olho sempre lê "tem mais coisa embaixo".
+   Estrutura fixa, para toda folha nova seguir:
+     alça  →  cabeçalho (título + ✕)  →  corpo rolável  →  rodapé com a ação
+   O rodapé não rola, tem borda superior e absorve a área segura do aparelho:
+   é ele que diz "acabou aqui". O corpo só ganha barra de rolagem quando
+   precisa, e a folha nunca passa de 85% da altura da tela. */
+.sd{display:flex;flex-direction:column;max-height:85vh}
+.sd-head{flex-shrink:0;padding:0 16px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sd-title{font-size:15px;font-weight:600;color:var(--tx1)}
+.sd-x{border:none;background:none;font-size:15px;color:var(--tx2);padding:6px 8px;cursor:pointer;line-height:1;font-family:inherit}
+.sd-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 14px;flex:1 1 auto;overscroll-behavior:contain}
+.sd-foot{flex-shrink:0;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));border-top:.5px solid var(--bd3);background:var(--bg1);display:flex;flex-direction:column;gap:8px}
 .bs-title{padding:10px 16px 12px;font-size:13px;font-weight:500;color:var(--tx2);text-align:center;border-bottom:.5px solid var(--bd3)}
 .bs-btn{width:100%;padding:15px 16px;text-align:left;font-size:15px;cursor:pointer;border:none;border-bottom:.5px solid var(--bd3);background:none;color:var(--tx1);display:flex;align-items:center;gap:12px;font-family:inherit}
 .bs-btn:active{background:var(--bg2)}
@@ -1783,7 +1798,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v129';
+const APP_VERSION = 'v130';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5598,25 +5613,30 @@ async function salvarRegistroDiario(reg){
 // as regras do Firestore negam `delete` no diário para todos, inclusive admin.
 const MOTIVOS_CANCEL=['Lançado em duplicidade','Item errado','Quantidade errada','Não aconteceu','Outro'];
 function regPorId(id){return diarioHoje.find(r=>r.id===id)||diarioHist.find(r=>r.id===id)||filaPend.find(r=>r.id===id)||null;}
-function fecharSheetDin(){document.querySelectorAll('.sheet-dinamico').forEach(el=>el.remove());}
-function abrirSheetDin(titulo,corpoHTML){
+function fecharSheetDin(){document.querySelectorAll('.sheet-dinamico').forEach(el=>el.remove());document.removeEventListener('keydown',sheetDinEsc);}
+// v130 — helper único das folhas de baixo. Ver o comentário do CSS `.sd`.
+// corpoHTML = conteúdo rolável · acoesHTML = rodapé fixo (a ação que encerra).
+function abrirSheetDin(titulo,corpoHTML,acoesHTML){
   fecharSheetDin();
   const bg=document.createElement('div');
   bg.className='bs-modal-bg on sheet-dinamico';
-  // v129: a folha encostava na borda de baixo e parecia cortada. Agora tem alça,
-  // teto de 85% da altura da tela com rolagem interna (a de "Corrigir" é alta) e
-  // rodapé generoso, somando a área segura do aparelho.
-  bg.innerHTML=`<div class="bs-sheet" style="max-width:430px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px))">
-      <div class="bs-handle" style="margin-bottom:6px"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:sticky;top:0;background:var(--bg1);padding:6px 0 8px;z-index:1">
-      <div style="font-size:15px;font-weight:600">${esc(titulo)}</div>
-      <button class="zb sheet-x" style="border:none;background:none;font-size:15px;color:var(--tx2);padding:4px 8px">✕</button></div>
-    ${corpoHTML}</div>`;
+  bg.innerHTML=`<div class="bs-sheet sd" style="max-width:430px">
+      <div class="bs-handle"></div>
+      <div class="sd-head"><div class="sd-title">${esc(titulo)}</div>
+        <button class="sd-x sheet-x" aria-label="Fechar">✕</button></div>
+      <div class="sd-body">${corpoHTML}</div>
+      <div class="sd-foot">${acoesHTML||'<button class="bs sheet-x">Fechar</button>'}</div>
+    </div>`;
   (document.getElementById('app')||document.body).appendChild(bg);
   bg.addEventListener('click',e=>{if(e.target===bg)fecharSheetDin();});
-  bg.querySelector('.sheet-x').addEventListener('click',fecharSheetDin);
+  bg.querySelectorAll('.sheet-x').forEach(b=>b.addEventListener('click',fecharSheetDin));
+  document.addEventListener('keydown',sheetDinEsc);
+  // foco no primeiro campo, quando houver — evita um toque a mais no celular
+  const f=bg.querySelector('.sd-body input,.sd-body select');
+  if(f)setTimeout(()=>{try{f.focus();}catch(e){}},250);
   return bg;
 }
+function sheetDinEsc(e){if(e.key==='Escape')fecharSheetDin();}
 function abrirRegMenu(id){
   const r=regPorId(id);
   if(!r||!isAdminRole())return;
@@ -5634,7 +5654,7 @@ function abrirRegMenu(id){
     if(r.tipo!=='conferencia')corpo+=`<button class="bs reg-corrigir" data-reg="${r.id}" style="margin-bottom:8px">Corrigir</button>`;
     corpo+=`<button class="bs reg-cancelar" data-reg="${r.id}" style="color:#B91C1C;border-color:#FCA5A5">Cancelar registro</button>`;
   }
-  const bg=abrirSheetDin('Registro',corpo);
+  const bg=abrirSheetDin('Registro',corpo,'<button class="bs sheet-x">Fechar</button>');
   const b1=bg.querySelector('.reg-corrigir');if(b1)b1.addEventListener('click',()=>{fecharSheetDin();abrirCorrigirReg(id,false);});
   const b2=bg.querySelector('.reg-cancelar');if(b2)b2.addEventListener('click',()=>{fecharSheetDin();abrirCancelarReg(id);});
   const b3=bg.querySelector('.reg-nota');if(b3)b3.addEventListener('click',()=>{fecharSheetDin();abrirCorrigirReg(id,true);});
@@ -5645,10 +5665,9 @@ function abrirCancelarReg(id){
     <div class="fl">Motivo</div>
     <select class="fi" id="cx-motivo">${MOTIVOS_CANCEL.map(m=>`<option>${esc(m)}</option>`).join('')}</select>
     <div style="height:8px"></div>
-    <input class="fi" id="cx-obs" type="text" placeholder="Detalhe (opcional)"/>
-    <div style="height:10px"></div>
-    <button class="bp" id="cx-ok" style="background:#B91C1C">Cancelar registro</button>`;
-  const bg=abrirSheetDin('Cancelar registro',corpo);
+    <input class="fi" id="cx-obs" type="text" placeholder="Detalhe (opcional)"/>`;
+  const bg=abrirSheetDin('Cancelar registro',corpo,
+    '<button class="bp" id="cx-ok" style="background:#B91C1C">Cancelar registro</button><button class="bs sheet-x">Voltar</button>');
   bg.querySelector('#cx-ok').addEventListener('click',async()=>{
     const mot=bg.querySelector('#cx-motivo').value;
     const obs=bg.querySelector('#cx-obs').value.trim();
@@ -5687,8 +5706,8 @@ function abrirCorrigirReg(id,nota){
   }
   campos+=`<div style="height:8px"></div><div class="fl">Observação</div><input class="fi" id="cr-obs" type="text" value="${esc(r.obs||'')}"/>`;
   const aviso=nota?`<div class="wb" style="margin-bottom:10px">Isto cria um registro novo ligado ao original. O movimento que já foi para o Saipos continua lá — a nota serve para explicar a diferença na contagem.</div>`:'';
-  const bg=abrirSheetDin(nota?'Nota de correção':'Corrigir registro',
-    aviso+campos+`<div style="height:12px"></div><button class="bp" id="cr-ok">${nota?'Registrar nota':'Salvar correção'}</button>`);
+  const bg=abrirSheetDin(nota?'Nota de correção':'Corrigir registro', aviso+campos,
+    `<button class="bp" id="cr-ok">${nota?'Registrar nota':'Salvar correção'}</button><button class="bs sheet-x">Voltar</button>`);
   bg.querySelector('#cr-ok').addEventListener('click',async()=>{
     const g=sel=>{const el=bg.querySelector(sel);return el?el.value:null;};
     const btn=bg.querySelector('#cr-ok');btn.disabled=true;btn.textContent='Salvando…';
