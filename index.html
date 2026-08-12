@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v135</title>
+<title>Gesto Operação v136</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1808,7 +1808,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v135';
+const APP_VERSION = 'v136';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2250,6 +2250,7 @@ async function carregarTodosRascunhos(){
       const d=doc.data();
       const lid=doc.id;
       // Documentos especiais (config/specs/fechamento) não são rascunhos de local
+      if(lid===SALDOS_DOC){saldos={...d};return;} // v136: saldo da conferência
       if(lid===SPECS_DOC||lid===CONFIG_DOC||lid===FECHAMENTO_DOC)return;
       counts[lid]=d.counts||{};
       rascunhos[lid]={
@@ -2274,6 +2275,15 @@ function iniciarListenerContagemAtiva(){
     snap.docChanges().forEach(change=>{
       const lid=change.doc.id;
       const d=change.doc.data();
+      // v136: saldo da conferência mudou (outra pessoa deu saída ou lançou produção)
+      if(lid===SALDOS_DOC){
+        if(change.type!=='removed'){
+          saldos={...d};
+          const tela=document.getElementById('s-dconf');
+          if(tela&&tela.classList.contains('on')&&!dconfEdit)renderDconfLista();
+        }
+        return;
+      }
       // Specs compartilhadas mudaram (admin editou): aplica para todos em tempo real.
       // Mescla por local/item: a versão compartilhada (admin) prevalece sobre a do usuário.
       if(lid===SPECS_DOC){
@@ -4799,6 +4809,7 @@ const DIARIO_TIPOS={
   conferencia:{label:'Conferência',icon:'ti-clipboard-check',cor:'#185FA5',bg:'#E6F1FB',verbo:'Conferir processados'},
   erro:{label:'Erro de prato',icon:'ti-alert-triangle',cor:'#854F0B',bg:'#FAEEDA',verbo:'Registrar erro'},
   desperdicio:{label:'Desperdício',icon:'ti-trash',cor:'#A32D2D',bg:'#FCEBEB',verbo:'Registrar desperdício'},
+  consumo:{label:'Saída do congelador',icon:'ti-arrow-down-circle',cor:'#185FA5',bg:'#E6F1FB',verbo:'Registrar consumo'}, // v136
 };
 let SETORES=['Cozinha','Bar','Forno','Salão']; // v94: editável em Gestão › Usuários (persistido em cfg_diario.setoresLista)
 const MOTIVOS_ERRO=['Comanda errada','Preparo errado','Devolvido pelo cliente','Outro'];
@@ -4867,7 +4878,7 @@ function analisarCardapioSaipos(){
 async function ensureDiarioCfg(){
   if(diarioCfgLoaded||!firebaseReady||!currentUser)return;
   try{const doc=await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).get();
-    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null,diasUteis:Array.isArray(d.diasUteis)?d.diasUteis.slice():null};
+    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null,diasUteis:Array.isArray(d.diasUteis)?d.diasUteis.slice():null,conferencia:d.conferencia||null}; // v136: lista curada por setor
       if(Array.isArray(d.setoresLista)&&d.setoresLista.length)SETORES=d.setoresLista.slice();
       if(Array.isArray(d.rolesLista)&&d.rolesLista.length)ROLES=d.rolesLista.slice();
       if(Array.isArray(d.rotCategorias)&&d.rotCategorias.length)ROT_CATS=d.rotCategorias.slice();
@@ -5686,6 +5697,10 @@ function abrirCancelarReg(id){
     try{
       await db.collection(DIARIO_COL).doc(id).update({status:'cancelado',
         cancelMotivo:obs?mot+' — '+obs:mot,cancelPor:currentUserNome||'',cancelEm:Date.now()});
+      // v136: desfaz o efeito no saldo da conferência
+      if(r.tipo==='producao'&&confListaCods().map(String).includes(String(r.item&&r.item.cod)))
+        await ajustarSaldo(r.item.cod,-(r.real!=null?r.real:(r.qtd||0)));
+      if(r.tipo==='consumo'&&r.item)await ajustarSaldo(r.item.cod,(r.qtd||0));
       fecharSheetDin();
       showToast('Registro cancelado.',{type:'ok'});
       await recarregarDiarioTela();
@@ -5748,6 +5763,12 @@ function abrirCorrigirReg(id,nota){
       }else{
         upd.editadoEm=Date.now();upd.editadoPor=currentUserNome||'';
         await db.collection(DIARIO_COL).doc(r.id).update(upd);
+        // v136: aplica no saldo só a DIFERENÇA entre o que valia e o que passou a valer
+        if(r.tipo==='producao'&&confListaCods().map(String).includes(String(r.item&&r.item.cod))){
+          const antes=(r.real!=null?r.real:(r.qtd||0)),depois=(upd.real!=null?upd.real:(upd.qtd!=null?upd.qtd:antes));
+          if(depois!==antes)await ajustarSaldo(r.item.cod,depois-antes);
+        }
+        if(r.tipo==='consumo'&&r.item&&upd.qtd!=null&&upd.qtd!==r.qtd)await ajustarSaldo(r.item.cod,r.qtd-upd.qtd);
       }
       fecharSheetDin();
       showToast(nota?'Nota de correção registrada.':'Registro corrigido.',{type:'ok'});
@@ -5813,7 +5834,7 @@ function renderDiarioBody(c){
   h+='<div class="sec">Registrar agora</div>';
   const cards=[
     {tipo:'producao',sub:'Insumos processados/beneficiados hoje'},
-    {tipo:'conferencia',sub:'Contagem rápida dos processados em estoque'},
+    {tipo:'conferencia',sub:'Saldo do congelador — marque o que saiu'},
     {tipo:'erro',sub:'Prato feito por engano ou devolvido'},
     {tipo:'desperdicio',sub:'Vencidos, estragados, quebras'},
   ];
@@ -6067,66 +6088,201 @@ async function salvarDreg(){
 // sincronização diária mantém em dia. Antes eram duas definições para a mesma
 // coisa (grupo aqui, lista de códigos ali), e a de Gestão envelhecia sozinha:
 // item novo no Saipos aparecia na Produção e sumia da Conferência.
-function dconfItens(){
-  const grupos=gruposProcessadosDoUsuario();
-  return CATALOGO.filter(x=>grupos.has(x.grupo));
+// ══ v136: CONFERÊNCIA COMO SALDO DE PORÇÕES ═════════════════════════════════
+// Substitui a conferência-fotografia ("quanto tem agora de tudo") pelo controle
+// que a cozinha já faz no papel — a planilha semanal com PROD e CONS por dia.
+//
+// O que o app acrescenta ao papel é o SALDO, que lá fica na cabeça de quem lê:
+//     saldo = saldo anterior + produção registrada − consumo informado ± ajuste
+//
+// A produção entra sozinha, e entra pelo RENDIMENTO REAL (as 25 porções que
+// saíram, não as 27 que a ficha prometia) — senão o saldo nasce mentindo.
+//
+// A lista é CURADA por setor e mora aqui dentro, não em Gestão: a lista antiga
+// ficava numa tela distante e envelheceu sozinha até chegar vazia. Configuração
+// perto do uso é o que a mantém viva. Ela também não é "os processados do
+// grupo": a planilha da cozinha inclui os gelatos (comprados, grupo Lácteos) e
+// deixa de fora molho, pão e zabaione, que são a granel.
+const SALDOS_DOC='saldos_conferencia'; // fora do prefixo cfg_: todo usuário ativo escreve
+let saldos={},dconfEdit=false,dconfBuscaAdd='';
+
+function confListaCods(){
+  const cfg=(diarioCfg&&diarioCfg.conferencia)||{};
+  const setor=currentUserSetor||null;
+  if(setor)return cfg[setor]||[];
+  // gestor/admin sem setor: junta as listas de todos os setores, sem repetir
+  const out=[];Object.keys(cfg).forEach(k=>(cfg[k]||[]).forEach(c=>{if(!out.includes(c))out.push(c);}));
+  return out;
 }
-function abrirDconf(){dconfVals={};show('s-dconf');renderDconf();}
+function confSetorAlvo(){return currentUserSetor||(SETORES[0]||'Cozinha');}
+function dconfItens(){
+  const cods=confListaCods();
+  return cods.map(c=>getProd(c)).filter(Boolean)
+    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+function saldoDe(cod){const v=Number(saldos[String(cod)]);return isFinite(v)?v:0;}
+function dconfPendente(cod){const v=Number(dconfVals[cod]);return isFinite(v)?v:0;}
+
+function abrirDconf(){dconfVals={};dconfEdit=false;dconfBuscaAdd='';show('s-dconf');renderDconf();}
 function renderDconf(){
   const c=document.getElementById('dconf-cnt');
   const bb=document.getElementById('dconf-bbar');
+  if(dconfEdit)return renderDconfEdit(c,bb);
   const itens=dconfItens();
   if(!itens.length){
     c.innerHTML=`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-clipboard-check" style="font-size:28px;opacity:.5"></i></div>
-      <div class="empty-title">Nenhum processado para o seu setor</div>
-      <div class="empty-sub">${currentUserSetor&&!PROC_GRUPOS.includes('Processados '+currentUserSetor)?'O setor '+esc(currentUserSetor)+' não tem insumos processados.':'Verifique se a base foi atualizada (grupos Processados Cozinha/Bar/Forno).'}</div></div>`;
-    bb.innerHTML='';return;
+      <div class="empty-title">Lista ainda vazia</div>
+      <div class="empty-sub">${isAdminRole()?'Monte a lista do que se conta no congelador deste setor.':'Peça ao gestor para montar a lista do seu setor.'}</div>
+      ${isAdminRole()?'<button class="bs empty-cta" id="dconf-editar-vazio" style="margin-top:12px">Montar a lista</button>':''}</div>`;
+    bb.innerHTML='';
+    const b=c.querySelector('#dconf-editar-vazio');
+    if(b)b.addEventListener('click',()=>{dconfEdit=true;renderDconf();});
+    return;
   }
-  const jaHoje=diarioHoje.some(r=>r.tipo==='conferencia'&&r.uid===(currentUser&&currentUser.uid));
-  let h=jaHoje?'<div class="wb"><i class="ti ti-info-circle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12.5px;color:#92400E">Você já registrou uma conferência hoje. Um novo envio cria outro registro (o histórico guarda os dois).</div></div>':'';
-  h+='<div class="sec">Quanto tem agora de cada processado?</div>';
-  h+=itens.map(x=>`<div class="pcard" style="gap:6px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
-      <div style="font-size:11.5px;color:var(--tx2)">${esc(x.grupo)}</div></div>
-      <input class="ii dconf-inp" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" placeholder="—" value="${dconfVals[x.cod]??''}" style="width:84px;text-align:center;font-size:16px;font-weight:600"/>
-      <span style="font-size:12px;color:var(--tx2);width:34px">${esc(x.unidade)}</span>
-    </div></div>`).join('');
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0">
+      <div style="font-size:12px;color:var(--tx2)">${esc(confSetorAlvo())} · ${itens.length} itens</div>
+      ${isAdminRole()?'<button class="bg_" id="dconf-editar" style="width:auto;padding:4px 8px;font-size:12.5px">Editar lista</button>':''}</div>`;
+  h+='<div class="sec">O que saiu do congelador?</div>';
+  h+='<div id="dconf-lista" style="display:flex;flex-direction:column;gap:8px"></div>';
   c.innerHTML=h;
-  c.querySelectorAll('.dconf-inp').forEach(el=>el.addEventListener('input',()=>{dconfVals[el.dataset.cod]=el.value;atualizarDconfBar();}));
-  bb.innerHTML=`<button class="bp" id="dconf-salvar"><i class="ti ti-check"></i> Salvar conferência</button>
+  const be=c.querySelector('#dconf-editar');
+  if(be)be.addEventListener('click',()=>{dconfEdit=true;renderDconf();});
+  renderDconfLista();
+  bb.innerHTML=`<button class="bp" id="dconf-salvar"><i class="ti ti-check"></i> Registrar consumo</button>
     <div id="dconf-status" style="font-size:12px;color:var(--tx2);text-align:center;min-height:14px"></div>`;
   document.getElementById('dconf-salvar').addEventListener('click',salvarDconf);
   atualizarDconfBar();
 }
+function dconfCardHTML(x){
+  const saldo=saldoDe(x.cod);
+  const usado=dconfPendente(x.cod);
+  const restante=saldo-usado;
+  const un=unidExtenso(x.unidade,restante);
+  return `<div style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+        <div style="font-size:11.5px;color:var(--tx2);margin-top:1px">em estoque ${fmtNum(saldo)} ${esc(unidExtenso(x.unidade,saldo))}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:19px;font-weight:600;color:${restante<0?'#B91C1C':'var(--tx1)'}">${fmtNum(restante)}</div>
+        <div style="font-size:10.5px;color:var(--tx2)">${esc(un)}</div>
+      </div>
+    </div>
+    <div class="cntb"><div class="cnt-row">
+      <button class="cbt dconf-menos" data-cod="${esc(x.cod)}">−</button>
+      <div class="cctr dconf-ctr" data-cod="${esc(x.cod)}" title="Toque para digitar"><div class="cv">${usado?fmtNum(usado):'0'}</div><div class="cu">usado</div></div>
+      <button class="cbt dconf-mais" data-cod="${esc(x.cod)}">+</button></div>
+      ${restante<0?'<div class="ccv" style="color:#B91C1C">mais do que havia no saldo</div>':''}</div>`;
+}
+function renderDconfLista(){
+  const el=document.getElementById('dconf-lista');
+  if(!el)return;
+  el.innerHTML=dconfItens().map(x=>`<div class="pcard" id="dconf-pc-${esc(x.cod)}">${dconfCardHTML(x)}</div>`).join('');
+  el.querySelectorAll('.dconf-menos').forEach(b=>b.addEventListener('click',()=>dconfStep(b.dataset.cod,-1)));
+  el.querySelectorAll('.dconf-mais').forEach(b=>b.addEventListener('click',()=>dconfStep(b.dataset.cod,1)));
+  el.querySelectorAll('.dconf-ctr').forEach(b=>b.addEventListener('click',()=>{
+    const cod=b.dataset.cod;
+    b.innerHTML=`<input class="qty-input-inline dconf-inp" type="text" inputmode="decimal" value="${dconfPendente(cod)||''}"/><div class="cu">usado</div>`;
+    const inp=b.querySelector('.dconf-inp');inp.focus();inp.select();
+    const commit=()=>{const q=parseQtdDiario(inp.value);dconfVals[cod]=isFinite(q)&&q>0?q:0;rerenderDconfCard(cod);};
+    inp.addEventListener('blur',commit);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  }));
+  atualizarDconfBar();
+}
+function rerenderDconfCard(cod){
+  const el=document.getElementById('dconf-pc-'+cod);const it=getProd(cod);
+  if(!el||!it)return;
+  el.innerHTML=dconfCardHTML(it);
+  el.querySelectorAll('.dconf-menos').forEach(b=>b.addEventListener('click',()=>dconfStep(b.dataset.cod,-1)));
+  el.querySelectorAll('.dconf-mais').forEach(b=>b.addEventListener('click',()=>dconfStep(b.dataset.cod,1)));
+  el.querySelectorAll('.dconf-ctr').forEach(b=>b.addEventListener('click',()=>renderDconfLista()));
+  atualizarDconfBar();
+}
+// O botão "−" tira do saldo, então SOMA no que foi usado. O "+" desfaz.
+function dconfStep(cod,delta){
+  const v=Math.max(0,dconfPendente(cod)+delta);
+  dconfVals[cod]=v;
+  rerenderDconfCard(cod);
+}
 function atualizarDconfBar(){
-  const n=Object.values(dconfVals).filter(v=>String(v).trim()!=='').length;
+  const n=Object.keys(dconfVals).filter(c=>dconfPendente(c)>0).length;
   const st=document.getElementById('dconf-status');
-  if(st)st.textContent=n?n+' item'+(n>1?'s':'')+' preenchido'+(n>1?'s':''):'Preencha ao menos um item.';
+  if(st)st.textContent=n?n+' item'+(n>1?'s':'')+' com saída':'Marque o que saiu do congelador.';
 }
 async function salvarDconf(){
   const itens=dconfItens();
-  const items=[];
-  itens.forEach(x=>{
-    const v=String(dconfVals[x.cod]??'').trim();
-    if(v==='')return;
-    const q=parseQtdDiario(v);
-    if(isFinite(q)&&q>=0)items.push({cod:x.cod,nome:x.nome,unidade:x.unidade,qtd:q});
-  });
+  const mov=[];
+  itens.forEach(x=>{const q=dconfPendente(x.cod);if(q>0)mov.push({x,q});});
   const st=document.getElementById('dconf-status');
-  if(!items.length){st.style.color='#ff3b30';st.textContent='Preencha ao menos um item.';return;}
-  const btn=document.getElementById('dconf-salvar');
-  btn.disabled=true;btn.textContent='Salvando…';
+  if(!mov.length){st.style.color='#ff3b30';st.textContent='Marque o que saiu do congelador.';return;}
+  const btn=document.getElementById('dconf-salvar');btn.disabled=true;btn.textContent='Salvando…';
   try{
-    await salvarRegistroDiario({tipo:'conferencia',items});
+    for(const m of mov){
+      await salvarRegistroDiario({tipo:'consumo',status:'na',
+        item:{cod:m.x.cod,nome:m.x.nome,unidade:m.x.unidade,grupo:m.x.grupo},
+        qtd:m.q,saldoAntes:saldoDe(m.x.cod)});
+      await ajustarSaldo(m.x.cod,-m.q);
+    }
+    showToast('Saída registrada.',{type:'ok'});
     fecharDreg();
   }catch(e){
     st.style.color='#ff3b30';st.textContent='Erro: '+e.message;
-    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Salvar conferência';
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Registrar consumo';
   }
 }
+// Saldo é somado/subtraído com increment: dois celulares mexendo no mesmo item
+// ao mesmo tempo não se sobrescrevem.
+async function ajustarSaldo(cod,delta){
+  if(!firebaseReady||!currentUser||!delta)return;
+  saldos[String(cod)]=saldoDe(cod)+delta; // otimista, para a tela responder na hora
+  await db.collection(RASCUNHO_COL).doc(SALDOS_DOC)
+    .set({[String(cod)]:firebase.firestore.FieldValue.increment(delta)},{merge:true});
+}
 
-// ── Produção (lista de cards igual à contagem — v87) ──────────────────────────
+// ── Editar a lista do setor (gestor) ───────────────────────────────────────
+function renderDconfEdit(c,bb){
+  const setor=confSetorAlvo();
+  const cods=confListaCods();
+  const sel=cods.map(x=>getProd(x)).filter(Boolean).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  let h=`<div class="tipb">Itens que este setor conta no congelador. Pode incluir o que não é produzido aqui — sorvete comprado, por exemplo.</div>`;
+  h+=`<div class="sec">${esc(setor)} · ${sel.length} itens</div>`;
+  h+=sel.map(x=>`<div class="row" style="cursor:default">
+    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
+    <div style="font-size:11px;color:var(--tx2)">${esc(x.grupo)} · ${esc(x.unidade)}</div></div>
+    <button class="zb dconf-rem" data-cod="${esc(x.cod)}" style="color:#B91C1C;border-color:#FCA5A5">Remover</button></div>`).join('')
+    ||'<div class="empty" style="padding:16px"><span>Nenhum item ainda.</span></div>';
+  h+=`<div class="sec">Adicionar</div>
+    <input id="dconf-add-busca" class="srch" placeholder="Buscar item na base…" autocomplete="off" value="${esc(dconfBuscaAdd)}"/>
+    <div id="dconf-add-res" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>`;
+  c.innerHTML=h;
+  const pintarRes=()=>{
+    const el=c.querySelector('#dconf-add-res');
+    const q=dnorm(dconfBuscaAdd.trim());
+    if(q.length<2){el.innerHTML='<div style="font-size:11.5px;color:var(--tx2);padding:2px 2px">Digite ao menos duas letras.</div>';return;}
+    const jaTem=new Set(cods.map(String));
+    const res=CATALOGO.filter(x=>!jaTem.has(String(x.cod))&&(dnorm(x.nome).includes(q)||dnorm(x.grupo).includes(q))).slice(0,12);
+    el.innerHTML=res.map(x=>`<div class="row" data-add="${esc(x.cod)}" style="padding:9px 12px">
+      <div style="flex:1"><div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11px;color:var(--tx2)">${esc(x.grupo)} · ${esc(x.unidade)}</div></div>
+      <i class="ti ti-plus" style="color:var(--acc)"></i></div>`).join('')
+      ||'<div style="font-size:11.5px;color:var(--tx2)">Nada encontrado.</div>';
+    el.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>salvarConfLista(setor,[...cods,b.dataset.add])));
+  };
+  const bi=c.querySelector('#dconf-add-busca');
+  bi.addEventListener('input',()=>{dconfBuscaAdd=bi.value;pintarRes();});
+  pintarRes();
+  c.querySelectorAll('.dconf-rem').forEach(b=>b.addEventListener('click',()=>salvarConfLista(setor,cods.filter(x=>String(x)!==String(b.dataset.cod)))));
+  bb.innerHTML=`<button class="bp" id="dconf-fim"><i class="ti ti-check"></i> Concluir</button>`;
+  document.getElementById('dconf-fim').addEventListener('click',()=>{dconfEdit=false;dconfBuscaAdd='';renderDconf();});
+}
+async function salvarConfLista(setor,cods){
+  if(!isAdminRole())return;
+  diarioCfg.conferencia={...(diarioCfg.conferencia||{}),[setor]:cods.map(String)};
+  await salvarDiarioCfg();
+  renderDconf();
+}
+
 // v134: o catálogo vem ordenado por nome, então os grupos se intercalavam na
 // tela (Bar, Cozinha, Forno, Bar de novo…). Agora ordena por grupo e, dentro
 // dele, por nome — e respeita o filtro de grupos escolhido no topo.
@@ -6339,7 +6495,13 @@ async function salvarDprod(){
   });
   const btn=document.getElementById('dprod-salvar');btn.disabled=true;btn.textContent='Salvando…';
   try{
-    for(const r of regs)await salvarRegistroDiario(r);
+    const naConferencia=confListaCods().map(String);
+    for(const r of regs){
+      await salvarRegistroDiario(r);
+      // v136: a produção entra no saldo da conferência pelo que SAIU DE VERDADE
+      // (o real da conferência de rendimento), não pelo que a ficha prometia
+      if(naConferencia.includes(String(r.item.cod)))await ajustarSaldo(r.item.cod,(r.real!=null?r.real:r.qtd));
+    }
     fecharDreg();
   }catch(e){
     st.style.color='#ff3b30';st.textContent='Erro: '+e.message;
