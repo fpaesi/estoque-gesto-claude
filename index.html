@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v127</title>
+<title>Gesto Operação v128</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1783,7 +1783,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v127';
+const APP_VERSION = 'v128';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2853,7 +2853,12 @@ if(firebaseReady){
             setLoginLoading(false);
             return;
           }
-          currentUserRole=normalizeRole(perf.role);
+          // v128: guarda o papel CRU. normalizeRole() só sabe resolver tipos custom
+          // depois que ensureDiarioCfg() carregar cfg_diario.rolesLista — e isso
+          // acontece algumas linhas abaixo. Normalizar aqui derrubava todo papel
+          // custom para contador_conferente em silêncio: foi o que manteve o único
+          // gestor da casa sem acesso de gestão por duas semanas sem ninguém notar.
+          currentUserRole=perf.role;
           currentUserNome=perf.nome||user.email;
           currentUserTabs=normalizeTabs(perf.tabs); // v80
           currentUserSetor=perf.setor||null; // v85
@@ -2886,6 +2891,12 @@ if(firebaseReady){
       const nmEl=document.getElementById('user-name');if(nmEl)nmEl.textContent=currentUserNome.split(' ')[0]||'Usuário';
       // v95: carrega tipos de perfil/setores dinâmicos antes de decidir permissões
       try{await ensureDiarioCfg();}catch(e){}
+      // v128: só agora dá para resolver o papel — a lista de tipos já chegou
+      const _rolePerf=currentUserRole;
+      currentUserRole=normalizeRole(currentUserRole);
+      if(_rolePerf&&_rolePerf!==currentUserRole&&!ROLES.some(r=>r.id===_rolePerf)){
+        console.warn('Perfil aponta para um tipo que não existe mais:',_rolePerf,'→',currentUserRole);
+      }
       // Ajusta abas conforme o nível de acesso
       ajustarTabsPorRole();
       // Carrega dados e mostra home
