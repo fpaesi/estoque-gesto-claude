@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v143</title>
+<title>Gesto Operação v144</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1826,7 +1826,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v143';
+const APP_VERSION = 'v144';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6018,8 +6018,16 @@ function dregErroCardHTML(x){
   const v=dregErro[x.cod]||{};
   const q=v.qtd||0;
   const pronto=q>0&&v.motivo&&v.destino;
-  const chips=(lista,campo,sel)=>`<div class="chips" style="flex-wrap:wrap;gap:5px">`+
-    lista.map(m=>`<span class="chip${sel===m?' on':''}" data-erro-${campo}="${esc(m)}" data-cod="${esc(x.cod)}" data-nome="${esc(x.nome)}">${esc(m)}</span>`).join('')+`</div>`;
+  // v144: cada grupo tem rótulo próprio e uma linha separando — sem isso os dois
+  // conjuntos de chips viram uma coisa só e ninguém sabe que precisa escolher nos
+  // DOIS. O rótulo fica âmbar quando o prato já está marcado e falta aquele grupo.
+  const grupo=(titulo,lista,campo,sel)=>{
+    const pend=q>0&&!sel;
+    return `<div style="margin-top:2px">
+      <div style="font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${pend?'#92400E':'var(--tx2)'};margin-bottom:3px">${esc(titulo)}${pend?' · escolha':''}</div>
+      <div class="chips" style="flex-wrap:wrap;gap:5px">`+
+      lista.map(m=>`<span class="chip${sel===m?' on':''}" data-erro-${campo}="${esc(m)}" data-cod="${esc(x.cod)}" data-nome="${esc(x.nome)}">${esc(m)}</span>`).join('')+`</div></div>`;
+  };
   return `<div class="pcard" id="erro-pc-${esc(x.cod)}" style="gap:7px;padding:10px 12px;${q>0?'border-color:'+(pronto?'#0F6E56':DIARIO_TIPOS.erro.cor)+';':''}">
     <div style="display:flex;align-items:center;gap:8px">
       <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
@@ -6030,9 +6038,9 @@ function dregErroCardHTML(x){
         <button class="cbt erro-mais" data-cod="${esc(x.cod)}" style="width:34px;height:34px">+</button></div>`
         :`<button class="cbt erro-mais" data-cod="${esc(x.cod)}" data-nome="${esc(x.nome)}" style="width:34px;height:34px">+</button>`}
     </div>
-    ${chips(MOTIVOS_ERRO,'motivo',v.motivo)}
-    ${chips(DESTINOS_ERRO,'destino',v.destino)}
-    ${q>0&&!(v.motivo&&v.destino)?'<div style="font-size:11px;color:#92400E">falta '+(!v.motivo?'o motivo':'o destino')+'</div>':''}
+    ${grupo('Por que deu errado',MOTIVOS_ERRO,'motivo',v.motivo)}
+    <div style="border-top:.5px solid var(--bd3);margin:2px 0 0"></div>
+    ${grupo('Para onde foi',DESTINOS_ERRO,'destino',v.destino)}
   </div>`;
 }
 function wireDregErro(el){
