@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v140</title>
+<title>Gesto Operação v141</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1826,7 +1826,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v140';
+const APP_VERSION = 'v141';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6015,10 +6015,18 @@ function renderDreg(){
           <div class="decr"><input id="dreg-dec" class="deci" type="text" inputmode="decimal" placeholder="0,000" value="${esc(dregDecVal)}"/>
           <span class="decu">${esc(dregItem.unidade||'UN')}</span></div></div>`;
       }
+    }else if(dregTipo==='erro'){
+      // v141: prato se conta em pratos — o mesmo contador da Conferência, com
+      // toque no número para digitar. Começa em 1, que é o caso quase sempre.
+      const q=parseInt(dregCntQty)||0;
+      h+=`<div class="cntb"><div class="cnt-row">
+        <button class="cbt" id="dreg-minus">−</button>
+        <div class="cctr" id="dreg-cctr" title="Toque para digitar"><div class="cv" id="dreg-cv">${q}</div><div class="cu">${q===1?'prato':'pratos'}</div></div>
+        <button class="cbt" id="dreg-plus">+</button></div></div>`;
     }else{
-      h+=`<div class="decb"><div class="decl">Quantidade (${esc(dregItem.unidade||'UN')})</div>
-        <div class="decr"><input id="dreg-qtd" class="deci" type="text" inputmode="decimal" placeholder="0" value="${dregTipo==='erro'?'1':''}"/>
-        <span class="decu">${esc(dregItem.unidade||'UN')}</span></div></div>`;
+      h+=`<div class="decb"><div class="decl">Quantidade em ${esc(unidExtenso(dregItem.unidade||'UN',2))}</div>
+        <div class="decr"><input id="dreg-qtd" class="deci" type="text" inputmode="decimal" placeholder="0" value=""/>
+        <span class="decu">${esc(unidExtenso(dregItem.unidade||'UN',2))}</span></div></div>`;
     }
     if(dregTipo==='erro'){
       h+='<div class="fl" style="margin-top:4px">Motivo</div><div class="chips" style="flex-wrap:wrap">'+
@@ -6046,7 +6054,7 @@ function renderDreg(){
   }
   c.querySelectorAll('[data-dreg-cod]').forEach(el=>el.addEventListener('click',()=>{
     dregItem={cod:el.dataset.dregCod,nome:el.dataset.dregNome,unidade:el.dataset.dregUn,grupo:el.dataset.dregGr};
-    dregCntQty=0;dregDecVal='';
+    dregCntQty=dregTipo==='erro'?1:0;dregDecVal='';
     renderDreg();
   }));
   const man=c.querySelector('#dreg-manual');
@@ -6058,7 +6066,8 @@ function renderDreg(){
   if(dmn)dmn.addEventListener('click',()=>{dregCntQty=Math.max(0,(parseInt(dregCntQty)||0)-1);renderDreg();});
   if(dpl)dpl.addEventListener('click',()=>{dregCntQty=(parseInt(dregCntQty)||0)+1;renderDreg();});
   if(dct)dct.addEventListener('click',()=>{
-    dct.innerHTML=`<input id="dreg-cv-inp" class="qty-input-inline" type="number" inputmode="numeric" min="0" step="1" value="${dregCntQty||0}"/><div class="cu">${esc((dregSpec&&(dregSpec.unidContagem||dregSpec.embalagem))||'')}</div>`;
+    const rot=dregTipo==='erro'?((parseInt(dregCntQty)||0)===1?'prato':'pratos'):((dregSpec&&(dregSpec.unidContagem||dregSpec.embalagem))||'');
+    dct.innerHTML=`<input id="dreg-cv-inp" class="qty-input-inline" type="number" inputmode="numeric" min="0" step="1" value="${dregCntQty||0}"/><div class="cu">${esc(rot)}</div>`;
     const inp=dct.querySelector('#dreg-cv-inp');inp.focus();inp.select();
     const commit=()=>{dregCntQty=Math.max(0,parseInt(inp.value)||0);renderDreg();};
     inp.addEventListener('blur',commit);
@@ -6089,7 +6098,7 @@ async function salvarDreg(){
   if(dregTipo==='producao'){
     qtd=(dregSpec&&dregSpec.modo==='contador')?((parseFloat(dregCntQty)||0)*(dregSpec.fator||1)):parseQtdDiario(dregDecVal);
   }else{
-    qtd=parseQtdDiario(document.getElementById('dreg-qtd').value);
+    qtd=dregTipo==='erro'?(parseInt(dregCntQty)||0):parseQtdDiario(document.getElementById('dreg-qtd').value);
   }
   if(!isFinite(qtd)||qtd<=0){st.textContent='Informe a quantidade.';return;}
   if((dregTipo==='erro'||dregTipo==='desperdicio')&&!dregMotivo){st.textContent='Escolha o motivo.';return;}
