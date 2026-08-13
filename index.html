@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v144</title>
+<title>Gesto Operação v145</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1826,7 +1826,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v144';
+const APP_VERSION = 'v145';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6014,15 +6014,17 @@ function renderDregErro(){
 // v143: nada de abrir para preencher. Toda linha já vem com motivo e destino à
 // mão, e tocar num deles JÁ MARCA o prato com 1 — a quantidade só é digitada
 // quando for mais de um, que é a exceção. Registrar um prato = 2 toques.
+// "Outro" sozinho não explica nada: só conta como motivo depois de escrito.
+function erroMotivoOk(v){return !!v.motivo&&(v.motivo!=='Outro'||String(v.motivoOutro||'').trim().length>1);}
 function dregErroCardHTML(x){
   const v=dregErro[x.cod]||{};
   const q=v.qtd||0;
-  const pronto=q>0&&v.motivo&&v.destino;
+  const pronto=q>0&&erroMotivoOk(v)&&v.destino;
   // v144: cada grupo tem rótulo próprio e uma linha separando — sem isso os dois
   // conjuntos de chips viram uma coisa só e ninguém sabe que precisa escolher nos
   // DOIS. O rótulo fica âmbar quando o prato já está marcado e falta aquele grupo.
   const grupo=(titulo,lista,campo,sel)=>{
-    const pend=q>0&&!sel;
+    const pend=q>0&&(campo==='motivo'?!erroMotivoOk(v):!sel);
     return `<div style="margin-top:2px">
       <div style="font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${pend?'#92400E':'var(--tx2)'};margin-bottom:3px">${esc(titulo)}${pend?' · escolha':''}</div>
       <div class="chips" style="flex-wrap:wrap;gap:5px">`+
@@ -6039,6 +6041,7 @@ function dregErroCardHTML(x){
         :`<button class="cbt erro-mais" data-cod="${esc(x.cod)}" data-nome="${esc(x.nome)}" style="width:34px;height:34px">+</button>`}
     </div>
     ${grupo('Por que deu errado',MOTIVOS_ERRO,'motivo',v.motivo)}
+    ${v.motivo==='Outro'?`<input class="fi erro-outro" data-cod="${esc(x.cod)}" type="text" placeholder="Qual foi o motivo?" value="${esc(v.motivoOutro||'')}" style="margin-top:5px"/>`:''}
     <div style="border-top:.5px solid var(--bd3);margin:2px 0 0"></div>
     ${grupo('Para onde foi',DESTINOS_ERRO,'destino',v.destino)}
   </div>`;
@@ -6063,6 +6066,10 @@ function wireDregErro(el){
     v.nome=b.dataset.nome;if(!v.qtd&&v.destino)v.qtd=1;
     renderDregErroCard(b.dataset.cod);
   }));
+  el.querySelectorAll('.erro-outro').forEach(inp=>{
+    inp.addEventListener('input',()=>{dregErroVal(inp.dataset.cod).motivoOutro=inp.value;atualizarDregErroBar();});
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  });
   el.querySelectorAll('.erro-ctr').forEach(b=>b.addEventListener('click',()=>{
     const cod=b.dataset.cod,v=dregErroVal(cod);
     b.innerHTML=`<input class="qty-input-inline" type="number" inputmode="numeric" min="0" step="1" value="${v.qtd||0}"/>`;
@@ -6084,7 +6091,7 @@ function renderDregErroCard(cod,recriar){
 }
 function atualizarDregErroBar(){
   const marc=dregErroPreenchidos();
-  const faltam=marc.filter(c=>!dregErro[c].motivo||!dregErro[c].destino).length;
+  const faltam=marc.filter(c=>!erroMotivoOk(dregErro[c])||!dregErro[c].destino).length;
   const st=document.getElementById('dreg-erro-status');
   if(!st)return;
   if(!marc.length){st.style.color='var(--tx2)';st.textContent='Toque no motivo do prato que saiu errado.';return;}
@@ -6096,7 +6103,7 @@ async function salvarDregErro(){
   const cods=dregErroPreenchidos();
   const st=document.getElementById('dreg-erro-status');
   if(!cods.length){st.style.color='#ff3b30';st.textContent='Toque no motivo do prato que saiu errado.';return;}
-  const faltando=cods.filter(c=>!dregErro[c].motivo||!dregErro[c].destino);
+  const faltando=cods.filter(c=>!erroMotivoOk(dregErro[c])||!dregErro[c].destino);
   if(faltando.length){st.style.color='#ff3b30';st.textContent='Falta motivo ou destino em '+faltando.length+' prato'+(faltando.length>1?'s':'')+'.';return;}
   const btn=document.getElementById('dreg-erro-salvar');btn.disabled=true;btn.textContent='Salvando…';
   try{
@@ -6104,7 +6111,8 @@ async function salvarDregErro(){
       const v=dregErro[cod];
       const item=CARDAPIO.find(x=>String(x.cod)===String(cod))||{};
       await salvarRegistroDiario({tipo:'erro',item:{cod:String(cod),nome:v.nome||item.nome||'',unidade:'UN',grupo:item.cat||''},
-        qtd:v.qtd,motivo:v.motivo,destino:v.destino});
+        qtd:v.qtd,motivo:v.motivo==='Outro'?String(v.motivoOutro||'').trim():v.motivo,
+        motivoTipo:v.motivo,destino:v.destino});
     }
     dregErro={};
     showToast('Erro registrado.',{type:'ok'});
