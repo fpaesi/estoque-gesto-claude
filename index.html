@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v138</title>
+<title>Gesto Operação v139</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1596,7 +1596,12 @@ let RENDIMENTOS={};
 function rendimentoDe(cod){const r=RENDIMENTOS[String(cod)];const y=r&&Number(r.yield);return (isFinite(y)&&y>0)?y:null;}
 function aplicarCatalogo(arr,meta,updatedAt,rend){
   if(Array.isArray(arr)&&arr.length){
-    CATALOGO=arr.map(x=>({cod:String(x.cod),nome:x.nome||'',grupo:x.grupo||'',unidade:unidSigla(x.unidade)}));
+    // v139: estoque/custo/controla vêm da sincronização e alimentam o confronto
+    // entre o saldo informado pela equipe e o que o Saipos diz ter.
+    CATALOGO=arr.map(x=>({cod:String(x.cod),nome:x.nome||'',grupo:x.grupo||'',unidade:unidSigla(x.unidade),
+      estoque:(x.estoque!=null&&isFinite(x.estoque))?Number(x.estoque):null,
+      custoMedio:(x.custoMedio!=null&&isFinite(x.custoMedio))?Number(x.custoMedio):null,
+      controlaEstoque:x.controlaEstoque!==false}));
   }
   rebuildCatIndex();
   catalogoMeta=meta||{};
@@ -1808,7 +1813,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v138';
+const APP_VERSION = 'v139';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6596,6 +6601,8 @@ function renderGestaoDiario(){
   // (grupos "Processados …"), não mais mantida à mão.
   return `<div class="sec">Fila de lançamento no Saipos</div>
   <div id="gd-fila"><div class="empty" style="padding:16px"><span>Carregando fila…</span></div></div>
+  <div class="sec">Conferência × Saipos</div>
+  <div id="gd-diverg"></div>
   <div class="sec">Cardápio (pratos p/ erro de prato)</div>
   <button class="bbtn" id="gd-cardapio-btn">
     <i class="ti ti-tools-kitchen-2" style="font-size:22px;color:var(--acc);flex-shrink:0"></i>
@@ -6604,12 +6611,73 @@ function renderGestaoDiario(){
 }
 function wireGestaoDiario(c){
   ensureDiarioCfg().then(()=>{
+    renderDivergencias(c.querySelector('#gd-diverg'));
     const info=c.querySelector('#gd-cardapio-info');
     if(info)info.textContent=CARDAPIO.length?CARDAPIO.length+' pratos · atualizado em '+new Date(cardapioUpdatedAt).toLocaleDateString('pt-BR'):'Nunca carregado';
     carregarFila().then(()=>{const el=c.querySelector('#gd-fila');if(el)renderFilaLista(el);});
   });
   const cb=c.querySelector('#gd-cardapio-btn');
   if(cb)cb.addEventListener('click',abrirAtualizarCardapio);
+}
+// ══ v139: CONFERÊNCIA × SAIPOS (só gestor e administrador) ═══════════════════
+// Duas contagens do mesmo congelador que deveriam bater:
+//   • saldo informado  — o que a equipe declara: produção somada, consumo subtraído
+//   • estoque Saipos   — o que o sistema de gestão acha que existe
+//
+// Hoje elas NÃO batem por um motivo conhecido e medível: a produção nunca foi
+// lançada no Saipos, então lá o beneficiado só sai (venda pela ficha) e nunca
+// entra — é por isso que aparecem saldos negativos. Este quadro serve primeiro
+// para medir esse vazamento e, depois que o lançamento automático estiver
+// ligado, para virar controle de verdade.
+//
+// Desperdício NÃO entra no saldo (decisão do Fabio): ele é registrado à parte e
+// aparece aqui como EXPLICAÇÃO — quando o ajuste de estoque for feito, dá para
+// saber quanto da diferença foi descarte identificado.
+async function renderDivergencias(el){
+  if(!el)return;
+  const cods=[];
+  Object.keys((diarioCfg&&diarioCfg.conferencia)||{}).forEach(st=>
+    confItensDoSetor(st).forEach(i=>{if(!cods.includes(i.cod))cods.push(i.cod);}));
+  if(!cods.length){el.innerHTML='<div class="empty" style="padding:16px"><span>Nenhum item na conferência ainda.</span></div>';return;}
+  // desperdícios dos últimos 30 dias, por item — a explicação da diferença
+  const desde=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const desp={};
+  try{
+    const snap=await db.collection(DIARIO_COL).where('dataDia','>=',desde).get();
+    snap.forEach(d=>{const x=d.data();
+      if(x.status==='cancelado')return;
+      if(x.tipo!=='desperdicio'||!x.item)return;
+      desp[String(x.item.cod)]=(desp[String(x.item.cod)]||0)+(Number(x.qtd)||0);});
+  }catch(e){console.warn('divergências:',e);}
+  const linhas=cods.map(c=>{
+    const p=getProd(c)||{};
+    const saldo=saldoDe(c);
+    const est=(p.estoque!=null)?p.estoque:null;
+    const dif=(est==null)?null:saldo-est;
+    return {cod:c,nome:p.nome||c,un:p.unidade||'',saldo,est,dif,desp:desp[String(c)]||0,controla:p.controlaEstoque!==false};
+  }).sort((a,b)=>Math.abs(b.dif||0)-Math.abs(a.dif||0));
+  const semDado=linhas.every(l=>l.est==null);
+  let h='';
+  if(semDado){
+    h+=`<div class="wb"><i class="ti ti-info-circle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12.5px;color:#92400E">O estoque do Saipos ainda não chegou. Ele passa a vir na sincronização diária da base — depois do próximo deploy das funções.</div></div>`;
+  }
+  h+=`<div class="tipb">Saldo informado é o que a equipe declara. Estoque Saipos é o que o sistema acha que existe. Enquanto a produção não for lançada automaticamente, a diferença mede principalmente esse vazamento.</div>`;
+  h+=linhas.map(l=>{
+    const cor=l.dif==null?'var(--tx2)':Math.abs(l.dif)<0.001?'#3B6D11':(l.dif>0?'#854F0B':'#B91C1C');
+    return `<div class="pcard" style="gap:6px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:500">${esc(l.nome)}</div>
+          <div style="font-size:11px;color:var(--tx2);margin-top:1px">${esc(unidExtenso(l.un,2))}${l.controla?'':' · <b>não controla estoque no Saipos</b>'}</div></div>
+        <div style="text-align:right;white-space:nowrap">
+          <div style="font-size:16px;font-weight:600;color:${cor}">${l.dif==null?'—':(l.dif>0?'+':'')+fmtNum(l.dif)}</div>
+          <div style="font-size:10px;color:var(--tx2)">diferença</div></div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:11.5px;color:var(--tx2);flex-wrap:wrap">
+        <span>informado <b style="color:var(--tx1)">${fmtNum(l.saldo)}</b></span>
+        <span>Saipos <b style="color:var(--tx1)">${l.est==null?'—':fmtNum(l.est)}</b></span>
+        ${l.desp?`<span>desperdício 30d <b style="color:#A32D2D">${fmtNum(l.desp)}</b></span>`:''}
+      </div></div>`;}).join('');
+  el.innerHTML=h;
 }
 async function carregarFila(){
   try{
