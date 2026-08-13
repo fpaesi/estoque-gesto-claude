@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v145</title>
+<title>Gesto Operação v146</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1826,7 +1826,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v145';
+const APP_VERSION = 'v146';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4864,7 +4864,9 @@ function codsDoSetor(){
 // ── Cardápio (base de pratos p/ erro de prato) ────────────────────────────────
 function carregarCardapioLocal(){
   try{const d=JSON.parse(localStorage.getItem(SK_CARD)||'null');
-    if(d&&Array.isArray(d.cardapio)){CARDAPIO=d.cardapio;cardapioUpdatedAt=d.updatedAt||0;}}catch(e){}
+    // itens do cardápio trazem {cod,nome,cat,imp} — imp = impressora (print_type)
+    if(d&&Array.isArray(d.cardapio)){CARDAPIO=d.cardapio;cardapioUpdatedAt=d.updatedAt||0;}
+  }catch(e){}
 }
 function salvarCardapioLocal(){try{localStorage.setItem(SK_CARD,JSON.stringify({cardapio:CARDAPIO,updatedAt:cardapioUpdatedAt}));}catch(e){}}
 async function sincronizarCardapio(){
@@ -4898,7 +4900,7 @@ function analisarCardapioSaipos(){
 async function ensureDiarioCfg(){
   if(diarioCfgLoaded||!firebaseReady||!currentUser)return;
   try{const doc=await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).get();
-    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null,diasUteis:Array.isArray(d.diasUteis)?d.diasUteis.slice():null,conferencia:d.conferencia||null}; // v136: lista curada por setor
+    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null,diasUteis:Array.isArray(d.diasUteis)?d.diasUteis.slice():null,conferencia:d.conferencia||null,impressoras:d.impressoras||null}; // v136/v146
       if(Array.isArray(d.setoresLista)&&d.setoresLista.length)SETORES=d.setoresLista.slice();
       if(Array.isArray(d.rolesLista)&&d.rolesLista.length)ROLES=d.rolesLista.slice();
       if(Array.isArray(d.rotCategorias)&&d.rotCategorias.length)ROT_CATS=d.rotCategorias.slice();
@@ -5925,7 +5927,7 @@ function renderDiarioBody(c){
 
 // ── Formulário de registro (produção / erro / desperdício) ────────────────────
 function abrirDreg(tipo){
-  dregTipo=tipo;dregItem=null;dregMotivo=null;dregDestino=null;dregBusca='';dregFotoBlob=null;dregErro={};
+  dregTipo=tipo;dregItem=null;dregMotivo=null;dregDestino=null;dregBusca='';dregFotoBlob=null;dregErro={};dregImpEdit=false;
   dregSpec=null;dregCntQty=0;dregDecVal='';
   const t=DIARIO_TIPOS[tipo];
   document.getElementById('dreg-title').textContent=t.label;
@@ -5972,18 +5974,71 @@ function dregLista(){
 // o prato ali mesmo, com contador, motivo e destino embutidos, e dá para marcar
 // vários pratos antes de salvar de uma vez.
 let dregErro={}; // { cod: {nome, qtd, motivo, destino} }
+// ── v146: filtro por impressora ────────────────────────────────────────────
+// O Saipos não tem "setor" no prato, mas tem a IMPRESSORA para onde o pedido
+// vai (campo print_type) — que na prática é quem produz. O nome da impressora
+// não vem por API, então o app mostra "Impressora N" com exemplos e o gestor diz
+// de que setor é. Prato de impressora sem setor definido aparece para todos: é
+// melhor registrar um erro no lugar errado do que não conseguir registrar.
+let dregImpEdit=false;
+function impressorasDoCardapio(){
+  const m={};
+  CARDAPIO.forEach(x=>{const k=(x.imp==null?'?':String(x.imp));(m[k]=m[k]||{qtd:0,exemplos:[]});m[k].qtd++;if(m[k].exemplos.length<3)m[k].exemplos.push(x.nome);});
+  return Object.keys(m).sort((a,b)=>m[b].qtd-m[a].qtd).map(k=>({id:k,...m[k]}));
+}
+function setorDaImpressora(imp){return ((diarioCfg&&diarioCfg.impressoras)||{})[String(imp==null?'?':imp)]||null;}
+function cardapioDoUsuario(){
+  const cfg=(diarioCfg&&diarioCfg.impressoras)||{};
+  if(isAdminRole()||!currentUserSetor||!Object.keys(cfg).length)return CARDAPIO;
+  return CARDAPIO.filter(x=>{
+    const st=setorDaImpressora(x.imp);
+    return !st||st===currentUserSetor; // sem setor definido = todo mundo vê
+  });
+}
+async function salvarImpressoras(map){
+  if(!isAdminRole())return;
+  diarioCfg.impressoras=map;
+  await salvarDiarioCfg();
+}
+function renderDregImpressoras(){
+  const c=document.getElementById('dreg-cnt'),bb=document.getElementById('dreg-bbar');
+  const cfg={...((diarioCfg&&diarioCfg.impressoras)||{})};
+  const imps=impressorasDoCardapio();
+  let h=`<div class="tipb">O Saipos manda cada pedido para uma impressora, e é isso que diz quem produz o prato. O nome da impressora não vem pela integração — identifique pelos exemplos e diga de que setor é cada uma. Impressora sem setor aparece para todo mundo.</div>`;
+  h+=imps.map(i=>`<div class="pcard" style="gap:6px">
+    <div><div style="font-size:14px;font-weight:500">${i.id==='-1'?'Não imprime':(i.id==='?'?'Sem impressora':'Impressora '+esc(i.id))}</div>
+      <div style="font-size:11.5px;color:var(--tx2)">${i.qtd} prato${i.qtd>1?'s':''} · ${esc(i.exemplos.join(' · '))}</div></div>
+    <div class="chips" style="flex-wrap:wrap;gap:5px">
+      <span class="chip${!cfg[i.id]?' on':''}" data-imp="${esc(i.id)}" data-setor="">Todos</span>
+      ${SETORES.map(st=>`<span class="chip${cfg[i.id]===st?' on':''}" data-imp="${esc(i.id)}" data-setor="${esc(st)}">${esc(st)}</span>`).join('')}
+    </div></div>`).join('');
+  c.innerHTML=h;
+  c.querySelectorAll('[data-imp]').forEach(b=>b.addEventListener('click',async()=>{
+    const id=b.dataset.imp,st=b.dataset.setor;
+    if(st)cfg[id]=st;else delete cfg[id];
+    await salvarImpressoras(cfg);
+    renderDregImpressoras();
+  }));
+  bb.innerHTML=`<button class="bp" id="dreg-imp-fim"><i class="ti ti-check"></i> Concluir</button>`;
+  document.getElementById('dreg-imp-fim').addEventListener('click',()=>{dregImpEdit=false;renderDreg();});
+}
 function dregErroVal(cod){if(!dregErro[cod])dregErro[cod]={qtd:0,motivo:null,destino:null};return dregErro[cod];}
 function dregErroPreenchidos(){return Object.keys(dregErro).filter(c=>(dregErro[c].qtd||0)>0);}
 function renderDregErro(){
+  if(dregImpEdit)return renderDregImpressoras();
   const c=document.getElementById('dreg-cnt');
   const bb=document.getElementById('dreg-bbar');
-  let lista=CARDAPIO.map(x=>({cod:String(x.cod),nome:x.nome,grupo:x.cat||''}));
+  let lista=cardapioDoUsuario().map(x=>({cod:String(x.cod),nome:x.nome,grupo:x.cat||''}));
   const q=dnorm(dregBusca);
   if(q)lista=lista.filter(x=>dnorm(x.nome).includes(q)||dnorm(x.grupo).includes(q));
   // os já marcados sobem para o topo, para não sumirem quando a busca muda
   const marcados=dregErroPreenchidos();
   lista.sort((a,b)=>(marcados.includes(b.cod)?1:0)-(marcados.includes(a.cod)?1:0));
-  let h=`<div style="position:relative">
+  const visiveis=cardapioDoUsuario().length;
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 0 4px">
+      <div style="font-size:11.5px;color:var(--tx2)">${visiveis} prato${visiveis>1?'s':''}${!isAdminRole()&&currentUserSetor?' · '+esc(currentUserSetor):''}</div>
+      ${isAdminRole()?'<button class="bg_" id="dreg-imp-cfg" style="width:auto;padding:2px 6px;font-size:12px">Filtro por impressora</button>':''}</div>
+    <div style="position:relative">
     <input id="dreg-busca" class="srch" placeholder="Buscar prato…" value="${esc(dregBusca)}" autocomplete="off"/></div>`;
   if(!CARDAPIO.length){
     h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
@@ -5991,6 +6046,8 @@ function renderDregErro(){
   }
   h+='<div id="dreg-erro-lista" style="display:flex;flex-direction:column;gap:6px"></div>';
   c.innerHTML=h;
+  const bcfg=c.querySelector('#dreg-imp-cfg');
+  if(bcfg)bcfg.addEventListener('click',()=>{dregImpEdit=true;renderDreg();});
   const bi=c.querySelector('#dreg-busca');
   bi.addEventListener('input',()=>{dregBusca=bi.value;pintarErroLista();});
   pintarErroLista();
@@ -5999,7 +6056,7 @@ function renderDregErro(){
   document.getElementById('dreg-erro-salvar').addEventListener('click',salvarDregErro);
   atualizarDregErroBar();
   function pintarErroLista(){
-    let l=CARDAPIO.map(x=>({cod:String(x.cod),nome:x.nome,grupo:x.cat||''}));
+    let l=cardapioDoUsuario().map(x=>({cod:String(x.cod),nome:x.nome,grupo:x.cat||''}));
     const qq=dnorm(dregBusca);
     if(qq)l=l.filter(x=>dnorm(x.nome).includes(qq)||dnorm(x.grupo).includes(qq));
     const marc=dregErroPreenchidos();
