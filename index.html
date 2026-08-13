@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v141</title>
+<title>Gesto Operação v142</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1826,7 +1826,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v141';
+const APP_VERSION = 'v142';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5925,7 +5925,7 @@ function renderDiarioBody(c){
 
 // ── Formulário de registro (produção / erro / desperdício) ────────────────────
 function abrirDreg(tipo){
-  dregTipo=tipo;dregItem=null;dregMotivo=null;dregDestino=null;dregBusca='';dregFotoBlob=null;
+  dregTipo=tipo;dregItem=null;dregMotivo=null;dregDestino=null;dregBusca='';dregFotoBlob=null;dregErro={};
   dregSpec=null;dregCntQty=0;dregDecVal='';
   const t=DIARIO_TIPOS[tipo];
   document.getElementById('dreg-title').textContent=t.label;
@@ -5965,7 +5965,140 @@ function dregLista(){
   if(allowed)lista=lista.filter(x=>allowed.has(x.cod));
   return lista;
 }
+// ══ v142: ERRO DE PRATO SEM TROCA DE TELA ═══════════════════════════════════
+// Antes: buscar → escolher o prato → outra tela → motivo → destino → salvar →
+// voltar. Cinco toques e duas telas para dizer que uma pizza saiu errada, no
+// meio do serviço. Agora o erro é marcado na própria lista: um toque no "+" abre
+// o prato ali mesmo, com contador, motivo e destino embutidos, e dá para marcar
+// vários pratos antes de salvar de uma vez.
+let dregErro={}; // { cod: {nome, qtd, motivo, destino} }
+function dregErroVal(cod){if(!dregErro[cod])dregErro[cod]={qtd:0,motivo:null,destino:null};return dregErro[cod];}
+function dregErroPreenchidos(){return Object.keys(dregErro).filter(c=>(dregErro[c].qtd||0)>0);}
+function renderDregErro(){
+  const c=document.getElementById('dreg-cnt');
+  const bb=document.getElementById('dreg-bbar');
+  let lista=CARDAPIO.map(x=>({cod:String(x.cod),nome:x.nome,grupo:x.cat||''}));
+  const q=dnorm(dregBusca);
+  if(q)lista=lista.filter(x=>dnorm(x.nome).includes(q)||dnorm(x.grupo).includes(q));
+  // os já marcados sobem para o topo, para não sumirem quando a busca muda
+  const marcados=dregErroPreenchidos();
+  lista.sort((a,b)=>(marcados.includes(b.cod)?1:0)-(marcados.includes(a.cod)?1:0));
+  let h=`<div style="position:relative">
+    <input id="dreg-busca" class="srch" placeholder="Buscar prato…" value="${esc(dregBusca)}" autocomplete="off"/></div>`;
+  if(!CARDAPIO.length){
+    h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
+      <div style="font-size:13px;color:#92400E">O cardápio ainda não foi carregado. ${isAdminRole()?'Vá em Gestão › Diário › Atualizar cardápio.':'Peça a um administrador para atualizar o cardápio.'}</div></div>`;
+  }
+  h+='<div id="dreg-erro-lista" style="display:flex;flex-direction:column;gap:6px"></div>';
+  c.innerHTML=h;
+  const bi=c.querySelector('#dreg-busca');
+  bi.addEventListener('input',()=>{dregBusca=bi.value;pintarErroLista();});
+  pintarErroLista();
+  bb.innerHTML=`<button class="bp" id="dreg-erro-salvar" style="background:${DIARIO_TIPOS.erro.cor}"><i class="ti ti-check"></i> Registrar erro</button>
+    <div id="dreg-erro-status" style="font-size:12px;color:var(--tx2);text-align:center;min-height:14px"></div>`;
+  document.getElementById('dreg-erro-salvar').addEventListener('click',salvarDregErro);
+  atualizarDregErroBar();
+  function pintarErroLista(){
+    let l=CARDAPIO.map(x=>({cod:String(x.cod),nome:x.nome,grupo:x.cat||''}));
+    const qq=dnorm(dregBusca);
+    if(qq)l=l.filter(x=>dnorm(x.nome).includes(qq)||dnorm(x.grupo).includes(qq));
+    const marc=dregErroPreenchidos();
+    l.sort((a,b)=>(marc.includes(b.cod)?1:0)-(marc.includes(a.cod)?1:0));
+    const el=document.getElementById('dreg-erro-lista');
+    el.innerHTML=l.slice(0,60).map(x=>dregErroCardHTML(x)).join('')
+      ||'<div class="empty" style="padding:18px"><span>Nenhum prato com esse nome.</span></div>';
+    wireDregErro(el);
+    atualizarDregErroBar();
+  }
+}
+function dregErroCardHTML(x){
+  const v=dregErro[x.cod];
+  const q=v?v.qtd||0:0;
+  if(!q){
+    return `<div class="row" data-erro-add="${esc(x.cod)}" data-nome="${esc(x.nome)}" style="padding:10px 12px">
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11.5px;color:var(--tx2)">${esc(x.grupo)}</div></div>
+      <i class="ti ti-plus" style="color:${DIARIO_TIPOS.erro.cor};font-size:18px"></i></div>`;
+  }
+  const chips=(lista,campo,sel)=>`<div class="chips" style="flex-wrap:wrap;gap:5px">`+
+    lista.map(m=>`<span class="chip${sel===m?' on':''}" data-erro-${campo}="${esc(m)}" data-cod="${esc(x.cod)}">${esc(m)}</span>`).join('')+`</div>`;
+  return `<div class="pcard" id="erro-pc-${esc(x.cod)}" style="border-color:${DIARIO_TIPOS.erro.cor};gap:8px">
+    <div style="display:flex;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11.5px;color:var(--tx2)">${esc(x.grupo)}</div></div>
+      <div class="cnt-row" style="width:auto;gap:6px">
+        <button class="cbt erro-menos" data-cod="${esc(x.cod)}" style="width:38px;height:38px">−</button>
+        <div class="cctr erro-ctr" data-cod="${esc(x.cod)}" style="min-width:52px;padding:2px 6px" title="Toque para digitar"><div class="cv" style="font-size:20px">${q}</div><div class="cu">${q===1?'prato':'pratos'}</div></div>
+        <button class="cbt erro-mais" data-cod="${esc(x.cod)}" style="width:38px;height:38px">+</button></div>
+    </div>
+    <div><div class="fl">Motivo</div>${chips(MOTIVOS_ERRO,'motivo',v.motivo)}</div>
+    <div><div class="fl">Destino</div>${chips(DESTINOS_ERRO,'destino',v.destino)}</div>`
+    +(v.motivo&&v.destino?'':'<div style="font-size:11px;color:#92400E">escolha motivo e destino</div>')+`</div>`;
+}
+function wireDregErro(el){
+  el.querySelectorAll('[data-erro-add]').forEach(b=>b.addEventListener('click',()=>{
+    const cod=b.dataset.erroAdd;dregErroVal(cod).qtd=1;dregErroVal(cod).nome=b.dataset.nome;renderDregErroCard(cod,true);
+  }));
+  el.querySelectorAll('.erro-menos').forEach(b=>b.addEventListener('click',()=>{
+    const v=dregErroVal(b.dataset.cod);v.qtd=Math.max(0,(v.qtd||0)-1);renderDregErroCard(b.dataset.cod,v.qtd===0);
+  }));
+  el.querySelectorAll('.erro-mais').forEach(b=>b.addEventListener('click',()=>{
+    const v=dregErroVal(b.dataset.cod);v.qtd=(v.qtd||0)+1;renderDregErroCard(b.dataset.cod);
+  }));
+  el.querySelectorAll('[data-erro-motivo]').forEach(b=>b.addEventListener('click',()=>{
+    dregErroVal(b.dataset.cod).motivo=b.dataset.erroMotivo;renderDregErroCard(b.dataset.cod);
+  }));
+  el.querySelectorAll('[data-erro-destino]').forEach(b=>b.addEventListener('click',()=>{
+    dregErroVal(b.dataset.cod).destino=b.dataset.erroDestino;renderDregErroCard(b.dataset.cod);
+  }));
+  el.querySelectorAll('.erro-ctr').forEach(b=>b.addEventListener('click',()=>{
+    const cod=b.dataset.cod,v=dregErroVal(cod);
+    b.innerHTML=`<input class="qty-input-inline" type="number" inputmode="numeric" min="0" step="1" value="${v.qtd||0}"/>`;
+    const inp=b.querySelector('input');inp.focus();inp.select();
+    const commit=()=>{v.qtd=Math.max(0,parseInt(inp.value)||0);renderDregErroCard(cod,v.qtd===0);};
+    inp.addEventListener('blur',commit);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  }));
+}
+function renderDregErroCard(cod,recriar){
+  const item=CARDAPIO.find(x=>String(x.cod)===String(cod));
+  const el=document.getElementById('erro-pc-'+cod)||document.querySelector(`[data-erro-add="${cod}"]`);
+  if(!item||!el)return;
+  const novo=document.createElement('div');
+  novo.innerHTML=dregErroCardHTML({cod:String(item.cod),nome:item.nome,grupo:item.cat||''});
+  el.replaceWith(novo.firstElementChild);
+  wireDregErro(document.getElementById('dreg-erro-lista'));
+  atualizarDregErroBar();
+}
+function atualizarDregErroBar(){
+  const n=dregErroPreenchidos().length;
+  const st=document.getElementById('dreg-erro-status');
+  if(st){st.style.color='var(--tx2)';st.textContent=n?n+' prato'+(n>1?'s':'')+' marcado'+(n>1?'s':''):'Toque no + do prato que saiu errado.';}
+}
+async function salvarDregErro(){
+  const cods=dregErroPreenchidos();
+  const st=document.getElementById('dreg-erro-status');
+  if(!cods.length){st.style.color='#ff3b30';st.textContent='Toque no + do prato que saiu errado.';return;}
+  const faltando=cods.filter(c=>!dregErro[c].motivo||!dregErro[c].destino);
+  if(faltando.length){st.style.color='#ff3b30';st.textContent='Falta motivo ou destino em '+faltando.length+' prato'+(faltando.length>1?'s':'')+'.';return;}
+  const btn=document.getElementById('dreg-erro-salvar');btn.disabled=true;btn.textContent='Salvando…';
+  try{
+    for(const cod of cods){
+      const v=dregErro[cod];
+      const item=CARDAPIO.find(x=>String(x.cod)===String(cod))||{};
+      await salvarRegistroDiario({tipo:'erro',item:{cod:String(cod),nome:v.nome||item.nome||'',unidade:'UN',grupo:item.cat||''},
+        qtd:v.qtd,motivo:v.motivo,destino:v.destino});
+    }
+    dregErro={};
+    showToast('Erro registrado.',{type:'ok'});
+    fecharDreg();
+  }catch(e){
+    st.style.color='#ff3b30';st.textContent='Erro: '+e.message;
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Registrar erro';
+  }
+}
 function renderDreg(){
+  if(dregTipo==='erro')return renderDregErro();
   const c=document.getElementById('dreg-cnt');
   const bb=document.getElementById('dreg-bbar');
   const t=DIARIO_TIPOS[dregTipo];
