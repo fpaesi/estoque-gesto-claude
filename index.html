@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v147</title>
+<title>Gesto Operação v148</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1826,7 +1826,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v147';
+const APP_VERSION = 'v148';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5993,9 +5993,14 @@ function setorDaImpressora(imp){return ((diarioCfg&&diarioCfg.impressoras)||{})[
 function cardapioDoUsuario(){
   const cfg=(diarioCfg&&diarioCfg.impressoras)||{};
   if(isAdminRole()||!currentUserSetor||!Object.keys(cfg).length)return CARDAPIO;
+  // v148: setor sem NENHUMA impressora atribuída vê tudo. O Salão é o caso real:
+  // não produz nada, mas é quem recebe o prato devolvido pelo cliente — filtrar
+  // por impressora o deixaria com a tela vazia e sem como registrar.
+  const temImpressora=Object.values(cfg).includes(currentUserSetor);
+  if(!temImpressora)return CARDAPIO;
   return CARDAPIO.filter(x=>{
     const st=setorDaImpressora(x.imp);
-    return !st||st===currentUserSetor; // sem setor definido = todo mundo vê
+    return !st||st===currentUserSetor; // impressora sem setor = todo mundo vê
   });
 }
 async function salvarImpressoras(map){
