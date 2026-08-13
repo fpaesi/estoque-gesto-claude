@@ -133,6 +133,16 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ── gestao (dados de gestão, escritos só por Cloud Function) ───────────
+    // v140: estoque e custo médio do Saipos saíram do catálogo. O catálogo é a
+    // base da contagem e precisa ser legível por qualquer usuário ativo; estoque
+    // e custo são informação de gestão. Aqui a leitura exige gestor e a escrita é
+    // negada a todos — quem grava é o Admin SDK das funções, que ignora regras.
+    match /gestao/{doc} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ── Reservas (módulo Reservas GESTO, 09/08/2026) ───────────────────────
     // Escrita SEMPRE negada aqui: só as Cloud Functions do codebase `reservas`
     // escrevem, via Admin SDK, que ignora estas regras. O site público não usa
