@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v148</title>
+<title>Gesto Operação v149</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -852,6 +852,7 @@
     <div>
       <div class="fl">Nível de acesso</div>
       <div class="mto" id="nu-roles" style="flex-wrap:wrap"></div>
+      <div id="nu-role-hint" style="font-size:11px;color:var(--tx2);margin-top:4px"></div>
     </div>
     <div id="nu-setor-wrap">
       <div class="fl">Setor</div>
@@ -862,11 +863,6 @@
       <div class="fl">Setores do gestor (rotinas próprias)</div>
       <div id="nu-setorg" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       <div style="font-size:11px;color:var(--tx2);margin-top:4px">As rotinas desses setores aparecem nas atividades do dia do gestor. Nenhum marcado = vê as rotinas de todos. O painel da equipe mostra sempre todos os setores.</div>
-    </div>
-    <div id="nu-tabs-wrap">
-      <div class="fl">Abas liberadas para este contador</div>
-      <div id="nu-tabs" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-      <div style="font-size:11px;color:var(--tx2);margin-top:4px">Administradores sempre veem todas as abas.</div>
     </div>
     <div class="tipb">
       <strong>Administrador:</strong> acesso total, usuários, cadastros, fechamento e exportação<br>
@@ -1509,9 +1505,7 @@ const ACCESS_TABS=[
 ];
 let currentUserSetor=null; // v85: setor do colaborador — null = todos
 let currentUserSetoresG=null; // v101: setores do GESTOR (array) — filtram só as rotinas próprias dele no Início; null/[] = todas
-let currentUserTabs=null; // abas liberadas para o usuário logado (array de ids) ou null = todas
 let nuRole='contador_conferente'; // role selecionado no modal novo usuário
-let nuTabs=ACCESS_TABS.map(t=>t.id); // abas marcadas no modal novo usuário
 let secondaryAuthApp=null; // instância secundária do Firebase para criar usuários
 let locais=[...DEFAULT_LOCAIS];
 let sublocais={},subsubs={},vinculos={},ajustes={},specs={},qtdsPadrao={};
@@ -1826,7 +1820,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v148';
+const APP_VERSION = 'v149';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2775,7 +2769,7 @@ function signIn(){
 }
 function signOut(){
   if(!auth)return;
-  auth.signOut().then(()=>{currentUserRole=null;currentUserNome=null;currentUserTabs=null;show('s-login');}).catch(()=>{});
+  auth.signOut().then(()=>{currentUserRole=null;currentUserNome=null;show('s-login');}).catch(()=>{});
 }
 
 // ── v80 · Log de acessos ──────────────────────────────────────────────────────
@@ -2913,7 +2907,6 @@ if(firebaseReady){
           // gestor da casa sem acesso de gestão por duas semanas sem ninguém notar.
           currentUserRole=perf.role;
           currentUserNome=perf.nome||user.email;
-          currentUserTabs=normalizeTabs(perf.tabs); // v80
           currentUserSetor=perf.setor||null; // v85
           currentUserSetoresG=Array.isArray(perf.setores)&&perf.setores.length?perf.setores.slice():null; // v101
           mustChange=!!perf.mustChangePassword; // v80
@@ -2927,13 +2920,12 @@ if(firebaseReady){
           console.warn('Usuário autenticado sem perfil em `perfis` — acesso mínimo aplicado.');
           currentUserRole='contador_conferente';
           currentUserNome=user.displayName||user.email;
-          currentUserTabs=null;currentUserSetor=null;currentUserSetoresG=null;
+          currentUserSetor=null;currentUserSetoresG=null;
         }
       }catch(e){
         console.warn('Erro ao carregar perfil:',e);
         currentUserRole='contador_conferente';
         currentUserNome=user.email;
-        currentUserTabs=null;
       }
       currentUser=user;
       setLoginLoading(false);
@@ -2963,7 +2955,7 @@ if(firebaseReady){
       // v80: se o admin definiu uma senha temporária, obriga a troca antes de seguir
       if(mustChange)abrirTrocaSenha(true);
     }else{
-      currentUser=null;currentUserRole=null;currentUserNome=null;currentUserTabs=null;currentUserSetor=null;currentUserSetoresG=null;
+      currentUser=null;currentUserRole=null;currentUserNome=null;currentUserSetor=null;currentUserSetoresG=null;
       setSyncState('local');
       show('s-login');
     }
@@ -3255,9 +3247,12 @@ function slStatus(lid,slId){
 function countSemSpec(lid){return getProdsLocal(lid).filter(p=>!hasSpec(lid,p.cod)).length;}
 // v95: tipos de perfil dinâmicos — editáveis em Gestão › Usuários (cfg_diario.rolesLista)
 // Cada tipo: {id, nome, gestor:bool, base:bool}. "gestor" = acesso total (Gestão, fechamento, cadastros).
+// v149: `tabs` virou propriedade do TIPO de perfil (antes era campo por usuário em
+// perfis/{uid}.tabs). Escolher o nível de acesso já define as abas. Gestor ignora
+// (vê tudo); ausente/vazio = todas as abas.
 let ROLES=[
   {id:'admin',nome:'Administrador',gestor:true,base:true},
-  {id:'contador_conferente',nome:'Contador/Conferente',gestor:false,base:true}
+  {id:'contador_conferente',nome:'Contador/Conferente',gestor:false,base:true,tabs:['locais','consolidado','historico']}
 ];
 function normalizeRole(role){
   if(ROLES.some(r=>r.id===role))return role;
@@ -3283,20 +3278,32 @@ function isAdminRole(){return roleGestor(currentUserRole);}
 // Ferramentas avançadas (reiniciar contagem, importar backup).
 function isAdminPleno(){return normalizeRole(currentUserRole)==='admin';}
 function isContadorRole(){return normalizeRole(currentUserRole)==='contador_conferente';}
-// v80 — Controle de acesso por aba ------------------------------------------------
-// Normaliza o campo perfis/{uid}.tabs em uma lista válida. Vazio/ausente = todas as
-// abas (compatível com usuários antigos que não tinham o campo).
+// v80/v149 — Controle de acesso por aba -------------------------------------------
+// v149: até a v148 havia DOIS lugares dizendo a mesma coisa — o nível de acesso
+// (tipo de perfil) e uma lista de abas marcada usuário a usuário. Na prática todo
+// contador nascia com as três marcadas e o gestor ignorava o campo. Agora a lista
+// de abas pertence ao TIPO (ROLES[].tabs, editável em Gestão › Usuários › Tipos de
+// perfil) e o formulário de usuário só pergunta o nível. O campo antigo
+// perfis/{uid}.tabs é ignorado — usuários existentes migram sozinhos.
+// Sanitiza uma lista de abas contra o catálogo. Vazio/ausente = todas.
 function normalizeTabs(tabs){
   const all=ACCESS_TABS.map(t=>t.id);
   if(!Array.isArray(tabs)||!tabs.length)return all.slice();
   const filtered=all.filter(id=>tabs.includes(id));
   return filtered.length?filtered:all.slice();
 }
-// Abas que o usuário logado pode ver. Admin sempre vê todas.
-function userAllowedTabs(){
-  if(isAdminRole())return ACCESS_TABS.map(t=>t.id);
-  return normalizeTabs(currentUserTabs);
+// Abas liberadas para um tipo de perfil. Gestor vê todas.
+function roleTabs(role){
+  const r=roleInfo(role);
+  if(r.gestor)return ACCESS_TABS.map(t=>t.id);
+  return normalizeTabs(r.tabs);
 }
+// Rótulos das abas de um tipo (para os textos de apoio da interface).
+function roleTabsLabel(role){
+  return roleTabs(role).map(id=>(ACCESS_TABS.find(t=>t.id===id)||{}).label||id).join(', ');
+}
+// Abas que o usuário logado pode ver.
+function userAllowedTabs(){return roleTabs(currentUserRole);}
 // O usuário logado pode acessar a aba t? ('gestao' só admin.)
 function canAccessTab(t){
   if(t==='inicio')return true; // v91: Início sempre acessível
@@ -3331,17 +3338,14 @@ function gerarSenha(n){
   let s='';for(let i=0;i<n;i++)s+=chars[Math.floor(Math.random()*chars.length)];
   return s;
 }
-// v80: desenha os checkboxes de abas no modal de novo usuário e ajusta visibilidade por role
+// v149: o modal de novo usuário não pergunta mais as abas — elas vêm do tipo de
+// perfil. Aqui fica só a dica do que o nível escolhido enxerga e a visibilidade dos
+// campos de setor (colaborador x gestor).
 function renderNuTabs(){
-  const wrap=document.getElementById('nu-tabs');
-  if(wrap)wrap.innerHTML=ACCESS_TABS.map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" class="nu-tab-chk" data-tab="${t.id}" ${nuTabs.includes(t.id)?'checked':''}> ${t.label}</label>`).join('');
-  wrap.querySelectorAll('.nu-tab-chk').forEach(ch=>ch.addEventListener('change',()=>{
-    const id=ch.dataset.tab;
-    if(ch.checked){if(!nuTabs.includes(id))nuTabs.push(id);}
-    else nuTabs=nuTabs.filter(x=>x!==id);
-  }));
-  const tabsWrap=document.getElementById('nu-tabs-wrap');
-  if(tabsWrap)tabsWrap.style.display=roleGestor(nuRole)?'none':'';
+  const hint=document.getElementById('nu-role-hint');
+  if(hint)hint.textContent=roleGestor(nuRole)
+    ?'Gestor: vê todas as abas do módulo Estoque.'
+    :'Abas do módulo Estoque liberadas para este nível: '+roleTabsLabel(nuRole)+'. Para mudar, edite o tipo em Gestão › Usuários › Tipos de perfil.';
   const setorWrap=document.getElementById('nu-setor-wrap');
   if(setorWrap)setorWrap.style.display=roleGestor(nuRole)?'none':'';
   // v101: gestor escolhe os próprios setores (multi)
@@ -3392,7 +3396,6 @@ function abrirNovoUsuario(){
   document.getElementById('nu-pwd').value='';
   document.getElementById('nu-status').textContent='';
   nuRole='contador_conferente';
-  nuTabs=ACCESS_TABS.map(t=>t.id);
   nuSetoresG=[];
   renderNuRoles();
   renderNuTabs();
@@ -8047,7 +8050,7 @@ function getSecondaryAuth(){
   return secondaryAuthApp.auth();
 }
 
-async function criarUsuario(nome,login,tempPwd,role,tabs,setor,setoresG){
+async function criarUsuario(nome,login,tempPwd,role,setor,setoresG){
   if(!isAdminPleno())return{success:false,error:'Apenas o administrador pode criar usuários.'}; // v119
   const loginLimpo=cleanLogin(login);
   const email=loginToEmail(loginLimpo);
@@ -8059,7 +8062,6 @@ async function criarUsuario(nome,login,tempPwd,role,tabs,setor,setoresG){
     await secAuth.signOut();
     await db.collection('perfis').doc(uid).set({
       nome,email,login:emailToLogin(email),internalLogin:isInternalEmail(email),role,disabled:false,
-      tabs:roleGestor(role)?[]:(Array.isArray(tabs)?tabs:[]), // v80: abas liberadas
       setor:roleGestor(role)?null:(setor||null), // v85: setor do colaborador
       setores:roleGestor(role)&&Array.isArray(setoresG)&&setoresG.length?setoresG:null, // v101: setores do gestor
       mustChangePassword:true, // v80: força troca da senha temporária no 1º acesso
@@ -8097,11 +8099,8 @@ async function toggleDesativar(uid,disabled){
   try{await db.collection('perfis').doc(uid).update({disabled});return {success:true};}
   catch(e){return {success:false,error:e.message};}
 }
-// v80: atualiza as abas liberadas de um contador
-async function atualizarTabsUsuario(uid,tabs){
-  try{await db.collection('perfis').doc(uid).update({tabs:Array.isArray(tabs)?tabs:[]});return {success:true};}
-  catch(e){return {success:false,error:e.message};}
-}
+// v149: atualizarTabsUsuario() saiu daqui — as abas são do tipo de perfil agora
+// (ROLES[].tabs, gravado em cfg_diario.rolesLista por salvarRoles()).
 
 // ── Renderização da aba Usuários ──────────────────────────────────────────────
 // ── v80 · Aba Acessos (log de logins) ────────────────────────────────────────
@@ -8195,7 +8194,7 @@ async function renderUsuarios(c){
       <div class="tipb" style="margin-bottom:6px">Cada colaborador com setor definido vê apenas os locais marcados abaixo (itens, contagem e diário). Gestores veem tudo.</div>
       <div id="gd-setores"></div>
       <div class="sec" style="margin-top:12px">Tipos de perfil</div>
-      <div class="tipb" style="margin-bottom:6px">Todo tipo é <strong>Gestor</strong> (acesso total: Gestão, fechamento, cadastros) ou <strong>Operacional</strong> (conta, confere e executa rotinas, com abas e setor definidos por usuário). Os dois tipos originais podem ser renomeados, mas não excluídos.</div>
+      <div class="tipb" style="margin-bottom:6px">Todo tipo é <strong>Gestor</strong> (acesso total: Gestão, fechamento, cadastros) ou <strong>Operacional</strong> (conta, confere e executa rotinas). As <strong>abas</strong> de cada tipo operacional são marcadas aqui e valem para todos os usuários dele — o setor continua sendo por usuário. Os dois tipos originais podem ser renomeados, mas não excluídos.</div>
       <div id="rol-lista"></div>
       <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
         <input id="rol-novo" class="ii" placeholder="Novo tipo... (ex: Gerente de turno)" maxlength="30" style="flex:1"/>
@@ -8350,16 +8349,34 @@ function renderRolesUI(c,perfis){
         <button class="ib rol-edit-cancel" style="width:40px;height:40px">✕</button>
       </div>`;
     }
-    return `<div class="row" style="cursor:default">
+    return `<div class="row" style="cursor:default;flex-wrap:wrap">
       <i class="ti ${r.gestor?'ti-shield-check':'ti-user'}" style="font-size:17px;color:${r.gestor?'var(--acc)':'#3B6D11'};flex-shrink:0"></i>
       <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(r.nome)}</div>
-      <div style="font-size:11.5px;color:var(--tx2)">${r.gestor?'Gestor · acesso total':'Operacional'} · ${usos}</div></div>
+      <div style="font-size:11.5px;color:var(--tx2)">${r.gestor?'Gestor · acesso total':'Operacional · '+esc(roleTabsLabel(r.id))} · ${usos}</div></div>
       ${!r.base?`<button class="ib rol-tg" data-id="${esc(r.id)}" title="${r.gestor?'Tornar operacional':'Tornar gestor'}" style="width:38px;height:38px"><i class="ti ${r.gestor?'ti-shield-off':'ti-shield-check'}" style="font-size:15px"></i></button>`:''}
       <button class="ib rol-ren" data-id="${esc(r.id)}" title="Renomear" style="width:38px;height:38px"><i class="ti ti-pencil" style="font-size:15px"></i></button>
       ${!r.base?`<button class="ib danger rol-del" data-id="${esc(r.id)}" title="Excluir" style="width:38px;height:38px"><i class="ti ti-trash" style="font-size:15px"></i></button>`:''}
+      ${r.gestor?'':`<div style="flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:9px;padding-top:9px;border-top:.5px solid var(--bd3)">
+        <span style="font-size:11px;color:var(--tx2);flex-basis:100%">Abas do módulo Estoque liberadas para este tipo:</span>
+        ${ACCESS_TABS.map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" class="rol-tab-chk" data-id="${esc(r.id)}" data-tab="${t.id}" ${roleTabs(r.id).includes(t.id)?'checked':''}> ${t.label}</label>`).join('')}
+      </div>`}
     </div>`;
   }).join('');
 
+  // v149: as abas passaram a ser do tipo de perfil — marcar aqui vale para todos os
+  // usuários daquele tipo (no próximo carregamento do app deles).
+  el.querySelectorAll('.rol-tab-chk').forEach(ch=>ch.addEventListener('change',async()=>{
+    const r=ROLES.find(x=>x.id===ch.dataset.id);
+    if(!r){renderRolesUI(c,perfis);return;}
+    const atual=roleTabs(r.id);
+    const alvo=ch.dataset.tab;
+    const novo=ch.checked?atual.concat(atual.includes(alvo)?[]:[alvo]):atual.filter(x=>x!==alvo);
+    if(!novo.length){ch.checked=true;showToast('O tipo precisa de ao menos uma aba.',{type:'err'});return;}
+    r.tabs=ACCESS_TABS.map(t=>t.id).filter(id=>novo.includes(id));
+    try{await salvarRoles();}catch(e){showToast('Falha ao salvar: '+e.message,{type:'err'});}
+    renderRolesUI(c,perfis);
+    showToast(`Abas de "${r.nome}": ${roleTabsLabel(r.id)}`,{type:'ok'});
+  }));
   el.querySelectorAll('.rol-ren').forEach(b=>b.addEventListener('click',()=>{rolEditando=b.dataset.id;renderRolesUI(c,perfis);
     setTimeout(()=>{const i=document.getElementById('rol-edit-inp');if(i){i.focus();i.select();}},60);}));
   el.querySelectorAll('.rol-edit-cancel').forEach(b=>b.addEventListener('click',()=>{rolEditando=null;renderRolesUI(c,perfis);}));
@@ -8406,7 +8423,7 @@ function renderRolesUI(c,perfis){
     if(!nome)return;
     if(ROLES.some(x=>x.nome.toLowerCase()===nome.toLowerCase())){showToast('Já existe um tipo com esse nome.',{type:'err'});return;}
     const gestor=!!c.querySelector('#rol-gestor-chk')?.checked;
-    ROLES.push({id:novoRoleId(),nome,gestor,base:false});
+    ROLES.push({id:novoRoleId(),nome,gestor,base:false,tabs:gestor?[]:ACCESS_TABS.map(t=>t.id)}); // v149: tipo operacional nasce com todas as abas
     await salvarRoles();
     inp.value='';
     const gc=c.querySelector('#rol-gestor-chk');if(gc)gc.checked=false;
@@ -8431,6 +8448,7 @@ function abrirGerenciarUsuario(perf){
     <div style="margin:0 0 8px">
       <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Tipo de perfil:</div>
       <select id="gu-role" class="fi" style="width:100%">${ROLES.map(r=>`<option value="${esc(r.id)}"${normalizeRole(perf.role)===r.id?' selected':''}>${esc(r.nome)}${r.gestor?' (gestor)':''}</option>`).join('')}</select>
+      <div id="gu-role-hint" style="font-size:11px;color:var(--tx2);margin-top:5px"></div>
     </div>
     ${internal?`<div style="margin-bottom:8px">
       <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Nova senha temporária (opcional, mín. 6 caracteres):</div>
@@ -8439,10 +8457,6 @@ function abrirGerenciarUsuario(perf){
         <button class="bs" id="gu-genpwd" type="button" title="Gerar senha" style="flex-shrink:0;width:44px;padding:0"><i class="ti ti-dice-5"></i></button>
       </div>
     </div>`:'<button class="bs" id="gu-reset" style="margin-bottom:8px;width:100%"><i class="ti ti-mail"></i> Enviar e-mail de redefinição de senha</button>'}
-    <div id="gu-sec-tabs" style="margin:10px 0 8px;padding-top:10px;border-top:.5px solid var(--bd3)">
-      <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Abas liberadas para este contador:</div>
-      <div id="gu-tabs" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-    </div>
     <div id="gu-sec-setor" style="margin:10px 0 8px;padding-top:10px;border-top:.5px solid var(--bd3)">
       <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Setor do colaborador:</div>
       <select id="gu-setor" class="fi" style="width:100%">${setorOpts}</select>
@@ -8459,23 +8473,15 @@ function abrirGerenciarUsuario(perf){
   `;
   document.getElementById('modal-gerenciar-usuario').classList.add('on');
 
-  // v80: estado local das abas deste usuário (subconjunto liberado)
-  let guTabs=normalizeTabs(perf.tabs);
-  const guTabsWrap=document.getElementById('gu-tabs');
-  if(guTabsWrap){
-    guTabsWrap.innerHTML=ACCESS_TABS.map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" class="gu-tab-chk" data-tab="${t.id}" ${guTabs.includes(t.id)?'checked':''}> ${t.label}</label>`).join('');
-    guTabsWrap.querySelectorAll('.gu-tab-chk').forEach(ch=>ch.addEventListener('change',()=>{
-      const id=ch.dataset.tab;
-      if(ch.checked){if(!guTabs.includes(id))guTabs.push(id);}else guTabs=guTabs.filter(x=>x!==id);
-    }));
-  }
-  // v96: seções de abas/setor acompanham o tipo escolhido no select
+  // v96/v149: a seção de setor acompanha o tipo escolhido; as abas não são mais
+  // editáveis por usuário — o texto de apoio só mostra o que o tipo enxerga.
   const guRoleSel=document.getElementById('gu-role');
   const guSyncSections=()=>{
     const g=roleGestor(guRoleSel.value);
-    const t=document.getElementById('gu-sec-tabs');if(t)t.style.display=g?'none':'';
     const s=document.getElementById('gu-sec-setor');if(s)s.style.display=g?'none':'';
     const sg=document.getElementById('gu-sec-setorg');if(sg)sg.style.display=g?'':'none';
+    const h=document.getElementById('gu-role-hint');
+    if(h)h.textContent=g?'Gestor: acesso total, vê todas as abas.':'Abas do módulo Estoque deste tipo: '+roleTabsLabel(guRoleSel.value)+'.';
   };
   guRoleSel.addEventListener('change',guSyncSections);
   guSyncSections();
@@ -8496,7 +8502,7 @@ function abrirGerenciarUsuario(perf){
     const inp=document.getElementById('gu-newpwd');if(inp)inp.value=gerarSenha(8);
   });
 
-  // v96: um único "Salvar alterações" — tipo + abas + setor + senha temporária (se preenchida)
+  // v96/v149: um único "Salvar alterações" — tipo + setor + senha temporária (se preenchida)
   document.getElementById('gu-salvar').addEventListener('click',async()=>{
     const st=document.getElementById('gu-save-status');
     const btn=document.getElementById('gu-salvar');
@@ -8504,15 +8510,14 @@ function abrirGerenciarUsuario(perf){
     const g=roleGestor(roleV);
     const nova=(document.getElementById('gu-newpwd')?.value||'').trim();
     if(nova&&nova.length<6){st.style.color='#ff3b30';st.textContent='A senha precisa ter ao menos 6 caracteres (ou deixe vazio).';return;}
-    if(!g&&!guTabs.length){st.style.color='#ff3b30';st.textContent='Marque ao menos uma aba para o contador.';return;}
     btn.disabled=true;
     st.style.color='var(--tx2)';st.textContent='Salvando...';
     try{
       const upd={role:roleV};
-      if(g){upd.tabs=[];upd.setor=null;upd.setores=guSetoresG.length?guSetoresG.slice():null;}
-      else{upd.tabs=guTabs.slice();upd.setor=document.getElementById('gu-setor')?.value||null;upd.setores=null;}
+      if(g){upd.setor=null;upd.setores=guSetoresG.length?guSetoresG.slice():null;}
+      else{upd.setor=document.getElementById('gu-setor')?.value||null;upd.setores=null;}
       await db.collection('perfis').doc(perf.uid).update(upd);
-      perf.role=roleV;perf.tabs=upd.tabs;perf.setor=upd.setor;perf.setores=upd.setores;
+      perf.role=roleV;perf.setor=upd.setor;perf.setores=upd.setores;
       if(perf.uid===currentUser?.uid)currentUserSetoresG=upd.setores; // vale já para o próprio gestor
       if(internal&&nova){
         const r=await definirSenhaUsuarioInterno(perf.uid,nova);
@@ -8590,14 +8595,11 @@ document.getElementById('nu-criar').addEventListener('click',async()=>{
   if(!login){st.textContent='Informe o usuário de acesso.';return;}
   if(!login.includes('@')&&!validInternalLogin(login)){st.textContent='Use 3 a 32 caracteres: letras, números, ponto, hífen ou underline.';return;}
   if(tempPwd.length<6){st.textContent='Informe uma senha temporária com pelo menos 6 caracteres.';return;}
-  // v80: admin sempre vê todas as abas; contador recebe o subconjunto marcado (mín. 1)
-  const nuGestor=roleGestor(nuRole);
-  const tabsSel=nuGestor?[]:nuTabs.slice();
-  if(!nuGestor&&!tabsSel.length){st.textContent='Marque ao menos uma aba para o contador.';return;}
+  // v149: nada de abas aqui — quem define é o tipo de perfil escolhido acima.
   const btn=document.getElementById('nu-criar');
   btn.disabled=true;btn.textContent='Criando...';
   const nuSetorEl=document.getElementById('nu-setor');
-  const r=await criarUsuario(nome,login,tempPwd,nuRole,tabsSel,nuSetorEl?(nuSetorEl.value||null):null,nuSetoresG.slice());
+  const r=await criarUsuario(nome,login,tempPwd,nuRole,nuSetorEl?(nuSetorEl.value||null):null,nuSetoresG.slice());
   btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Criar usuário';
   if(r.success){
     closeModal('modal-novo-usuario');
