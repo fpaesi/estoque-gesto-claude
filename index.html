@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v150</title>
+<title>Gesto Operação v151</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1820,7 +1820,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v150';
+const APP_VERSION = 'v151';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4857,11 +4857,19 @@ function locaisVisiveis(){
   const f=locais.filter(l=>ids.has(l.id));
   return f.length?f:locais;
 }
+// v151: o desperdício lista EXATAMENTE os itens que o colaborador vê na contagem.
+// Antes havia dois caminhos para a mesma pergunta: a contagem lia locaisVisiveis(), e
+// aqui refazíamos a conta a partir de setorLocais() — com um fail-open DIFERENTE. Setor
+// com locais vazios abria o CATÁLOGO INTEIRO no desperdício enquanto a contagem mostrava
+// nada, que é o oposto do certo. Agora é uma fonte só, e conjunto vazio significa vazio.
+// O fail-open de "setor sem nenhum local" continua existindo, mas mora dentro de
+// locaisVisiveis() e vale igual para as duas telas — que é o ponto: elas não podem mais
+// divergir. Único chamador: dregLista().
 function codsDoSetor(){
-  if(isAdminRole()||!currentUserSetor)return null;
+  if(isAdminRole()||!currentUserSetor)return null; // null = sem filtro (gestor vê tudo)
   const s=new Set();
-  setorLocais(currentUserSetor).forEach(lid=>getProdsLocal(lid).forEach(p=>s.add(p.cod)));
-  return s.size?s:null;
+  locaisVisiveis().forEach(l=>getProdsLocal(l.id).forEach(p=>s.add(p.cod)));
+  return s;
 }
 
 // ── Cardápio (base de pratos p/ erro de prato) ────────────────────────────────
@@ -6237,11 +6245,24 @@ function renderDreg(){
       h+=`<div class="wb"><i class="ti ti-info-circle" style="font-size:20px;color:#185FA5;flex-shrink:0"></i>
         <div style="font-size:13px;color:#1E3A5F">${dregBusca?'Nenhum insumo processado encontrado com esse termo no seu setor.':(currentUserSetor&&!PROC_GRUPOS.includes('Processados '+currentUserSetor)?'O setor '+esc(currentUserSetor)+' não tem insumos processados para registrar produção.':'Nenhum insumo processado disponível. Verifique se a base foi atualizada (grupos Processados Cozinha/Bar/Forno).')}</div></div>`;
     }
-    h+=lista.slice(0,40).map(x=>`<div class="row" data-dreg-cod="${esc(x.cod)}" data-dreg-nome="${esc(x.nome)}" data-dreg-un="${esc(x.unidade)}" data-dreg-gr="${esc(x.grupo)}">
+    // v151: sem a saída de texto livre, lista vazia no desperdício vira bloqueio de
+    // verdade — então precisa dizer o que fazer, e distinguir "não há item nos locais do
+    // meu setor" de "a busca não achou". A primeira é problema de cadastro, não do usuário.
+    if(dregTipo==='desperdicio'&&!dregLista().length){
+      h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:20px;color:#D97706;flex-shrink:0"></i>
+        <div style="font-size:13px;color:#92400E">Nenhum item vinculado aos locais${currentUserSetor?' do setor '+esc(currentUserSetor):''}. ${isAdminRole()?'Vincule os locais em Gestão › Diário › Setores, ou confira o cadastro do local.':'Peça a um administrador para vincular os locais do seu setor em Gestão › Diário › Setores.'}</div></div>`;
+    }
+    // v151: o teto de 40 existia para não renderizar o catálogo inteiro. No desperdício a
+    // lista agora é só a dos locais do setor, e sem o texto digitado um item na posição 41
+    // ficaria inalcançável para quem rola em vez de buscar.
+    const cap=(dregTipo==='desperdicio'&&!isAdminRole())?400:40;
+    h+=lista.slice(0,cap).map(x=>`<div class="row" data-dreg-cod="${esc(x.cod)}" data-dreg-nome="${esc(x.nome)}" data-dreg-un="${esc(x.unidade)}" data-dreg-gr="${esc(x.grupo)}">
       <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
       <div style="font-size:11.5px;color:var(--tx2)">${esc(x.grupo)}${x.unidade?' · '+esc(x.unidade):''}</div></div>
       <i class="ti ti-chevron-right" style="color:var(--tx2)"></i></div>`).join('');
-    if(dregTipo!=='producao'&&dregBusca&&dregBusca.trim().length>=3)h+=`<div class="row" id="dreg-manual" style="border-style:dashed">
+    // v151: desperdício não aceita mais item digitado à mão — a lista dos locais do setor
+    // passa a ser um limite de verdade, não uma conveniência.
+    if(dregTipo!=='producao'&&dregTipo!=='desperdicio'&&dregBusca&&dregBusca.trim().length>=3)h+=`<div class="row" id="dreg-manual" style="border-style:dashed">
       <i class="ti ti-pencil" style="font-size:18px;color:var(--tx2);width:28px;text-align:center"></i>
       <div style="flex:1"><div style="font-size:14px;font-weight:500">Usar texto digitado</div>
       <div style="font-size:11.5px;color:var(--tx2)">"${esc(dregBusca.trim())}"</div></div></div>`;
