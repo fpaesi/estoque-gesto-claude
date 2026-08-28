@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v151</title>
+<title>Gesto Operação v152</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1820,7 +1820,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v151';
+const APP_VERSION = 'v152';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -3458,13 +3458,10 @@ function renderHome(){
       }).length;
       homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">${faltam} local${faltam!==1?'is':''} ainda não finalizado${faltam!==1?'s':''}</div>`;
     } else if(!dataFimContagem){
-      // Todos finalizados, aguardando confirmação do Gestor
-      if(isAdminRole()){
-        homeBbar.innerHTML=`<button id="btn-confirmar-fim" class="bp"><i class="ti ti-circle-check"></i> Confirmar Fim da Contagem</button>`;
-        document.getElementById('btn-confirmar-fim').addEventListener('click',confirmarFimContagem);
-      }else{
-        homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">Aguardando fechamento pelo administrador</div>`;
-      }
+      // v152: confirmar o fim da contagem saiu daqui e virou ação da aba Locais, dentro
+      // do card de Progresso geral — é lá que o gestor lê "Todos os locais finalizados!",
+      // então é lá que ele fecha. Aqui fica só o estado, sem ação.
+      homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">${isAdminRole()?'Todos os locais finalizados — confirme o fechamento na aba Locais':'Aguardando fechamento pelo administrador'}</div>`;
     } else {
       // Fechamento confirmado — exportar, refazer o fechamento (recalcula com os
       // dados atuais) ou iniciar uma nova contagem do zero.
@@ -3516,6 +3513,18 @@ function renderHome(){
   } else {renderGestao(c);}
 }
 
+// v152: bloco de fechamento que vive no card de Progresso geral da aba Locais.
+// Só aparece com TODOS os locais finalizados (checagem global, não a do setor).
+function fechamentoLocaisHTML(){
+  if(!todosLocaisFinalizados())return '';
+  if(dataFimContagem){
+    const q=fmtDT(dataFimContagem);
+    return `<div style="font-size:12px;color:var(--tx2);text-align:center">Contagem fechada${q?' em '+esc(q):''}${confirmedByName?' por '+esc(confirmedByName):''}</div>`;
+  }
+  if(!isAdminRole())return `<div style="font-size:12px;color:var(--tx2);text-align:center">Aguardando fechamento pelo administrador</div>`;
+  return `<button id="btn-confirmar-fim-locais" class="bp" style="margin-top:2px"><i class="ti ti-circle-check"></i> Confirmar Fim da Contagem</button>`;
+}
+
 // v91: aba Locais extraída para dentro do módulo Estoque
 function renderLocaisTab(c){
   {
@@ -3543,7 +3552,7 @@ function renderLocaisTab(c){
         <div style="font-size:13px;font-weight:600;color:${tudo?'#27500A':'var(--acc)'}">${nFin}/${total} locais</div>
       </div>
       <div class="progt" style="height:6px;background:var(--bg3)"><div style="height:100%;width:${pct}%;background:${tudo?'#639922':'var(--acc)'};border-radius:3px;transition:width .4s"></div></div>
-      ${tudo?`<div style="font-size:12px;color:#27500A;text-align:center;font-weight:500"><i class="ti ti-circle-check"></i> Todos os locais finalizados!</div>`:
+      ${tudo?`<div style="font-size:12px;color:#27500A;text-align:center;font-weight:500"><i class="ti ti-circle-check"></i> Todos os locais finalizados!</div>${fechamentoLocaisHTML()}`:
         `<div style="display:flex;gap:12px;font-size:11px;color:var(--tx2)">
           <span><span style="color:var(--acc);font-weight:600">${emContagem.length}</span> em contagem</span>
           <span><span style="color:var(--tx2);font-weight:600">${aContar.length}</span> a contar</span>
@@ -3635,6 +3644,8 @@ function renderLocaisTab(c){
 
     c.innerHTML=h;
     c.querySelectorAll('[data-action="local"]').forEach(el=>el.addEventListener('click',()=>goToLocal(el.dataset.lid)));
+    const btnFim=c.querySelector('#btn-confirmar-fim-locais');
+    if(btnFim)btnFim.addEventListener('click',confirmarFimContagem);
   }
 }
 
