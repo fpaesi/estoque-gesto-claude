@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v153</title>
+<title>Gesto Operação v154</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1820,7 +1820,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v153';
+const APP_VERSION = 'v154';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -7247,8 +7247,11 @@ function syncAtrasado(){
   const out=[];
   const hb=horasDesde(catalogoUpdatedAt);
   if(CATALOGO.length&&hb!==null&&hb>SYNC_LIMITE_H)out.push({doc:'base',nome:'base de insumos',horas:hb,ts:catalogoUpdatedAt});
-  const hc=horasDesde(cardapioUpdatedAt);
-  if(CARDAPIO.length&&hc!==null&&hc>SYNC_LIMITE_H)out.push({doc:'cardapio',nome:'cardápio',horas:hc,ts:cardapioUpdatedAt});
+  // v154: o cardápio NÃO entra aqui. CATALOGO é lido do Firestore no boot, então
+  // catalogoUpdatedAt é o do servidor; já o CARDAPIO só é buscado sob demanda
+  // (sincronizarCardapio), então o timestamp local pode estar velho mesmo com a
+  // nuvem em dia — dava alarme falso. E a base basta como sentinela: as duas
+  // Cloud Functions rodam às 5h na mesma infra, caem juntas.
   return out;
 }
 // v90 (7A): card de status ("o que eu tenho e de quando é") nos modais de atualização
@@ -7267,6 +7270,11 @@ function preencherStatusAtualizacao(elId,qtd,ts,rotulo){
 function abrirAtualizarCardapio(){
   preencherStatusAtualizacao('ac-statuscard',CARDAPIO.length,typeof cardapioUpdatedAt!=='undefined'?cardapioUpdatedAt:null,'pratos no cardápio');
   document.getElementById('modal-atualizar-cardapio').classList.add('on');
+  // v154: o cardápio só é buscado da nuvem sob demanda, então o que está na tela
+  // pode ser um cache velho de um servidor em dia. Puxa e reescreve o card.
+  Promise.resolve(sincronizarCardapio()).catch(()=>{}).then(()=>{
+    preencherStatusAtualizacao('ac-statuscard',CARDAPIO.length,cardapioUpdatedAt||null,'pratos no cardápio');
+  });
 }
 // ── v105: snapshots de configuração (listar / criar / restaurar via Cloud Functions) ──
 async function wireGestaoBackup(c){
