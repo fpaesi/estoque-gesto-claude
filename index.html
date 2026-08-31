@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v152</title>
+<title>Gesto Operação v153</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1820,7 +1820,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v152';
+const APP_VERSION = 'v153';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5115,6 +5115,19 @@ function renderInicioBody(c){
 
   // Atividades automáticas ("Agora")
   const autos=[];
+  // v153: sincronização com o Saipos parada. Ver syncAtrasado() — o app ficou 10
+  // dias com a base congelada em 21/08/2026 sem ninguém notar. Só o admin vê,
+  // porque só ele pode resolver.
+  const atrasados=isAdminRole()?syncAtrasado():[];
+  if(atrasados.length){
+    const quais=atrasados.map(a=>a.nome).join(' e ');
+    const pior=atrasados.slice().sort((a,b)=>b.horas-a.horas)[0];
+    autos.push(`<div class="atv" data-auto="syncparado" style="border-color:#FCA5A5;background:#FEF2F2">
+      <div class="atv-ico" style="background:#fff"><i class="ti ti-cloud-off" style="font-size:18px;color:#B91C1C"></i></div>
+      <div style="flex:1;min-width:0"><div class="atv-nome" style="color:#7F1D1D">Sincronização com o Saipos parada</div>
+      <div class="atv-sub" style="color:#A14444">${esc(quais)} — última ${fmtAtraso(pior.horas)} (${new Date(pior.ts).toLocaleDateString('pt-BR')}). Deveria rodar sozinha todo dia às 5h.</div></div>
+      <span class="atv-cta" style="color:#B91C1C">Atualizar →</span></div>`);
+  }
   const meuLocal=currentUser?locais.find(l=>{
     const r=rascunhos[l.id];const cnt=counts[l.id]||{};
     const done=Object.values(cnt).filter(x=>x.touched).length;
@@ -5219,6 +5232,9 @@ function renderInicioBody(c){
     if(el.dataset.auto==='contagem'&&meuLocal)goToLocal(meuLocal.id);
     else if(el.dataset.auto==='fila'){gestaoTabId='diario';homeTab('gestao');}
     else if(el.dataset.auto==='produzir'){abrirDprod();}
+    else if(el.dataset.auto==='syncparado'){
+      if(atrasados.some(a=>a.doc==='base'))abrirAtualizarBase();else abrirAtualizarCardapio();
+    }
   }));
   c.querySelectorAll('.eq-head').forEach(el=>el.addEventListener('click',()=>{
     const b=document.getElementById('eqb-'+el.dataset.eq);
@@ -7216,6 +7232,25 @@ function abrirAtualizarBase(){
   preencherStatusAtualizacao('ab-statuscard',CATALOGO.length,typeof catalogoUpdatedAt!=='undefined'?catalogoUpdatedAt:null,'itens na base');
   document.getElementById('modal-atualizar-base').classList.add('on');
 }
+// ── v153: vigia da sincronização automática ─────────────────────────────────
+// A base de insumos e o cardápio são gravados por Cloud Function todo dia às 5h
+// (sincronizarBaseDiaria / sincronizarCardapioDiario). Em 21/08/2026 o projeto
+// do Firebase caiu do plano Blaze para o Spark — todas as functions morreram e o
+// app rodou 10 dias com a base congelada sem avisar ninguém: a única pista era
+// um "atualizado há N dias" escondido dentro do modal de atualização.
+// Agora, passando de 36h (uma janela das 5h perdida, com folga), o administrador
+// vê um card vermelho no Início.
+const SYNC_LIMITE_H=36;
+function horasDesde(ts){return ts?Math.floor((Date.now()-ts)/3600000):null;}
+function fmtAtraso(h){return h<48?('há '+h+' horas'):('há '+Math.floor(h/24)+' dias');}
+function syncAtrasado(){
+  const out=[];
+  const hb=horasDesde(catalogoUpdatedAt);
+  if(CATALOGO.length&&hb!==null&&hb>SYNC_LIMITE_H)out.push({doc:'base',nome:'base de insumos',horas:hb,ts:catalogoUpdatedAt});
+  const hc=horasDesde(cardapioUpdatedAt);
+  if(CARDAPIO.length&&hc!==null&&hc>SYNC_LIMITE_H)out.push({doc:'cardapio',nome:'cardápio',horas:hc,ts:cardapioUpdatedAt});
+  return out;
+}
 // v90 (7A): card de status ("o que eu tenho e de quando é") nos modais de atualização
 function preencherStatusAtualizacao(elId,qtd,ts,rotulo){
   const el=document.getElementById(elId);
@@ -7223,9 +7258,11 @@ function preencherStatusAtualizacao(elId,qtd,ts,rotulo){
   if(!qtd){el.className='upd-status warn';el.innerHTML='<i class="ti ti-alert-triangle"></i> <strong>Nunca carregado.</strong> Faça a primeira atualização abaixo.';return;}
   const dias=ts?Math.floor((Date.now()-ts)/86400000):null;
   const quando=ts?(dias===0?'hoje':dias===1?'ontem':'há '+dias+' dias')+' ('+new Date(ts).toLocaleDateString('pt-BR')+')':'data desconhecida';
-  const velho=dias!==null&&dias>30;
+  // v153: era 30 dias — número herdado de quando a atualização era manual. Com a
+  // Cloud Function diária das 5h, passar de 36h já significa que algo quebrou.
+  const velho=ts?horasDesde(ts)>SYNC_LIMITE_H:false;
   el.className='upd-status'+(velho?' warn':'');
-  el.innerHTML=`<i class="ti ${velho?'ti-alert-triangle':'ti-circle-check'}"></i> <strong>${qtd} ${rotulo}</strong> · atualizado ${quando}${velho?' — considere atualizar':''}`;
+  el.innerHTML=`<i class="ti ${velho?'ti-alert-triangle':'ti-circle-check'}"></i> <strong>${qtd} ${rotulo}</strong> · atualizado ${quando}${velho?' — a sincronização automática das 5h não rodou':''}`;
 }
 function abrirAtualizarCardapio(){
   preencherStatusAtualizacao('ac-statuscard',CARDAPIO.length,typeof cardapioUpdatedAt!=='undefined'?cardapioUpdatedAt:null,'pratos no cardápio');
