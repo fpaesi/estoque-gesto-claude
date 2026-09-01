@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v156</title>
+<title>Gesto Operação v157</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1820,7 +1820,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v156';
+const APP_VERSION = 'v157';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -3504,12 +3504,13 @@ function renderHome(){
       // Fechamento confirmado — exportar, refazer o fechamento (recalcula com os
       // dados atuais) ou iniciar uma nova contagem do zero.
       if(isAdminRole()){
+        // v157: "Iniciar nova contagem (zerar)" saiu daqui. A mesma ação agora vive
+        // no fim do próprio Resumo, disponível a qualquer momento — manter as duas
+        // deixava dois botões de zerar na mesma tela depois do fechamento.
         homeBbar.innerHTML=`<button id="btn-exportar-csv" class="bp" style="background:#27500A"><i class="ti ti-file-spreadsheet"></i> Exportar CSV</button>
-          <button id="btn-refazer-fechamento" class="bs"><i class="ti ti-rotate"></i> Refazer fechamento</button>
-          <button id="btn-nova-contagem" class="bs" style="color:#ff3b30;border-color:#ffb3ad"><i class="ti ti-refresh"></i> Iniciar nova contagem (zerar)</button>`;
+          <button id="btn-refazer-fechamento" class="bs"><i class="ti ti-rotate"></i> Refazer fechamento</button>`;
         document.getElementById('btn-exportar-csv').addEventListener('click',exportarCSV);
         document.getElementById('btn-refazer-fechamento').addEventListener('click',confirmarFimContagem);
-        document.getElementById('btn-nova-contagem').addEventListener('click',reiniciarContagemZero);
       }else{
         homeBbar.innerHTML=`<div style="text-align:center;font-size:13px;color:var(--tx2);padding:6px 0">Contagem fechada pelo administrador</div>`;
       }
@@ -3584,14 +3585,6 @@ function renderLocaisTab(c){
     const pct=total?Math.round(nFin/total*100):0;
     const tudo=nFin===total;
 
-    // v156: reiniciar a contagem não espera mais o fechamento. Até a v155 o único
-    // botão visível era o da barra do Consolidado, e ele só aparecia DEPOIS de
-    // "Confirmar Fim da Contagem" — quem começou a contagem errada tinha que
-    // terminar todos os locais para poder zerar, ou saber que existia um atalho
-    // escondido em Gestão › Estoque › Ferramentas avançadas.
-    const rsz=resumoContagemVigente();
-    const podeZerar=isAdminPleno()&&rsz.temDado;
-
     let h=`<div style="background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);padding:12px 14px;display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:13px;font-weight:500;color:var(--tx2)">Progresso geral</div>
@@ -3604,7 +3597,6 @@ function renderLocaisTab(c){
           <span><span style="color:var(--tx2);font-weight:600">${aContar.length}</span> a contar</span>
           <span><span style="color:#639922;font-weight:600">${nFin}</span> finalizado${nFin!==1?'s':''}</span>
         </div>`}
-      ${podeZerar?`<button class="bg_" id="btn-reiniciar-locais" style="font-size:12px;padding:6px 0;color:#ff3b30;border-top:.5px solid var(--bd3);margin-top:2px"><i class="ti ti-rotate" style="font-size:13px"></i> Reiniciar contagem do zero</button>`:''}
     </div>`;
 
     // ── Em Contagem ─────────────────────────────────────────────────────────
@@ -3693,8 +3685,6 @@ function renderLocaisTab(c){
     c.querySelectorAll('[data-action="local"]').forEach(el=>el.addEventListener('click',()=>goToLocal(el.dataset.lid)));
     const btnFim=c.querySelector('#btn-confirmar-fim-locais');
     if(btnFim)btnFim.addEventListener('click',confirmarFimContagem);
-    const btnZerar=c.querySelector('#btn-reiniciar-locais');
-    if(btnZerar)btnZerar.addEventListener('click',reiniciarContagemZero);
   }
 }
 
@@ -7738,6 +7728,17 @@ function renderConsolidado(c){
     </div>`;
   }
 
+  // v157: "Reiniciar contagem do zero" mora aqui, no fim do Resumo. Antes só
+  // existia escondido atrás do link "Ferramentas avançadas" em Gestão › Estoque ›
+  // Locais (ou na barra do Consolidado, e ali só DEPOIS do fechamento). Fica no
+  // fim da aba de propósito: é destrutivo e não deve ficar no caminho do polegar.
+  const rsz=resumoContagemVigente();
+  const hReset=(isAdminPleno()&&rsz.temDado)?`<div class="sec">Contagem atual</div>
+    <button class="bbtn" id="btn-reset-resumo" style="border-color:#ff3b30;background:#fff5f5">
+      <i class="ti ti-rotate" style="font-size:22px;color:#ff3b30;flex-shrink:0"></i>
+      <div><div style="font-size:14px;font-weight:500;color:#ff3b30">Reiniciar contagem do zero</div>
+      <div style="font-size:11px;color:#ff3b30;opacity:.8;margin-top:2px">Apaga ${rsz.itens} ${rsz.itens===1?'item contado':'itens contados'}${rsz.finalizados?` e ${rsz.finalizados} ${rsz.finalizados===1?'local finalizado':'locais finalizados'}`:''} e a data de fechamento. Mantém cadastros, locais, especificações e histórico.</div></div></button>`:'';
+
   let hHeader=`<div class="card" style="gap:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="font-size:13px;font-weight:500;color:var(--tx2)">Locais finalizados</div>
@@ -7760,7 +7761,11 @@ function renderConsolidado(c){
     if(d.foto)totais[prod.nome].foto=fotoSrc(d.foto);
   });});
   const entries=Object.entries(totais);
-  if(!entries.length){c.innerHTML=hHeader+'<div class="empty"><i class="ti ti-package" style="font-size:36px;opacity:.3"></i><span>Nenhum item contado ainda</span></div>';return;}
+  if(!entries.length){
+    c.innerHTML=hHeader+'<div class="empty"><i class="ti ti-package" style="font-size:36px;opacity:.3"></i><span>Nenhum item contado ainda</span></div>'+hReset;
+    c.querySelector('#btn-reset-resumo')?.addEventListener('click',reiniciarContagemZero);
+    return;
+  }
   let h=hHeader+`<div class="sec">${entries.length} itens contados</div><div class="card">`;
   entries.forEach(([nome,d])=>{
     const fotoURL=fotoSrc(d.foto);
@@ -7818,9 +7823,10 @@ function renderConsolidado(c){
     <button id="btn-copiar-desc" class="bs" style="display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-clipboard-copy"></i> Copiar lista</button>`;
   }
 
-  c.innerHTML=h;
+  c.innerHTML=h+hReset;
   document.getElementById('btn-copiar-lista')?.addEventListener('click',copiarListaCompras);
   document.getElementById('btn-copiar-desc')?.addEventListener('click',copiarListaDescontinuar);
+  c.querySelector('#btn-reset-resumo')?.addEventListener('click',reiniciarContagemZero);
 }
 
 function toggleCardExtra(cod){
