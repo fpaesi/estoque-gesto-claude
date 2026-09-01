@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v160</title>
+<title>Gesto Operação v161</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1825,7 +1825,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v160';
+const APP_VERSION = 'v161';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4094,6 +4094,67 @@ function auditSection(title,items,icon,color,emptyText,limit=8){
   const body=items.length?shown.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:.5px solid var(--bd3)"><span style="font-size:12px;color:var(--tx1)">${esc(p.nome)}</span><span style="font-size:10px;color:var(--tx2);white-space:nowrap">COD ${p.cod}</span></div>`).join('')+more:`<div style="font-size:12px;color:var(--tx2);padding-top:4px">${emptyText}</div>`;
   return `<div class="card" style="padding:10px 12px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="ti ${icon}" style="font-size:16px;color:${color}"></i><div style="font-size:13px;font-weight:500;color:var(--tx1);flex:1">${title}</div><div class="bdg" style="background:var(--bg2);color:var(--tx2)">${items.length}</div></div>${body}</div>`;
 }
+// ── v161: conferência de valor na auditoria de fechamento ────────────────────
+// Erro de vírgula é invisível como número e gritante como dinheiro: 550 KG de
+// alcatra passam por uma quantidade qualquer no meio da lista e viram R$ 24.695
+// no total do local. Por isso esta seção ordena por VALOR, não por nome — o erro
+// sobe sozinho para a primeira linha.
+// Só gestor/admin: o custo médio vem de gestao/estoque_saipos, que a regra do
+// Firestore não deixa o contador ler (ver custoMedioDe).
+// O número é indicativo, não contábil: parte dos custos médios da base do Saipos
+// está corrompida. Serve para achar contagem errada, não para fechar mês.
+function auditValorHTML(lid,slId){
+  if(!isAdminRole())return '';
+  const prods=slId==='__local__'?getProdsLocal(lid):getProdsSublocal(lid,slId);
+  const cnt=counts[lid]||{};
+  const linhas=[];let semCusto=0;
+  prods.forEach(p=>{
+    const d=cnt[p.cod];
+    if(!d||!d.touched)return;
+    const q=qtdBaseDe(lid,p.cod);
+    if(!(q>0))return;
+    const custo=custoMedioDe(p.cod);
+    if(!custo){semCusto++;return;}
+    linhas.push({p,q,custo,valor:q*custo,est:estoqueSaiposDe(p.cod)});
+  });
+  if(!linhas.length)return '';
+  const total=linhas.reduce((s,x)=>s+x.valor,0);
+  linhas.sort((a,b)=>b.valor-a.valor);
+  // Dois sinais, ambos relativos ao próprio item — limiar absoluto não existe
+  // numa loja que conta tanto sal quanto vinho.
+  const alerta=x=>{
+    if(x.est!=null&&x.est>0&&x.q>x.est*10)return `${fmtNum(Math.round(x.q/x.est))}× o estoque`;
+    if(linhas.length>2&&total>0&&x.valor>total*0.5)return `${Math.round(x.valor/total*100)}% do total`;
+    return null;
+  };
+  const flag=linhas.filter(x=>alerta(x));
+  const resto=linhas.filter(x=>!alerta(x));
+  const mostrar=[...flag,...resto.slice(0,Math.max(0,8-flag.length))];
+  const ocultos=linhas.length-mostrar.length;
+  const linhaHTML=x=>{
+    const a=alerta(x);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:.5px solid var(--bd3)${a?';background:#FEF6F6;margin:0 -12px;padding-left:12px;padding-right:12px':''}">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:12.5px;color:var(--tx1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.p.nome)}${a?`<span class="bdg" style="background:#FEE2E2;color:#991B1B;margin-left:6px;font-size:10px">${a}</span>`:''}</div>
+        <div style="font-size:10.5px;color:var(--tx2);margin-top:1px">${fmtNum(x.q)} ${esc(x.p.unidade)} × ${brlNum(x.custo)}${x.est!=null?` · Saipos: ${fmtNum(x.est)}`:''}</div>
+      </div>
+      <div style="font-size:13px;font-weight:600;white-space:nowrap;${a?'color:#B42318':''}">${brlNum(x.valor)}</div>
+    </div>`;
+  };
+  const rodape=[];
+  if(ocultos>0)rodape.push(`+${ocultos} ${ocultos===1?'item':'itens'} de menor valor`);
+  if(semCusto)rodape.push(`${semCusto} sem custo na base`);
+  return `<div class="card" style="padding:10px 12px">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+      <i class="ti ti-cash" style="font-size:16px;color:var(--acc)"></i>
+      <div style="font-size:13px;font-weight:500;color:var(--tx1);flex:1">Conferência de valor</div>
+      <div style="font-size:14px;font-weight:700;color:var(--acc)">${brlNum(total)}</div>
+    </div>
+    ${flag.length?`<div style="font-size:11px;color:#991B1B;padding-bottom:2px">${flag.length} ${flag.length===1?'linha fora do padrão':'linhas fora do padrão'} — confira antes de fechar.</div>`:''}
+    ${mostrar.map(linhaHTML).join('')}
+    ${rodape.length?`<div style="font-size:11px;color:var(--tx2);padding-top:5px">${rodape.join(' · ')}</div>`:''}
+  </div>`;
+}
 function showAuditoria(onConfirm,scope='sublocal'){
   const l=getLocal(aLocal),sl=getContableSubs(aLocal).find(s=>s.id===aSublocal);
   const isLocal=scope==='local';
@@ -4108,6 +4169,7 @@ function showAuditoria(onConfirm,scope='sublocal'){
   } else {
     h+=`<div class="cpv"><i class="ti ti-circle-check"></i> Nenhum item pendente ${isLocal?'neste local':'nesta etapa'}.</div>`;
   }
+  h+=auditValorHTML(aLocal,isLocal?'__local__':aSublocal); // v161: primeiro o dinheiro
   h+=auditSection('Quantidade zero',[...data.pendentes,...data.zerados],'ti-circle-zero','#92400E','Nenhum item zerado.');
   if(FOTOS_ENABLED)h+=auditSection('Sem foto',data.semFoto,'ti-photo-off','var(--tx2)','Todos os itens contados têm foto.');
   h+=auditSection('Com observação',data.comObs,'ti-message-circle','var(--acc)','Nenhuma observação registrada.');
