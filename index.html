@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v154</title>
+<title>Gesto Operação v155</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1820,7 +1820,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v154';
+const APP_VERSION = 'v155';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2546,21 +2546,13 @@ function exportarListaLocalPDF(lid){
   if(!l){showToast('Local não encontrado.',{type:'err'});return;}
   const prods=getProdsLocal(lid);
   if(!prods.length){showToast('Este local não tem itens para exportar.',{type:'err'});return;}
-  // Ordem dos sublocais conforme o roteiro; "Sem Sublocal" por último.
-  const ordem=new Map();
-  getContableSubs(lid).forEach((s,i)=>ordem.set(s.id,i));
-  // Monta linhas com a chave de ordenação.
+  // v155: sem sort próprio — getProdsLocal já devolve na ordem canônica
+  // (ordenarProdsLocal), a mesma que a tela de contagem usa.
   const rows=prods.map(p=>{
-    const slId=getVinculo(lid,p.cod);
     const semSub=isItemSemSublocalEfetivo(lid,p.cod);
-    const subNome=semSub?'Sem Sublocal':getSublocNome(lid,slId);
-    const subOrd=semSub?Number.MAX_SAFE_INTEGER:(ordem.has(slId)?ordem.get(slId):Number.MAX_SAFE_INTEGER-1);
-    return {subNome,subOrd,grupo:p.grupo||'',nome:p.nome||'',un:unidContagemPartes(lid,p)};
+    const subNome=semSub?'Sem Sublocal':getSublocNome(lid,getVinculo(lid,p.cod));
+    return {subNome,grupo:p.grupo||'',nome:p.nome||'',un:unidContagemPartes(lid,p)};
   });
-  rows.sort((a,b)=>a.subOrd-b.subOrd
-    ||a.subNome.localeCompare(b.subNome,'pt-BR')
-    ||a.grupo.localeCompare(b.grupo,'pt-BR')
-    ||a.nome.localeCompare(b.nome,'pt-BR'));
   // Corpo da tabela: nome do sublocal só na 1ª linha de cada grupo (mais limpo).
   let body='',lastSub=null;
   rows.forEach(r=>{
@@ -3225,12 +3217,34 @@ async function removerFotoRepositorio(path){
   try{await storage.ref(path).delete();}catch(e){console.warn('Não foi possível remover foto do Storage:',e);}
 }
 
+// v155: ORDEM CANÔNICA dos itens de um local — uma só regra para a tela de
+// contagem e para a lista impressa. Antes eram duas: a tela mostrava os itens na
+// ordem crua da BASE (separador de categoria repetindo quando a categoria voltava)
+// e a impressão fazia o próprio sort. Quem conta na mão seguia um papel numa ordem
+// e a tela noutra.
+// Regra: sublocal na ordem do roteiro (item sem sublocal — ou com vínculo órfão —
+// vai por último, igual ao passo "Sem sublocal"), depois categoria e nome do item
+// em ordem alfabética pt-BR.
+function ordenarProdsLocal(lid,prods){
+  if(!prods||prods.length<2)return prods;
+  const ordem=new Map();
+  getContableSubs(lid).forEach((s,i)=>ordem.set(s.id,i));
+  const SEM=Number.MAX_SAFE_INTEGER;
+  const ordDe=p=>{const v=getVinculo(lid,p.cod);return v&&ordem.has(v)?ordem.get(v):SEM;};
+  return prods
+    .map((p,i)=>({p,o:ordDe(p),i}))
+    .sort((a,b)=>a.o-b.o
+      ||String(a.p.grupo||'').localeCompare(String(b.p.grupo||''),'pt-BR')
+      ||String(a.p.nome||'').localeCompare(String(b.p.nome||''),'pt-BR')
+      ||a.i-b.i)
+    .map(x=>x.p);
+}
 function getProdsLocal(lid){
   const base=BASE[lid]||[];const aj=ajustes[lid]||{extras:[],removidos:[]};
   const rem=new Set(aj.removidos||[]);
   let prods=base.filter(c=>!rem.has(c)).map(c=>{const it=getProd(c);return it?{...it}:null;}).filter(Boolean);
   (aj.extras||[]).forEach(c=>{if(!prods.find(p=>p.cod===c)){const it=getProd(c);if(it)prods.push({...it,_extra:true});}});
-  return prods;
+  return ordenarProdsLocal(lid,prods);
 }
 function getProdsSublocal(lid,slId){
   const all=getProdsLocal(lid);
@@ -3837,8 +3851,17 @@ function renderCount(){
     document.getElementById('count-list').innerHTML=h||emptyMsg;updProg(contaveis,done);renderCountBbar(contaveis,done);return;
   }
   if(isAdminRole())h+=`<div style="padding:8px 12px 4px"><button id="btn-add-item-top" style="width:100%;padding:10px 14px;border-radius:var(--r1);background:none;border:.5px dashed var(--acc-bd);font-size:13px;font-weight:500;color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit"><i class="ti ti-plus"></i> Adicionar item ao local</button></div>`;
-  let lastG=null;
+  // v155: a lista agora chega agrupada por sublocal → categoria. Quando a tela
+  // mostra mais de um sublocal (visão "Todos"), o cabeçalho do sublocal entra
+  // antes das categorias — sem ele, "Bebidas" reapareceria a cada sublocal sem
+  // nada explicando por quê.
+  const multiSub=subs.length&&(!aSublocal||aSublocal==='__todos__');
+  let lastG=null,lastS=null;
   filtrado.forEach(p=>{
+    if(multiSub){
+      const sNome=isItemSemSublocalEfetivo(aLocal,p.cod)?'Sem sublocal':getSublocNome(aLocal,getVinculo(aLocal,p.cod));
+      if(sNome!==lastS){h+=`<div class="gsep" style="font-size:12px;font-weight:600;color:var(--tx1);padding-top:14px"><i class="ti ti-map-pin" style="font-size:12px"></i> ${esc(sNome)}</div>`;lastS=sNome;lastG=null;}
+    }
     if(p.grupo!==lastG){h+=`<div class="gsep">${p.grupo}</div>`;lastG=p.grupo;}
     const d=cnt[p.cod]||{qty:0,qtyDec:'',note:'',touched:false,foto:null};
     const spec=getSpec(aLocal,p.cod);
