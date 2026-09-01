@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v158</title>
+<title>Gesto Operação v159</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1825,7 +1825,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v158';
+const APP_VERSION = 'v159';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2509,8 +2509,18 @@ function salvarContagemFinal(nome,quando){
   });
   // Cada item guarda o flag `t` (foi tocado/contado), para o Histórico
   // distinguir "sem estoque" (contado=0) de "não contado".
+  // v159: `f` = fora da contagem (item sem vínculo com local nenhum ou marcado
+  // "Não contar"). Gravado no snapshot porque locais e marcações mudam depois —
+  // o histórico tem que continuar contando a verdade do dia do fechamento.
+  const vinc=codsVinculados();
   const itensFinal=CATALOGO
-    .map(p=>({cod:String(p.cod),nome:p.nome||'',unidade:p.unidade||'',total:+(totais[p.cod]||0).toFixed(4),t:!!tocados[String(p.cod)]}))
+    .map(p=>{
+      const cod=String(p.cod);
+      const tot=+(totais[p.cod]||0).toFixed(4);
+      const tocado=!!tocados[cod];
+      return {cod,nome:p.nome||'',unidade:p.unidade||'',total:tot,t:tocado,
+              f:situacaoItem(cod,tot,tocado,vinc)==='Fora da contagem'};
+    })
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const contados=itensFinal.filter(i=>i.total>0).length;          // com estoque
   const totalTocados=itensFinal.filter(i=>i.t).length;            // efetivamente contados
@@ -2665,6 +2675,26 @@ function exportarEspecsCSV(){
 }
 
 // Exporta o CSV consolidado
+// v159: classificação única da situação de um item no fechamento — usada pelo CSV
+// do fechamento, pelo snapshot do histórico e pelo CSV do histórico, para os três
+// nunca discordarem.
+//
+// A quarta situação, "Fora da contagem", existe porque até a v158 o export
+// percorria o CATÁLOGO INTEIRO e carimbava "Não contado" em três coisas
+// diferentes: item de um local que ninguém contou, item que não está em local
+// nenhum (nunca entrou na contagem) e item marcado como "Não contar". Só o
+// primeiro é pendência de verdade; os outros dois são ruído que inflava o bloco
+// de descarte do ajuste mensal e escondia a pendência real.
+//
+// Ordem importa: quantidade contada manda sobre qualquer classificação. Um item
+// tirado do local DEPOIS de contado continua saindo com o número dele.
+function situacaoItem(cod,total,tocado,vinc){
+  if(total>0)return 'Com estoque';
+  if(tocado)return 'Sem estoque (contado)';
+  const c=String(cod);
+  if(!vinc.has(c)||isNaoControlado(c))return 'Fora da contagem';
+  return 'Não contado';
+}
 function exportarCSV(){
   if(!dataFimContagem)return;
   const dataFimStr=dataFimContagem.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -2691,12 +2721,13 @@ function exportarCSV(){
   // quantidade 0), ordenadas por nome do produto. Coluna "Situação" diferencia
   // os três casos. As 5 primeiras colunas mantêm o formato esperado pelo Saipos.
   const cabecalho=['Data de Fim da Contagem','COD_SAIPOS','Item','Quantidade','Unidade','Situação'];
+  const vinc=codsVinculados(); // v159
   const linhas=CATALOGO
     .map(p=>{
       const cod=String(p.cod);
       const tot=totais[cod]?totais[cod].total:0;
       const foiTocado=!!tocados[cod];
-      const situacao=tot>0?'Com estoque':(foiTocado?'Sem estoque (contado)':'Não contado');
+      const situacao=situacaoItem(cod,tot,foiTocado,vinc);
       return {cod,nome:p.nome||'',unidade:p.unidade||'',total:tot,situacao};
     })
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'))
@@ -2723,7 +2754,11 @@ function exportarContagemFinalCSV(entry){
   const dataStr=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
   const cabecalho=['Contagem','Data de Fim','COD_SAIPOS','Item','Quantidade','Unidade','Situação'];
   const linhas=itens.map(i=>{
-    const sit=i.total>0?'Com estoque':(('t' in i)?(i.t?'Sem estoque (contado)':'Não contado'):'Zerado / não contado');
+    // v159: snapshots novos trazem `f` (fora da contagem); os antigos, só `t`;
+    // os mais antigos ainda, nenhum dos dois.
+    const sit=i.total>0?'Com estoque'
+      :('t' in i)?(i.t?'Sem estoque (contado)':(i.f?'Fora da contagem':'Não contado'))
+      :'Zerado / não contado';
     // v116: snapshots antigos foram gravados com o id de unidade; traduz na leitura.
     return [entry.nome||'Contagem final',dataStr,i.cod,i.nome,fmtNum(i.total).replace('.',','),unidSigla(i.unidade),sit];
   });
@@ -3170,8 +3205,13 @@ function confirmarFinalizacaoParcial(lid,onOk){
   const {contados,total,pendentes}=progressoLocal(lid);
   if(contados===0)return; // botão fica desabilitado nesse caso; guarda extra
   if(pendentes===0){onOk();return;}
+  // v159: o texto antigo dizia que os pendentes "viram baixa de estoque no
+  // Saipos". Não é verdade e nunca foi: eles saem do CSV como "Não contado" e o
+  // ajuste mensal descarta essas linhas — o estoque do item fica como está. A
+  // ameaça falsa empurrava o contador a chutar um número para não "dar baixa",
+  // que é o único desfecho aqui que estraga dado de verdade.
   appConfirm(
-    `${contados} de ${total} itens contados. Os ${pendentes} itens não contados entram no fechamento com quantidade 0 e viram baixa de estoque no Saipos.`,
+    `${contados} de ${total} itens contados. Os ${pendentes} itens não contados saem do fechamento como "Não contado" e ficam de fora do ajuste — o estoque deles no Saipos não muda.\n\nQuem tem estoque zero precisa ser contado e marcado como zero, não deixado em branco.`,
     {title:'Finalizar com pendências?',okText:`Finalizar assim mesmo`,cancelText:'Voltar e contar',danger:true},
     onOk
   );
@@ -8055,10 +8095,14 @@ function statsContagemFinal(e){
   const total=itens.length||e.totalItens||0;
   const comEstoque=itens.length?itens.filter(i=>i.total>0).length:(e.totalContados||0);
   let tocados=null,zerados=null,naoContados=null;
+  // v159: snapshots novos separam "não contado" (pendência real) de "fora da
+  // contagem" (item que nunca entrou na contagem).
+  const temFora=itens.some(i=>'f' in i);
+  const ehFora=i=>temFora&&i.f&&!i.t&&!(i.total>0);
   if(temFlag){
     tocados=itens.filter(i=>i.t).length;
     zerados=itens.filter(i=>i.t&&!(i.total>0)).length;
-    naoContados=itens.filter(i=>!i.t).length;
+    naoContados=itens.filter(i=>!i.t&&!ehFora(i)).length;
   }else if(typeof e.totalTocados==='number'){
     tocados=e.totalTocados;
     zerados=(typeof e.totalZerados==='number')?e.totalZerados:null;
@@ -8066,10 +8110,11 @@ function statsContagemFinal(e){
   }
   return {
     total,comEstoque,tocados,zerados,naoContados,
-    temTocados:tocados!=null,temFlag,
+    temTocados:tocados!=null,temFlag,temFora,
     itensComEstoque:itens.filter(i=>i.total>0),
     itensZerados:temFlag?itens.filter(i=>i.t&&!(i.total>0)):[],
-    itensNaoContados:temFlag?itens.filter(i=>!i.t):[],
+    itensFora:temFora?itens.filter(ehFora):[],
+    itensNaoContados:temFlag?itens.filter(i=>!i.t&&!ehFora(i)):[],
     itensSemEstoqueLegacy:itens.filter(i=>!(i.total>0)) // antigos: zerados+não contados juntos
   };
 }
@@ -8222,6 +8267,9 @@ function abrirDetalheContagemFinal(entry){
     // Registro novo: separa "sem estoque (contado)" de "não contado"
     h+=blocoItens('Sem estoque (contados)',st.itensZerados,'color:var(--tx2);');
     h+=blocoItens('Não contados',st.itensNaoContados,'color:var(--tx2);');
+    // v159: itens que nunca entraram na contagem — sem vínculo com local ou
+    // marcados "Não contar". Ficam por último: não são pendência de ninguém.
+    h+=blocoItens('Fora da contagem',st.itensFora,'color:var(--tx2);');
   }else{
     // Registro antigo: sem o flag de tocado, mantém o agrupamento único
     h+=blocoItens('Zerados / não contados',st.itensSemEstoqueLegacy,'color:var(--tx2);');
