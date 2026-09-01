@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v157</title>
+<title>Gesto Operação v158</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -126,7 +126,7 @@
   .ntab.on{color:var(--acc);border-bottom-color:var(--acc)}
 
   /* --- Chips ativos --- */
-  .chip.on{background:var(--acc-bg);border-color:var(--acc-bd);color:var(--acc-tx)}
+  .chip.on{background:var(--acc-bg);border-color:var(--acc-bd);color:var(--acc-tx)}.chip.falta{background:#FEF3C7;border-color:#FCD34D;color:#92400E;font-weight:600}.chip.falta.on{background:#B7791F;border-color:#B7791F;color:#fff}.chip.falta.zerado{background:#EAF3DE;border-color:#C0DD97;color:#27500A}
 
   /* --- Navegação de subloca ativo/feito --- */
   .slni.cur{background:var(--bg1);border-color:var(--acc);color:var(--acc)}
@@ -1491,6 +1491,11 @@ const BASE={
 };
 
 let aLocal=null,aSublocal=null,aGrupo='todos',sTerm='';
+// v158: filtro "Faltam" da tela de contagem. Vive junto dos chips de categoria e
+// se combina com eles (Carnes + Faltam = as carnes que ainda faltam). Sempre
+// começa desligado ao abrir um local ou trocar de sublocal — filtro que sobrevive
+// à navegação é filtro que esconde item sem ninguém lembrar por quê.
+let aSoFaltam=false;
 // aScope: sublocal de 1º nível (agrupador) dentro do qual a contagem está acontecendo.
 // null = contagem não escopada (roteiro mostra sublocais de 1º nível).
 let aScope=null;
@@ -1820,7 +1825,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v157';
+const APP_VERSION = 'v158';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -1928,6 +1933,7 @@ function resetarEstadoContagemLocal(){
   aLocal=null;
   aSublocal=null;
   aGrupo='todos';
+  aSoFaltam=false;
   sTerm='';
 }
 
@@ -3766,7 +3772,7 @@ async function entrarContagem(lid,slId){
     const first=getSubSubs(lid,slId)[0];
     slId=first?first.id:slId;
   }
-  aLocal=lid;aSublocal=slId;aGrupo='todos';sTerm='';
+  aLocal=lid;aSublocal=slId;aGrupo='todos';aSoFaltam=false;sTerm='';
   document.getElementById('srch-inp').value='';
   if(!counts[lid])counts[lid]={};
   const l=getLocal(lid);
@@ -3843,7 +3849,7 @@ function mudarSublocal(slId){
     const first=getSubSubs(aLocal,slId)[0];
     slId=first?first.id:slId;
   }
-  aSublocal=slId;aGrupo='todos';sTerm='';
+  aSublocal=slId;aGrupo='todos';aSoFaltam=false;sTerm='';
   document.getElementById('srch-inp').value='';
   renderSlNav();renderCount();updTopbarProgress();
 }
@@ -3859,21 +3865,39 @@ function renderCount(){
   const allFlat=getAllSubsFlat(aLocal);
   const grupos=['todos',...new Set(contaveis.map(p=>p.grupo))];
   const chipsEl=document.getElementById('grupo-chips');
-  chipsEl.innerHTML=grupos.map(g=>{const n=g==='todos'?contaveis.length:contaveis.filter(p=>p.grupo===g).length;
+  // v158: chip "Faltam (N)" na frente das categorias. Some quando não há mais
+  // nada pendente — e, se estava ligado, desliga sozinho, senão a lista ficaria
+  // vazia com o único botão de saída fora da tela.
+  const nFaltam=contaveis.length-done;
+  if(!nFaltam)aSoFaltam=false;
+  const chipFalta=nFaltam?`<div class="chip falta ${aSoFaltam?'on':''}" data-action="faltam" title="Mostrar apenas os itens ainda não contados">Faltam (${nFaltam})</div>`:'';
+  chipsEl.innerHTML=chipFalta+grupos.map(g=>{const n=g==='todos'?contaveis.length:contaveis.filter(p=>p.grupo===g).length;
     return `<div class="chip ${aGrupo===g?'on':''}" data-grupo="${g}" data-action="grupo">${g==='todos'?`Todos (${n})`:`${g} (${n})`}</div>`;
   }).join('');
   chipsEl.querySelectorAll('[data-action="grupo"]').forEach(el=>el.addEventListener('click',()=>setGrupo(el.dataset.grupo)));
+  chipsEl.querySelector('[data-action="faltam"]')?.addEventListener('click',toggleSoFaltam);
   let filtrado=contaveis;
   if(aGrupo!=='todos')filtrado=filtrado.filter(p=>p.grupo===aGrupo);
+  if(aSoFaltam)filtrado=filtrado.filter(p=>!cnt[p.cod]?.touched);
   if(sTerm)filtrado=filtrado.filter(p=>p.nome.toLowerCase().includes(sTerm)||p.cod.includes(sTerm));
   let h='';
   if(semSpec.length)h+=`<div class="wb"><i class="ti ti-alert-triangle" style="font-size:18px;color:#D97706;flex-shrink:0"></i><div style="font-size:12px;color:#92400E"><strong>${semSpec.length} ${semSpec.length===1?'item':'itens'} sem especificação</strong> — contados em Unidade Saipos.${isAdminRole()?' <button id="btn-gestao-spec" style="font-size:12px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Cadastrar especificação →</button>':''}</div></div>`;
   if(!filtrado.length){
     const isSublocEspecifico=aSublocal&&aSublocal!=='__todos__'&&aSublocal!=='__sem__';
-    const emptyMsg=isSublocEspecifico?
+    // v158: com o filtro ligado, lista vazia é boa notícia — mas precisa dizer
+    // isso e oferecer a volta, senão parece item sumido.
+    const emptyMsg=aSoFaltam?
+      `<div class="empty"><i class="ti ti-circle-check" style="font-size:30px;color:#639922"></i><span>Nada pendente por aqui</span><span style="font-size:12px;color:var(--tx2)">Todos os itens ${aGrupo!=='todos'?'de '+esc(aGrupo)+' ':''}${sTerm?'desta busca ':''}já foram contados.</span><button id="btn-ver-todos-faltam" style="font-size:13px;color:var(--acc);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit">Ver todos os itens</button></div>`:
+      isSublocEspecifico?
       `<div class="empty"><i class="ti ti-map-pin" style="font-size:30px;opacity:.3"></i><span>Nenhum item vinculado aqui</span><span style="font-size:12px;color:var(--tx2);text-align:center;line-height:1.5">Use <strong>Gestão › Locais</strong> para conferir a estrutura e vincule itens somente ao menor nível disponível.</span></div>`:
       '<div class="empty"><i class="ti ti-search" style="font-size:30px;opacity:.3"></i><span>Nenhum item</span></div>';
-    document.getElementById('count-list').innerHTML=h||emptyMsg;updProg(contaveis,done);renderCountBbar(contaveis,done);return;
+    // v158: era `h||emptyMsg` — com o aviso de "itens sem especificação" na tela,
+    // o h vinha preenchido e a mensagem de lista vazia era engolida. Some o filtro
+    // "Faltam" nisso e o contador via só o aviso amarelo, sem nada explicando o
+    // sumiço dos itens.
+    document.getElementById('count-list').innerHTML=h+emptyMsg;
+    document.getElementById('btn-ver-todos-faltam')?.addEventListener('click',toggleSoFaltam);
+    updProg(contaveis,done);renderCountBbar(contaveis,done);return;
   }
   if(isAdminRole())h+=`<div style="padding:8px 12px 4px"><button id="btn-add-item-top" style="width:100%;padding:10px 14px;border-radius:var(--r1);background:none;border:.5px dashed var(--acc-bd);font-size:13px;font-weight:500;color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit"><i class="ti ti-plus"></i> Adicionar item ao local</button></div>`;
   // v155: a lista agora chega agrupada por sublocal → categoria. Quando a tela
@@ -4075,6 +4099,25 @@ function renderCountBbar(prods,done){
 }
 
 function setGrupo(g){aGrupo=g;renderCount();}
+// v158: liga/desliga o "Faltam". Volta ao topo em vez de preservar o scroll —
+// a lista muda de tamanho, e a posição antiga não aponta mais para o mesmo item.
+function toggleSoFaltam(){
+  aSoFaltam=!aSoFaltam;
+  renderCount();
+  const cl=document.getElementById('count-list');if(cl)cl.scrollTop=0;
+}
+// v158: mantém o número do chip honesto SEM redesenhar a lista. Contar um item
+// não o faz sumir da tela: o card é atualizado no lugar (markTouched). Se a lista
+// se refizesse a cada toque, o item sumiria debaixo do dedo e corrigir um erro de
+// digitação viraria caçada. Ele sai da lista na próxima navegação.
+function atualizarChipFaltam(){
+  const el=document.querySelector('#grupo-chips [data-action="faltam"]');
+  if(!el||!aLocal)return;
+  const cnt=counts[aLocal]||{};
+  const n=getProdsSublocal(aLocal,aSublocal).filter(p=>!cnt[p.cod]?.touched).length;
+  if(!n){aSoFaltam=false;el.classList.remove('on');el.classList.add('zerado');el.textContent='Tudo contado ✓';return;}
+  el.classList.remove('zerado');el.textContent=`Faltam (${n})`;
+}
 function setSearch(q){sTerm=q.toLowerCase();renderCount();}
 
 function chgQty(cod,delta){
@@ -4182,6 +4225,7 @@ function updProg(prods,done){
   if(!prods){prods=getProdsSublocal(aLocal,aSublocal);const cnt=counts[aLocal]||{};done=prods.filter(p=>cnt[p.cod]?.touched).length;}
   const pct=prods.length?Math.round(done/prods.length*100):0;
   if(pbar)pbar.style.width=pct+'%';if(ppct)ppct.textContent=pct+'%';
+  atualizarChipFaltam(); // v158
 }
 
 function openAssign(cod){
