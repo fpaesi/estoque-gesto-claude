@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v163</title>
+<title>Gesto Operação v164</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -319,10 +319,6 @@
 .etq-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--bd3);font-size:14px}.etq-kv:last-child{border-bottom:none}
 .etq-kv .k{color:var(--tx2);font-size:13px}.etq-kv .v{font-weight:500;text-align:right}
 .etq-kv input{font-size:14px;padding:6px 8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:150px}
-.getq-tbl{width:100%;border-collapse:collapse;font-size:12px}.getq-tbl th{font-weight:500;color:var(--tx2);text-align:left;padding:6px 3px;border-bottom:.5px solid var(--bd3);font-size:11px}
-.getq-tbl td{padding:7px 3px;border-bottom:.5px solid var(--bd3);vertical-align:middle}.getq-tbl tr:last-child td{border-bottom:none}
-.getq-tbl input{width:46px;text-align:center;font-size:15px;padding:6px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit}
-.getq-tbl select{font-size:12px;padding:6px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:86px}
 @media print{body.etq-print #print-area .etq-lbl{border:none;margin:0;break-after:page;page-break-after:always}body.etq-print #print-area .etq-lbl:last-child{break-after:auto;page-break-after:auto}}
 /* ── Impressão: lista de conferência por local (v77) ── */
 #print-area{display:none}
@@ -1870,7 +1866,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v163';
+const APP_VERSION = 'v164';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6315,9 +6311,9 @@ const PROC_GRUPOS=['Processados Cozinha','Processados Bar','Processados Forno'];
 // Configuração mora em cfg_diario.etiquetas (documento já protegido, já no backup
 // diário, já carregado no login — nada de documento novo nas rules):
 //   {grupos:[nomes liberados]|null (null = padrão: tudo menos ETQ_GRUPOS_FORA),
-//    gruposPrazo:{grupo:{R,C,A,padrao}}, itens:{cod:{R,C,A,padrao,porcao:{q,nome}}}}
-// Prazo em DIAS por conservação: R resfriado, C congelado, A ambiente. Item herda
-// da categoria; '' ou ausente = herda. Item sem prazo nenhum NÃO imprime.
+//    itens:{cod:{R,C,A,padrao,porcao:{q,nome}}}}
+// Prazo em DIAS por conservação: R resfriado, C congelado, A ambiente — por ITEM,
+// sem herança de categoria (v164). Item sem prazo nenhum NÃO imprime.
 // Cada impressão vira um registro no `diario` com tipo:'etiqueta', status:'na'
 // (fora da fila Saipos, como as rotinas) — é o rastro que a vigilância pede:
 // quem imprimiu, quando, com que validade.
@@ -6327,22 +6323,14 @@ const ETQ_CONS={R:{nome:'Resfriado',rot:'RESFRIADO 0–5 °C'},C:{nome:'Congelad
 const ETQ_CONS_ORD=['R','C','A'];
 // Categorias que nunca precisam de etiqueta sanitária — fora por padrão; o gestor pode ligar.
 const ETQ_GRUPOS_FORA=['Louça','Material de Limpeza','Embalagens','Utensílios','Material de Escritório','Descartáveis','EPI','Equipamentos','Uniformes','Mobiliário','Higiene'];
-// Sugestão inicial de prazos por categoria (dias). É ponto de partida, não norma:
-// o gestor confirma em Gestão › Etiquetas — o que ele salvar em gruposPrazo vence.
-const ETQ_PRAZO_GRUPO={
-  'Lácteos':{R:5},'Charcutaria':{R:3},'Proteínas Animais':{R:1,C:30},'Hortifruti':{R:3},
-  'Conservas & Enlatados':{R:3},'Óleos & Gorduras':{A:90},'Farináceos':{A:30},'Armazém':{A:30},
-  'Compra & Processa':{R:3,C:30},'Chás':{A:90},'Bebidas Não Alcoólicas':{R:3},'Bebidas Alcoólicas':{A:30},
-  'Vinhos Tintos':{R:3},'Vinhos Brancos':{R:3},'Vinhos Rosés':{R:3},'Espumantes':{R:2},
-  'Processados Cozinha':{R:3,C:30},'Processados Bar':{R:5},'Processados Forno':{R:3,C:30},
-};
+// v164: prazo é SEMPRE por item (decisão do Fabio — categoria não serve: dentro de
+// 'Lácteos' o creme dura 3 dias e o parmesão 30). Item sem prazo não imprime.
 const ETQ_TITLE0=document.title;
 function etqCfg(){
   if(!diarioCfg)diarioCfg={};
   if(!diarioCfg.etiquetas||typeof diarioCfg.etiquetas!=='object')diarioCfg.etiquetas={};
   const e=diarioCfg.etiquetas;
   if(!Array.isArray(e.grupos))e.grupos=null;
-  if(!e.gruposPrazo||typeof e.gruposPrazo!=='object')e.gruposPrazo={};
   if(!e.itens||typeof e.itens!=='object')e.itens={};
   return e;
 }
@@ -6361,16 +6349,14 @@ function etqGrupoAtivo(g){
   return !ETQ_GRUPOS_FORA.includes(g)&&!PROC_GRUPOS.includes(g);
 }
 function etqNum(v){const n=Number(String(v??'').replace(',','.'));return (isFinite(n)&&n>0)?n:null;}
-// Prazos efetivos de um item: override do item > categoria configurada > sugestão embutida.
+// Prazos do item (só dele).
 function etqPrazos(cod){
-  const it=getProd(cod);const cfg=etqCfg();
-  const ov=cfg.itens[String(cod)]||{};
-  const gp=(it&&cfg.gruposPrazo[it.grupo])||(it&&ETQ_PRAZO_GRUPO[it.grupo])||{};
+  const ov=etqCfg().itens[String(cod)]||{};
   const dias={};
-  ETQ_CONS_ORD.forEach(c=>{const v=etqNum(ov[c])??etqNum(gp[c]);if(v)dias[c]=v;});
-  let padrao=(ov.padrao&&dias[ov.padrao])?ov.padrao:((gp.padrao&&dias[gp.padrao])?gp.padrao:null);
+  ETQ_CONS_ORD.forEach(c=>{const v=etqNum(ov[c]);if(v)dias[c]=v;});
+  let padrao=(ov.padrao&&dias[ov.padrao])?ov.padrao:null;
   if(!padrao)padrao=ETQ_CONS_ORD.find(c=>dias[c])||null;
-  return {dias,padrao,proprio:ETQ_CONS_ORD.some(c=>etqNum(ov[c]))||!!ov.padrao};
+  return {dias,padrao,proprio:!!padrao};
 }
 // Porção de armazenamento: converte a produção em nº de etiquetas.
 // PÇ/UN → 1 por unidade. KG/L → pote/bola/garrafa cadastrada; sem cadastro, 1 por kg/L.
@@ -6625,16 +6611,15 @@ let getqBusca='',getqSaveT=null;
 function getqSalvar(){clearTimeout(getqSaveT);getqSaveT=setTimeout(()=>salvarDiarioCfg(),700);}
 function renderGestaoEtq(){
   return `<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:4px">Etiquetas de identificação</div>
-    <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Prazo é por item, definido abaixo; item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
   <div class="sec">Categorias liberadas no módulo Etiquetas</div>
   <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">O que a equipe vê ao imprimir etiqueta de insumo. Processados saem pela Produção — ligue aqui só para reimpressão avulsa.</div>
   <div id="getq-grupos" class="chips" style="flex-wrap:wrap;padding:0 0 6px"></div>
-  <div class="sec">Prazo por categoria (dias)</div>
-  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">Vale para todos os itens da categoria que não tenham prazo próprio. Vazio = não imprime nessa conservação. ● marca a conservação padrão.</div>
-  <div id="getq-gp" class="card" style="padding:4px 10px;overflow-x:auto"></div>
-  <div class="sec">Prazo e porção por item</div>
-  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">Exceções à categoria e a porção de armazenamento dos processados em kg/L (pote 1 kg, bola 250 g…).</div>
+  <div class="sec">Prazo de validade por item (dias)</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">Cada insumo tem o seu prazo em cada conservação. Vazio = não imprime nessa conservação; item sem nenhum prazo não imprime. Processados em kg/L também definem a porção de armazenamento (pote 1 kg, bola 250 g…).</div>
+  <div id="getq-resumo" style="font-size:12px;color:var(--tx2);padding:0 2px 4px"></div>
   <input id="getq-busca" class="srch" placeholder="Buscar item pelo nome…" autocomplete="off" value="${esc(getqBusca)}"/>
+  <div class="chips" id="getq-fchips" style="padding:2px 0 4px"></div>
   <div id="getq-itens" style="display:flex;flex-direction:column;gap:8px"></div>
   <div class="sec">Como sai na impressora (60×40 mm)</div>
   <div id="getq-amostra" style="display:flex;justify-content:center;padding:8px;background:var(--bg2);border-radius:var(--r1)"></div>`;
@@ -6642,12 +6627,13 @@ function renderGestaoEtq(){
 function wireGestaoEtq(c){
   ensureDiarioCfg().then(()=>{
     renderGetqGrupos(c.querySelector('#getq-grupos'));
-    renderGetqGP(c.querySelector('#getq-gp'));
+    renderGetqFiltros(c);
     renderGetqItens(c.querySelector('#getq-itens'));
     const am=c.querySelector('#getq-amostra');
-    const ex=CATALOGO.find(x=>PROC_GRUPOS.includes(x.grupo)&&etqPrazos(x.cod).padrao)||CATALOGO[0];
-    if(am&&ex){const pz=etqPrazos(ex.cod);const now=new Date();const v=pz.padrao?etqValidade(ex.cod,pz.padrao,now):null;
-      am.innerHTML=etqLabelHTML({tipo:PROC_GRUPOS.includes(ex.grupo)?'producao':'insumo',nome:ex.nome,grupo:ex.grupo,cons:pz.padrao||'R',base:now,val:v&&v.d,resp:currentUserNome,rodape:etqPorcao(ex.cod).nome,idx:1,tot:1});}
+    const ex=CATALOGO.find(x=>etqPrazos(x.cod).padrao);const now=new Date();
+    if(am)am.innerHTML=ex
+      ?etqLabelHTML({tipo:PROC_GRUPOS.includes(ex.grupo)?'producao':'insumo',nome:ex.nome,grupo:ex.grupo,cons:etqPrazos(ex.cod).padrao,base:now,val:etqValidade(ex.cod,etqPrazos(ex.cod).padrao,now).d,resp:currentUserNome,rodape:etqPorcao(ex.cod).nome,idx:1,tot:1})
+      :etqLabelHTML({tipo:'producao',nome:'EXEMPLO — ALMÔNDEGA POLPETINI 150g',grupo:'Processados Cozinha',cons:'C',base:now,val:new Date(now.getTime()+30*86400000),resp:currentUserNome,rodape:'porção',idx:1,tot:20});
     const bi=c.querySelector('#getq-busca');
     if(bi)bi.addEventListener('input',()=>{getqBusca=bi.value;renderGetqItens(c.querySelector('#getq-itens'));});
   });
@@ -6661,63 +6647,52 @@ function renderGetqGrupos(el){
     const atual=etqTodosGrupos().filter(etqGrupoAtivo);
     cfg.grupos=atual.includes(g)?atual.filter(x=>x!==g):atual.concat([g]);
     getqSalvar();renderGetqGrupos(el);
-    const gp=document.getElementById('getq-gp');if(gp)renderGetqGP(gp);
+    const root=el.closest('#home-cnt')||document;renderGetqFiltros(root);renderGetqItens(document.getElementById('getq-itens'));
   }));
 }
 function getqGruposComPrazo(){return etqTodosGrupos().filter(g=>etqGrupoAtivo(g)||PROC_GRUPOS.includes(g));}
-function renderGetqGP(el){
-  if(!el)return;
-  const cfg=etqCfg();
+let getqFiltro=null; // null = todos · '__sem' = só sem prazo · nome do grupo
+function getqItensBase(){const gs=getqGruposComPrazo();return CATALOGO.filter(x=>gs.includes(x.grupo));}
+function renderGetqFiltros(root){
+  const el=root.querySelector('#getq-fchips');if(!el)return;
+  const base=getqItensBase();const sem=base.filter(x=>!etqPrazos(x.cod).padrao).length;
   const grupos=getqGruposComPrazo();
-  let h=`<table class="getq-tbl"><thead><tr><th>Categoria</th><th>Resfr.</th><th>Cong.</th><th>Amb.</th><th>Padrão</th></tr></thead><tbody>`;
-  grupos.forEach(g=>{
-    const salvo=cfg.gruposPrazo[g]||null,sug=ETQ_PRAZO_GRUPO[g]||{};
-    const val=c=>salvo?(salvo[c]??''):(sug[c]??'');
-    const ef={};ETQ_CONS_ORD.forEach(c=>{if(etqNum(val(c)))ef[c]=1;});
-    const padrao=(salvo&&salvo.padrao&&ef[salvo.padrao])?salvo.padrao:(ETQ_CONS_ORD.find(c=>ef[c])||'');
-    h+=`<tr data-g="${esc(g)}"><td style="font-weight:500;line-height:1.25">${esc(g)}${!salvo&&Object.keys(sug).length?'<div style="font-size:10px;color:var(--tx2);font-weight:400">sugestão — confirme</div>':''}</td>
-      ${ETQ_CONS_ORD.map(c=>`<td><input type="text" inputmode="numeric" data-c="${c}" value="${esc(val(c))}" placeholder="—"/></td>`).join('')}
-      <td><select data-c="padrao">${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${padrao===c?'selected':''} ${ef[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></td></tr>`;
-  });
-  h+='</tbody></table>';
-  el.innerHTML=h;
-  const grava=tr=>{
-    const g=tr.dataset.g;const o={};
-    tr.querySelectorAll('input[data-c]').forEach(i=>{o[i.dataset.c]=i.value.trim();});
-    o.padrao=tr.querySelector('select').value;
-    cfg.gruposPrazo[g]=o;getqSalvar();
-  };
-  el.querySelectorAll('tr[data-g]').forEach(tr=>{
-    tr.querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>{grava(tr);renderGetqGP(el);}));
-    tr.querySelector('select').addEventListener('change',()=>grava(tr));
-  });
+  if(getqFiltro&&getqFiltro!=='__sem'&&!grupos.includes(getqFiltro))getqFiltro=null;
+  el.innerHTML=`<span class="chip ${getqFiltro?'':'on'}" data-gf="">Todos</span><span class="chip ${getqFiltro==='__sem'?'on':''}" data-gf="__sem" style="${sem?'border-color:#FCD34D;':''}">Sem prazo (${sem})</span>`+grupos.map(g=>`<span class="chip ${getqFiltro===g?'on':''}" data-gf="${esc(g)}">${esc(g)}</span>`).join('');
+  el.querySelectorAll('[data-gf]').forEach(ch=>ch.addEventListener('click',()=>{getqFiltro=ch.dataset.gf||null;renderGetqFiltros(root);renderGetqItens(root.querySelector('#getq-itens'));}));
+  const rs=root.querySelector('#getq-resumo');
+  if(rs)rs.innerHTML=`<b>${base.length-sem}</b> de ${base.length} itens com prazo${sem?` · <span style="color:#92400E">${sem} sem prazo (não imprimem)</span>`:''}`;
 }
 function renderGetqItens(el){
   if(!el)return;
   const cfg=etqCfg();const q=getqBusca.trim().toLowerCase();
-  let itens;
-  if(q)itens=CATALOGO.filter(x=>String(x.nome).toLowerCase().includes(q)||String(x.cod).includes(q)).slice(0,25);
-  else itens=CATALOGO.filter(x=>cfg.itens[String(x.cod)]&&Object.keys(cfg.itens[String(x.cod)]).length);
-  if(!itens.length){el.innerHTML=`<div class="empty" style="padding:14px"><span>${q?'Nenhum item com esse nome.':'Nenhuma exceção cadastrada. Busque um item para definir prazo próprio ou porção.'}</span></div>`;return;}
-  let h='';
+  let itens=getqItensBase();
+  if(q)itens=itens.filter(x=>String(x.nome).toLowerCase().includes(q)||String(x.cod).includes(q));
+  else if(getqFiltro==='__sem')itens=itens.filter(x=>!etqPrazos(x.cod).padrao);
+  else if(getqFiltro)itens=itens.filter(x=>x.grupo===getqFiltro);
+  itens.sort((a,b)=>a.grupo.localeCompare(b.grupo,'pt-BR')||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  if(!itens.length){el.innerHTML=`<div class="empty" style="padding:14px"><span>${q?'Nenhum item com esse nome.':getqFiltro==='__sem'?'Todos os itens têm prazo.':'Nenhum item.'}</span></div>`;return;}
+  const LIM=80;const corte=itens.length>LIM;if(corte)itens=itens.slice(0,LIM);
+  let h='',lastG=null;
+  const inp='style="width:100%;margin-top:2px;font-size:15px;padding:6px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"';
   itens.forEach(x=>{
+    if(x.grupo!==lastG&&!getqFiltro&&!q){h+=`<div class="gsep">${esc(x.grupo)}</div>`;lastG=x.grupo;}
     const cod=String(x.cod),ov=cfg.itens[cod]||{},pz=etqPrazos(cod);
-    const gp=cfg.gruposPrazo[x.grupo]||ETQ_PRAZO_GRUPO[x.grupo]||{};
     const proc=PROC_GRUPOS.includes(x.grupo),cont=ehContavel(x.unidade);
-    const ef={};ETQ_CONS_ORD.forEach(c=>{if(pz.dias[c])ef[c]=1;});
-    h+=`<div class="card getq-item" data-cod="${esc(cod)}">
-      <div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
-      <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">${esc(x.grupo)} · ${esc(unidSigla(x.unidade))}${pz.proprio?' · <span style="color:var(--acc)">prazo próprio</span>':' · herda da categoria'}</div>
+    h+=`<div class="card getq-item" data-cod="${esc(cod)}" style="${pz.padrao?'':'border-left:3px solid #F59E0B'}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="font-size:13.5px;font-weight:500;line-height:1.25">${esc(x.nome)}</div>${pz.padrao?'':'<span class="sb-mis" style="flex-shrink:0">sem prazo</span>'}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">${esc(x.grupo)} · ${esc(unidSigla(x.unidade))}</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">
-        ${ETQ_CONS_ORD.map(c=>`<label style="font-size:10.5px;color:var(--tx2)">${ETQ_CONS[c].nome}<input type="text" inputmode="numeric" data-c="${c}" value="${esc(ov[c]??'')}" placeholder="${esc(etqNum(gp[c])||'—')}" style="width:100%;margin-top:2px;font-size:15px;padding:6px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>`).join('')}
-        <label style="font-size:10.5px;color:var(--tx2)">Padrão<select data-c="padrao" style="width:100%;margin-top:2px;font-size:13px;padding:7px 4px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"><option value="">(categoria)</option>${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${ov.padrao===c?'selected':''} ${ef[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></label>
+        ${ETQ_CONS_ORD.map(c=>`<label style="font-size:10.5px;color:var(--tx2)">${ETQ_CONS[c].nome}<input type="text" inputmode="numeric" data-c="${c}" value="${esc(ov[c]??'')}" placeholder="—" ${inp}/></label>`).join('')}
+        <label style="font-size:10.5px;color:var(--tx2)">Padrão<select data-c="padrao" style="width:100%;margin-top:2px;font-size:13px;padding:7px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"><option value="">auto</option>${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${ov.padrao===c?'selected':''} ${pz.dias[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></label>
       </div>
       ${(proc&&!cont)?`<div style="display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-top:8px">
-        <label style="font-size:10.5px;color:var(--tx2)">Porção (${esc(unidSigla(x.unidade))})<input type="text" inputmode="decimal" data-p="q" value="${esc(ov.porcao?ov.porcao.q:'')}" placeholder="ex.: 0,25" style="width:100%;margin-top:2px;font-size:15px;padding:6px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
+        <label style="font-size:10.5px;color:var(--tx2)">Porção (${esc(unidSigla(x.unidade))})<input type="text" inputmode="decimal" data-p="q" value="${esc(ov.porcao?ov.porcao.q:'')}" placeholder="ex.: 0,25" ${inp}/></label>
         <label style="font-size:10.5px;color:var(--tx2)">Nome da porção<input type="text" data-p="nome" value="${esc(ov.porcao?ov.porcao.nome||'':'')}" placeholder="ex.: bola 250 g" style="width:100%;margin-top:2px;font-size:14px;padding:7px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label></div>
         <div style="font-size:11px;color:var(--tx2);margin-top:4px">${rendimentoDe(cod)?'1 receita = '+fmtNum(rendimentoDe(cod))+' '+esc(unidSigla(x.unidade).toLowerCase())+(etqPorcao(cod).definida?' = '+Math.round(rendimentoDe(cod)/etqPorcao(cod).q)+' etiquetas':' — sem porção: 1 etiqueta por '+esc(unidSigla(x.unidade).toLowerCase())):'Sem rendimento de ficha sincronizado'}</div>`:''}
     </div>`;
   });
+  if(corte)h+=`<div class="empty" style="padding:12px"><span>Mostrando ${LIM} itens — use a busca ou um filtro para ver os demais.</span></div>`;
   el.innerHTML=h;
   el.querySelectorAll('.getq-item').forEach(card=>{
     const cod=card.dataset.cod;
@@ -6729,10 +6704,10 @@ function renderGetqItens(el){
       if(pq){o.porcao={q:pq.value.trim(),nome:pn.value.trim()};}
       cfg.itens[cod]=o;getqSalvar();
     };
-    card.querySelectorAll('input,select').forEach(i=>i.addEventListener('change',()=>{grava();renderGetqItens(el);}));
+    // redesenha só este card (foco/rolagem ficam no lugar) e atualiza os contadores
+    card.querySelectorAll('input,select').forEach(i=>i.addEventListener('change',()=>{grava();const root=el.closest('#home-cnt')||document;renderGetqFiltros(root);renderGetqItens(el);}));
   });
 }
-
 function gruposProcessadosDoUsuario(){
   if(isAdminRole()||!currentUserSetor)return new Set(PROC_GRUPOS); // gestor vê os três
   const g='Processados '+currentUserSetor; // Cozinha/Bar/Forno; Salão não tem processados
