@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v161</title>
+<title>Gesto Operação v162</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -297,6 +297,34 @@
 /* Modal ícone decorativo (substituiu emojis grandes) */
 .modal-icon{font-size:32px;color:var(--acc);display:block;text-align:center;margin-bottom:4px}
 
+/* ── v162: etiquetas de identificação 60×40 mm ── */
+.etq-lbl{width:60mm;height:40mm;background:#fff;color:#000;border:.5px solid #999;padding:2mm 2.5mm;display:flex;flex-direction:column;font-family:"Helvetica Neue",Arial,sans-serif;flex-shrink:0;box-sizing:border-box;break-after:page;page-break-after:always}
+.etq-lbl .eh{display:flex;justify-content:space-between;align-items:center;font-size:7pt;font-weight:700;letter-spacing:.06em}
+.etq-lbl .eh .ec{background:#000;color:#fff;padding:.5mm 1.5mm;border-radius:1mm;font-size:6.5pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.etq-lbl .en{font-size:11pt;font-weight:800;line-height:1.1;text-transform:uppercase;margin:1.5mm 0 1mm;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.etq-lbl .eg{display:grid;grid-template-columns:1fr 1fr;gap:1mm;border-top:.3mm solid #000;padding-top:1mm}
+.etq-lbl .eg small{display:block;font-size:5.5pt;font-weight:700;letter-spacing:.05em;color:#333}
+.etq-lbl .eg div{font-size:8.5pt;font-weight:600;line-height:1.15}.etq-lbl .eg .ev{font-size:10.5pt;font-weight:800}
+.etq-lbl .ef{display:flex;justify-content:space-between;gap:2mm;font-size:6.5pt;margin-top:1mm;color:#222;white-space:nowrap;overflow:hidden}
+.etq-box{border-top:.5px solid var(--bd3);padding-top:8px;margin-top:2px}
+.etq-line{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg2);border-radius:var(--r2);padding:6px 6px 6px 12px}
+.etq-l{font-size:12px;color:var(--tx2);line-height:1.3}.etq-l b{display:block;font-size:13px;color:var(--tx1);font-weight:500}
+.etq-mst{display:flex;align-items:center;background:var(--bg1);border:.5px solid var(--bd3);border-radius:8px;overflow:hidden;flex-shrink:0}
+.etq-mst button{width:38px;height:38px;border:none;background:none;font-size:20px;color:var(--tx1);cursor:pointer;font-family:inherit}.etq-mst button:active{background:var(--bg3)}
+.etq-mst .n{min-width:34px;text-align:center;font-size:16px;font-weight:600}
+.etq-pbtn{background:var(--acc-bg);color:var(--acc-tx);border:.5px solid var(--acc-bd);border-radius:8px;width:38px;height:38px;font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:inherit;flex-shrink:0}
+.etq-seg{display:flex;background:var(--bg2);border-radius:10px;padding:3px;gap:3px}
+.etq-seg div{flex:1;text-align:center;padding:8px 4px;border-radius:8px;font-size:12.5px;font-weight:500;color:var(--tx2);cursor:pointer;white-space:nowrap}
+.etq-seg div.on{background:var(--bg1);color:var(--tx1);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.etq-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--bd3);font-size:14px}.etq-kv:last-child{border-bottom:none}
+.etq-kv .k{color:var(--tx2);font-size:13px}.etq-kv .v{font-weight:500;text-align:right}
+.etq-kv input{font-size:14px;padding:6px 8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:150px}
+.etqpv-list{max-height:52vh;overflow:auto;padding:8px 16px;display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--bg2)}
+.getq-tbl{width:100%;border-collapse:collapse;font-size:12px}.getq-tbl th{font-weight:500;color:var(--tx2);text-align:left;padding:6px 3px;border-bottom:.5px solid var(--bd3);font-size:11px}
+.getq-tbl td{padding:7px 3px;border-bottom:.5px solid var(--bd3);vertical-align:middle}.getq-tbl tr:last-child td{border-bottom:none}
+.getq-tbl input{width:46px;text-align:center;font-size:15px;padding:6px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit}
+.getq-tbl select{font-size:12px;padding:6px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:86px}
+@media print{body.etq-print #print-area .etq-lbl{border:none;margin:0;break-after:page;page-break-after:always}body.etq-print #print-area .etq-lbl:last-child{break-after:auto;page-break-after:auto}}
 /* ── Impressão: lista de conferência por local (v77) ── */
 #print-area{display:none}
 @media print{
@@ -560,6 +588,35 @@
   </div>
   <div class="content" id="dprod-cnt"></div>
   <div class="bbar" id="dprod-bbar"></div>
+</div>
+
+<!-- v162: Diário › Etiquetas (insumos abertos/fracionados) -->
+<div id="s-etq" class="scr">
+  <div class="topbar">
+    <button class="tbtn" onclick="fecharDreg()"><span style="font-size:22px;line-height:1">←</span></button>
+    <div style="text-align:center"><div class="tt">Etiquetas</div><div class="ts">Insumos abertos ou fracionados</div></div>
+    <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit"><i class="ti ti-home" style="font-size:15px"></i> Início</button>
+  </div>
+  <div class="content" id="etq-cnt"></div>
+</div>
+<div class="bs-modal-bg" id="modal-etq-item">
+  <div class="bs-sheet">
+    <div class="bs-handle"></div>
+    <div id="etqi-body"></div>
+    <button class="bs-btn-cancel" onclick="closeModal('modal-etq-item')">Cancelar</button>
+    <div style="height:env(safe-area-inset-bottom,16px)"></div>
+  </div>
+</div>
+<div class="bs-modal-bg" id="modal-etq-pv">
+  <div class="bs-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-title" id="etqpv-title">Pré-visualização</div>
+    <div style="font-size:12px;color:var(--tx2);padding:8px 16px 6px;text-align:center">Tamanho real 60×40 mm · cada etiqueta é uma página na impressora</div>
+    <div class="etqpv-list" id="etqpv-list"></div>
+    <div style="padding:12px 16px 4px"><button class="bp" id="etqpv-go"><i class="ti ti-printer"></i> Enviar para a impressora</button></div>
+    <button class="bs-btn-cancel" id="etqpv-cancel">Cancelar</button>
+    <div style="height:env(safe-area-inset-bottom,16px)"></div>
+  </div>
 </div>
 
 <!-- v91: execução de rotina (atividade do dia) -->
@@ -1825,7 +1882,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v161';
+const APP_VERSION = 'v162';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2624,6 +2681,7 @@ function exportarListaLocalPDF(lid){
     </thead>
     <tbody>${body}</tbody>
   </table>`;
+  etqLimparModoImpressao(); // v162: garante @page A4 mesmo se a última impressão foi de etiqueta
   const area=document.getElementById('print-area');
   area.innerHTML=html;
   document.title=`Conferência ${l.nome} - ${dataStr}`;
@@ -4510,10 +4568,10 @@ function renderGestao(c){
   // v102→v105: Locais/Specs/Base/Backup agrupadas como sub-abas de Gestão › Estoque
   if(gestaoTabId==='locais'||gestaoTabId==='specs'||gestaoTabId==='base'||gestaoTabId==='backup'){gestaoEstTabId=gestaoTabId;gestaoTabId='estoque';}
   // v119: Usuários, Acessos e Sistema só para o administrador pleno
-  const tabs=isAdminPleno()?['rotinas','estoque','diario','usuarios','acessos','sistema']:['rotinas','estoque','diario'];
+  const tabs=isAdminPleno()?['rotinas','estoque','diario','etiquetas','usuarios','acessos','sistema']:['rotinas','estoque','diario','etiquetas']; // v162: Etiquetas
   if(!tabs.includes(gestaoTabId)&&gestaoTabId!=='estoque')gestaoTabId='rotinas';
   if(!isAdminPleno()&&gestaoEstTabId==='backup')gestaoEstTabId='locais';
-  const tabLabel={rotinas:'Rotinas',estoque:'Estoque',diario:'Diário',usuarios:'Usuários',acessos:'Acessos',sistema:'Sistema'};
+  const tabLabel={rotinas:'Rotinas',estoque:'Estoque',diario:'Diário',etiquetas:'Etiquetas',usuarios:'Usuários',acessos:'Acessos',sistema:'Sistema'};
   let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);font-size:13px;overflow-x:auto;scrollbar-width:none">
     ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:none;padding-left:13px;padding-right:13px;white-space:nowrap">${tabLabel[t]}</div>`).join('')}</div>`;
   const gTab=gestaoTabId==='estoque'?gestaoEstTabId:gestaoTabId;
@@ -4724,6 +4782,8 @@ function renderGestao(c){
     h+='<div id="gestao-acessos-list"></div>';
   } else if(gestaoTabId==='diario'){
     h+=renderGestaoDiario();
+  } else if(gestaoTabId==='etiquetas'){
+    h+=renderGestaoEtq(); // v162
   } else {
     h+=`<button class="bg_" id="btn-est-voltar" style="text-align:left;padding:6px 0;font-size:13px;color:var(--acc)">← Voltar aos Locais</button>
       <div class="sec">Ferramentas avançadas</div>
@@ -4758,6 +4818,7 @@ function renderGestao(c){
     if(alvo)renderAcessos(alvo);
   }
   if(gestaoTabId==='diario'){wireGestaoDiario(c);} // v85
+  if(gestaoTabId==='etiquetas'){wireGestaoEtq(c);} // v162
   if(gestaoTabId==='rotinas'){wireGestaoRotinas(c);} // v91
 
   // Event listeners
@@ -5117,6 +5178,7 @@ const DIARIO_TIPOS={
   erro:{label:'Erro de prato',icon:'ti-alert-triangle',cor:'#854F0B',bg:'#FAEEDA',verbo:'Registrar erro'},
   desperdicio:{label:'Desperdício',icon:'ti-trash',cor:'#A32D2D',bg:'#FCEBEB',verbo:'Registrar desperdício'},
   consumo:{label:'Saída do congelador',icon:'ti-arrow-down-circle',cor:'#185FA5',bg:'#E6F1FB',verbo:'Registrar consumo'}, // v136
+  etiqueta:{label:'Etiquetas',icon:'ti-tag',cor:'#5B21B6',bg:'#EDE9FE',verbo:'Imprimir etiquetas'}, // v162
 };
 let SETORES=['Cozinha','Bar','Forno','Salão']; // v94: editável em Gestão › Usuários (persistido em cfg_diario.setoresLista)
 const MOTIVOS_ERRO=['Comanda errada','Preparo errado','Devolvido pelo cliente','Outro'];
@@ -5195,7 +5257,7 @@ function analisarCardapioSaipos(){
 async function ensureDiarioCfg(){
   if(diarioCfgLoaded||!firebaseReady||!currentUser)return;
   try{const doc=await db.collection(RASCUNHO_COL).doc(DIARIO_CFG_DOC).get();
-    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null,diasUteis:Array.isArray(d.diasUteis)?d.diasUteis.slice():null,conferencia:d.conferencia||null,impressoras:d.impressoras||null,catsErro:Array.isArray(d.catsErro)?d.catsErro.slice():null}; // v136/v146/v150
+    if(doc.exists){const d=doc.data();diarioCfg={processados:d.processados||[],setores:d.setores||{},lanc:d.lanc||null,setoresLista:d.setoresLista||null,rolesLista:d.rolesLista||null,rotCategorias:d.rotCategorias||null,diasUteis:Array.isArray(d.diasUteis)?d.diasUteis.slice():null,conferencia:d.conferencia||null,impressoras:d.impressoras||null,catsErro:Array.isArray(d.catsErro)?d.catsErro.slice():null,etiquetas:(d.etiquetas&&typeof d.etiquetas==='object')?d.etiquetas:null}; // v136/v146/v150/v162
       if(Array.isArray(d.setoresLista)&&d.setoresLista.length)SETORES=d.setoresLista.slice();
       if(Array.isArray(d.rolesLista)&&d.rolesLista.length)ROLES=d.rolesLista.slice();
       if(Array.isArray(d.rotCategorias)&&d.rotCategorias.length)ROT_CATS=d.rotCategorias.slice();
@@ -6160,18 +6222,21 @@ function regLinhaHTML(r,admin){
   if(r.tipo==='conferencia'){
     desc='Conferência · '+(r.items?r.items.length:0)+' itens';
     sub=(r.userNome||'')+' · '+hora+(r.setor?' · '+esc(r.setor):'');
+  }else if(r.tipo==='etiqueta'){ // v162
+    desc=esc((r.item&&r.item.nome)||'?')+' · '+(r.qtd||0)+' etiqueta'+(r.qtd==1?'':'s');
+    sub=['Etiqueta'+(r.origem==='producao'?' · produção':r.origem==='reimpressao'?' · reimpressão':''),r.validade?'vence '+etqFmtCurto(new Date(r.validade)):null,r.cons&&ETQ_CONS[r.cons]?ETQ_CONS[r.cons].nome:null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
   }else{
     desc=esc((r.item&&r.item.nome)||'?')+(r.qtd!=null?' · '+fmtQtdDiario(r.qtd)+' '+esc(unidSigla(r.item&&r.item.unidade)):''); // v116: registros antigos do diário guardam o id
     sub=[t.label,r.motivo?esc(r.motivo):null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
   }
   const cancelado=r.status==='cancelado';
   const stBadge=cancelado?'<span class="bdg" style="background:var(--bg2);color:var(--tx2)">cancelado</span>' :
-    r.tipo==='conferencia'?'' :
+    r.tipo==='conferencia'||r.tipo==='etiqueta'?'' :
     r.status==='lancado'?'<span class="bdg" style="background:#EAF3DE;color:#27500A">lançado</span>' :
     r.status==='ignorado'?'<span class="bdg" style="background:var(--bg2);color:var(--tx2)">ignorado</span>' :
     '<span class="bdg" style="background:#FAEEDA;color:#633806">pendente</span>';
   // v127: gestor corrige ou cancela pelo menu "⋯" (rotina não entra: vive no Início)
-  const menu=(isAdminRole()&&r.tipo!=='rotina')?`<button class="zb reg-menu" data-reg="${r.id}" style="padding:4px 8px;border:none;background:none;color:var(--tx2);font-size:18px;line-height:1">⋯</button>`:'';
+  const menu=(isAdminRole()&&r.tipo!=='rotina'&&r.tipo!=='etiqueta')?`<button class="zb reg-menu" data-reg="${r.id}" style="padding:4px 8px;border:none;background:none;color:var(--tx2);font-size:18px;line-height:1">⋯</button>`:'';
   const risc=cancelado?'text-decoration:line-through;opacity:.55;':'';
   return `<div class="row" data-reg-id="${r.id}" style="cursor:default">
     <i class="ti ${t.icon}" style="font-size:20px;color:${cancelado?'var(--tx2)':t.cor};width:28px;text-align:center;flex-shrink:0"></i>
@@ -6190,6 +6255,7 @@ function renderDiarioBody(c){
     {tipo:'conferencia',sub:'Saldo do congelador — marque o que saiu'},
     {tipo:'erro',sub:'Prato feito por engano ou devolvido'},
     {tipo:'desperdicio',sub:'Vencidos, estragados, quebras'},
+    {tipo:'etiqueta',sub:'Identificação de insumos abertos ou fracionados'}, // v162
   ];
   cards.forEach(cd=>{
     const t=DIARIO_TIPOS[cd.tipo];
@@ -6222,7 +6288,7 @@ function renderDiarioBody(c){
   c.innerHTML=h;
   c.querySelectorAll('[data-diario-acao]').forEach(el=>el.addEventListener('click',()=>{
     const tp=el.dataset.diarioAcao;
-    if(tp==='conferencia')abrirDconf();else if(tp==='producao')abrirDprod();else abrirDreg(tp);
+    if(tp==='conferencia')abrirDconf();else if(tp==='producao')abrirDprod();else if(tp==='etiqueta')abrirEtq();else abrirDreg(tp);
   }));
   // v127: menu de correção/cancelamento (só gestor vê o botão)
   c.querySelectorAll('.reg-menu').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();abrirRegMenu(el.dataset.reg);}));
@@ -6249,6 +6315,443 @@ function fecharDreg(){show('s-home');homeTab('diario');}
 // v87: Produção mostra apenas insumos beneficiados (grupos "Processados"),
 // filtrados pelo setor do usuário pelo próprio nome do grupo (Processados <Setor>).
 const PROC_GRUPOS=['Processados Cozinha','Processados Bar','Processados Forno'];
+
+// ══ v162: ETIQUETAS DE IDENTIFICAÇÃO (vigilância sanitária) ═══════════════════
+// Duas portas de entrada, uma mecânica:
+//   • Produção: cada card mostra quantas etiquetas saem (1 por porção produzida —
+//     o armazenamento dos processados é padronizado, então 1 receita de Polpetini
+//     = 20 porções = 20 etiquetas) e o botão principal vira "Registrar e imprimir".
+//   • Diário › Etiquetas: insumos NÃO processados abertos ou fracionados (queijo
+//     aberto, frango porcionado). O gestor escolhe em Gestão › Etiquetas quais
+//     categorias do catálogo aparecem — Material de Limpeza não tem por que estar lá.
+// Configuração mora em cfg_diario.etiquetas (documento já protegido, já no backup
+// diário, já carregado no login — nada de documento novo nas rules):
+//   {grupos:[nomes liberados]|null (null = padrão: tudo menos ETQ_GRUPOS_FORA),
+//    gruposPrazo:{grupo:{R,C,A,padrao}}, itens:{cod:{R,C,A,padrao,porcao:{q,nome}}}}
+// Prazo em DIAS por conservação: R resfriado, C congelado, A ambiente. Item herda
+// da categoria; '' ou ausente = herda. Item sem prazo nenhum NÃO imprime.
+// Cada impressão vira um registro no `diario` com tipo:'etiqueta', status:'na'
+// (fora da fila Saipos, como as rotinas) — é o rastro que a vigilância pede:
+// quem imprimiu, quando, com que validade.
+// A etiqueta é HTML de 60×40 mm impresso via window.print com @page injetado na
+// hora (a folha A4 da lista de conferência continua intacta).
+const ETQ_CONS={R:{nome:'Resfriado',rot:'RESFRIADO 0–5 °C'},C:{nome:'Congelado',rot:'CONGELADO −18 °C'},A:{nome:'Ambiente',rot:'AMBIENTE'}};
+const ETQ_CONS_ORD=['R','C','A'];
+// Categorias que nunca precisam de etiqueta sanitária — fora por padrão; o gestor pode ligar.
+const ETQ_GRUPOS_FORA=['Louça','Material de Limpeza','Embalagens','Utensílios','Material de Escritório','Descartáveis','EPI','Equipamentos','Uniformes','Mobiliário','Higiene'];
+// Sugestão inicial de prazos por categoria (dias). É ponto de partida, não norma:
+// o gestor confirma em Gestão › Etiquetas — o que ele salvar em gruposPrazo vence.
+const ETQ_PRAZO_GRUPO={
+  'Lácteos':{R:5},'Charcutaria':{R:3},'Proteínas Animais':{R:1,C:30},'Hortifruti':{R:3},
+  'Conservas & Enlatados':{R:3},'Óleos & Gorduras':{A:90},'Farináceos':{A:30},'Armazém':{A:30},
+  'Compra & Processa':{R:3,C:30},'Chás':{A:90},'Bebidas Não Alcoólicas':{R:3},'Bebidas Alcoólicas':{A:30},
+  'Vinhos Tintos':{R:3},'Vinhos Brancos':{R:3},'Vinhos Rosés':{R:3},'Espumantes':{R:2},
+  'Processados Cozinha':{R:3,C:30},'Processados Bar':{R:5},'Processados Forno':{R:3,C:30},
+};
+const ETQ_TITLE0=document.title;
+function etqCfg(){
+  if(!diarioCfg)diarioCfg={};
+  if(!diarioCfg.etiquetas||typeof diarioCfg.etiquetas!=='object')diarioCfg.etiquetas={};
+  const e=diarioCfg.etiquetas;
+  if(!Array.isArray(e.grupos))e.grupos=null;
+  if(!e.gruposPrazo||typeof e.gruposPrazo!=='object')e.gruposPrazo={};
+  if(!e.itens||typeof e.itens!=='object')e.itens={};
+  return e;
+}
+function etqTodosGrupos(){
+  return [...new Set(CATALOGO.map(x=>x.grupo).filter(Boolean))].sort((a,b)=>{
+    const pa=PROC_GRUPOS.includes(a),pb=PROC_GRUPOS.includes(b);
+    if(pa!==pb)return pa?1:-1; // processados por último
+    return a.localeCompare(b,'pt-BR');
+  });
+}
+// Processados ficam desligados por padrão no módulo de insumos: a etiqueta deles
+// sai pela Produção. Ligar aqui serve só para reimpressão avulsa.
+function etqGrupoAtivo(g){
+  const cfg=etqCfg();
+  if(Array.isArray(cfg.grupos))return cfg.grupos.includes(g);
+  return !ETQ_GRUPOS_FORA.includes(g)&&!PROC_GRUPOS.includes(g);
+}
+function etqNum(v){const n=Number(String(v??'').replace(',','.'));return (isFinite(n)&&n>0)?n:null;}
+// Prazos efetivos de um item: override do item > categoria configurada > sugestão embutida.
+function etqPrazos(cod){
+  const it=getProd(cod);const cfg=etqCfg();
+  const ov=cfg.itens[String(cod)]||{};
+  const gp=(it&&cfg.gruposPrazo[it.grupo])||(it&&ETQ_PRAZO_GRUPO[it.grupo])||{};
+  const dias={};
+  ETQ_CONS_ORD.forEach(c=>{const v=etqNum(ov[c])??etqNum(gp[c]);if(v)dias[c]=v;});
+  let padrao=(ov.padrao&&dias[ov.padrao])?ov.padrao:((gp.padrao&&dias[gp.padrao])?gp.padrao:null);
+  if(!padrao)padrao=ETQ_CONS_ORD.find(c=>dias[c])||null;
+  return {dias,padrao,proprio:ETQ_CONS_ORD.some(c=>etqNum(ov[c]))||!!ov.padrao};
+}
+// Porção de armazenamento: converte a produção em nº de etiquetas.
+// PÇ/UN → 1 por unidade. KG/L → pote/bola/garrafa cadastrada; sem cadastro, 1 por kg/L.
+function etqPorcao(cod){
+  const it=getProd(cod);const ov=(etqCfg().itens[String(cod)]||{}).porcao;
+  if(ov&&etqNum(ov.q))return {q:etqNum(ov.q),nome:ov.nome||('porção de '+fmtNum(ov.q)+' '+unidSigla(it&&it.unidade).toLowerCase()),definida:true};
+  if(it&&ehContavel(it.unidade))return {q:1,nome:'porção',definida:true};
+  return {q:1,nome:'1 '+unidSigla(it&&it.unidade).toLowerCase(),definida:false};
+}
+// Validade = base (abertura/manipulação) + dias; nunca passa da validade original do fabricante.
+function etqValidade(cod,cons,base,valOrig){
+  const p=etqPrazos(cod);const d=p.dias[cons];
+  if(!d)return null;
+  const v=new Date(base.getTime()+d*86400000);
+  if(valOrig&&valOrig<v)return {d:valOrig,limitada:true};
+  return {d:v,limitada:false};
+}
+function etqFmtD(d){return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});}
+function etqFmtDH(d){return etqFmtD(d)+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function etqFmtCurto(d){return d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','');}
+// A etiqueta em si. Campos exigidos: produto, data de manipulação/abertura, validade,
+// conservação, responsável. Numeração i/N ajuda a conferir se todas foram coladas.
+function etqLabelHTML(o){
+  const grupo=String(o.grupo||'').replace(/^Processados\s*/i,'').toUpperCase();
+  return `<div class="etq-lbl">
+    <div class="eh"><span>GESTO · ${esc(grupo)}</span><span class="ec">${ETQ_CONS[o.cons].rot}</span></div>
+    <div class="en">${esc(o.nome)}</div>
+    <div class="eg">
+      <div><small>${o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA'}</small><div>${etqFmtDH(o.base)}</div></div>
+      <div><small>VALIDADE${o.limitada?' (FABR.)':''}</small><div class="ev">${o.val?etqFmtDH(o.val):'—'}</div></div>
+    </div>
+    <div class="ef"><span>Resp.: <b>${esc(o.resp||'')}</b></span><span>${esc(o.rodape||'')}</span><span>${o.idx}/${o.tot}</span></div>
+  </div>`;
+}
+// ── impressão ──────────────────────────────────────────────────────────────
+// O @page da lista de conferência (A4 paisagem) está no CSS estático. Aqui um
+// <style> temporário no fim do <head> vence a cascata e vira 60×40 mm; sai no
+// afterprint e, por garantia, no começo de exportarListaLocalPDF.
+function etqLimparModoImpressao(){
+  document.body.classList.remove('etq-print');
+  const st=document.getElementById('etq-page-style');if(st)st.remove();
+  document.title=ETQ_TITLE0;
+}
+function etqImprimir(labels){
+  const area=document.getElementById('print-area');
+  area.innerHTML=labels.join('');
+  let st=document.getElementById('etq-page-style');
+  if(!st){st=document.createElement('style');st.id='etq-page-style';document.head.appendChild(st);}
+  st.textContent='@page{size:60mm 40mm;margin:0}';
+  document.body.classList.add('etq-print');
+  document.title='Etiquetas GESTO';
+  const done=()=>{window.removeEventListener('afterprint',done);etqLimparModoImpressao();};
+  window.addEventListener('afterprint',done);
+  setTimeout(()=>window.print(),80);
+}
+// Pré-visualização em tamanho real antes de gastar etiqueta. onOk roda DEPOIS de
+// mandar para a impressora: é quem grava o registro no diário.
+function etqAbrirPreview(labels,titulo,onOk){
+  document.getElementById('etqpv-title').textContent=titulo+' · '+labels.length+' etiqueta'+(labels.length!==1?'s':'');
+  document.getElementById('etqpv-list').innerHTML=labels.join('');
+  const go=document.getElementById('etqpv-go');
+  go.onclick=async()=>{
+    closeModal('modal-etq-pv');
+    etqImprimir(labels);
+    showToast(labels.length+' etiqueta'+(labels.length!==1?'s':'')+' enviada'+(labels.length!==1?'s':'')+' para a impressora',{type:'ok'});
+    if(onOk){try{await onOk();}catch(e){showToast('Impresso, mas não consegui registrar: '+e.message,{type:'err'});}}
+  };
+  document.getElementById('etqpv-cancel').onclick=()=>closeModal('modal-etq-pv');
+  document.getElementById('modal-etq-pv').classList.add('on');
+}
+async function etqRegistrar(regs){
+  for(const r of regs)await salvarRegistroDiario({tipo:'etiqueta',status:'na',...r});
+}
+function etqRecentes(origem,max){
+  const vistos=new Set(),out=[];
+  diarioHoje.filter(r=>r.tipo==='etiqueta'&&r.status!=='cancelado'&&(!origem||r.origem===origem)).forEach(r=>{
+    const cod=String(r.item&&r.item.cod);if(!cod||vistos.has(cod))return;vistos.add(cod);out.push(r);
+  });
+  return out.slice(0,max||5);
+}
+
+// ── Diário › Etiquetas (insumos abertos/fracionados) ───────────────────────
+let etqBusca='',etqGrupo=null,etqI=null;
+function abrirEtq(){etqBusca='';etqGrupo=null;show('s-etq');renderEtq();}
+function etqItensDisponiveis(){return CATALOGO.filter(x=>x.grupo&&etqGrupoAtivo(x.grupo));}
+function renderEtq(){
+  const c=document.getElementById('etq-cnt');
+  const disp=etqItensDisponiveis();
+  if(!disp.length){
+    c.innerHTML=`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-tag" style="font-size:28px;opacity:.5"></i></div>
+      <div class="empty-title">Nenhuma categoria liberada</div>
+      <div class="empty-sub">${isAdminRole()?'Libere as categorias em Gestão › Etiquetas.':'Peça ao gestor para liberar as categorias em Gestão › Etiquetas.'}</div></div>`;
+    return;
+  }
+  const grupos=[...new Set(disp.map(x=>x.grupo))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  if(etqGrupo&&!grupos.includes(etqGrupo))etqGrupo=null;
+  let h=`<div style="position:relative">
+    <input id="etq-busca" class="srch" placeholder="Buscar insumo pelo nome…" autocomplete="off" value="${esc(etqBusca)}"/>
+    <button id="etq-busca-x" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx2);font-size:16px;cursor:pointer;padding:4px 6px;display:${etqBusca?'block':'none'};font-family:inherit">✕</button>
+  </div>`;
+  if(grupos.length>1)h+=`<div class="chips" id="etq-chips" style="padding:2px 0 4px"><span class="chip ${etqGrupo?'':'on'}" data-eg="">Todos</span>${grupos.map(g=>`<span class="chip ${etqGrupo===g?'on':''}" data-eg="${esc(g)}">${esc(g)}</span>`).join('')}</div>`;
+  h+='<div id="etq-lista" style="display:flex;flex-direction:column;gap:8px"></div>';
+  c.innerHTML=h;
+  c.querySelectorAll('[data-eg]').forEach(el=>el.addEventListener('click',()=>{etqGrupo=el.dataset.eg||null;renderEtq();}));
+  const bi=c.querySelector('#etq-busca'),bx=c.querySelector('#etq-busca-x');
+  bi.addEventListener('input',()=>{etqBusca=bi.value;bx.style.display=bi.value?'block':'none';renderEtqLista();});
+  bx.addEventListener('click',()=>{etqBusca='';bi.value='';bx.style.display='none';renderEtqLista();bi.focus();});
+  renderEtqLista();
+}
+function etqLinhaSub(cod){
+  const p=etqPrazos(cod);
+  if(!p.padrao)return '<span class="sb-mis"><i class="ti ti-alert-triangle" style="font-size:10px"></i>sem prazo — peça ao gestor</span>';
+  return esc(ETQ_CONS[p.padrao].nome)+' · '+fmtNum(p.dias[p.padrao])+' d após aberto'+(Object.keys(p.dias).length>1?' · +'+(Object.keys(p.dias).length-1):'');
+}
+function renderEtqLista(){
+  const el=document.getElementById('etq-lista');if(!el)return;
+  const q=etqBusca.trim().toLowerCase();
+  let itens=etqItensDisponiveis().filter(x=>(!etqGrupo||x.grupo===etqGrupo)&&(!q||String(x.nome).toLowerCase().includes(q)||String(x.cod).includes(q)));
+  itens.sort((a,b)=>a.grupo.localeCompare(b.grupo,'pt-BR')||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  let h='';
+  if(!q&&!etqGrupo){
+    const rec=etqRecentes(null,6);
+    if(rec.length){
+      h+='<div class="sec">Impressas hoje · toque para repetir</div><div class="chips" style="padding:0 0 4px">';
+      rec.forEach(r=>{h+=`<span class="chip etq-rec" data-cod="${esc(r.item.cod)}"><i class="ti ti-repeat" style="font-size:12px"></i>${esc(r.item.nome)}</span>`;});
+      h+='</div>';
+    }
+  }
+  if(!itens.length)h+=`<div class="empty" style="padding:20px"><span>${q?'Nenhum insumo com esse nome.':'Nenhum item nesta categoria.'}</span></div>`;
+  let lastG=null;
+  itens.forEach(x=>{
+    if(x.grupo!==lastG&&!etqGrupo){h+=`<div class="gsep">${esc(x.grupo)}</div>`;lastG=x.grupo;}
+    h+=`<div class="row etq-item" data-cod="${esc(x.cod)}"><div style="flex:1;min-width:0">
+      <div style="font-size:14px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11.5px;color:var(--tx2);margin-top:2px">${etqLinhaSub(x.cod)}</div></div>
+      <i class="ti ti-chevron-right" style="color:var(--tx2)"></i></div>`;
+  });
+  el.innerHTML=h;
+  el.querySelectorAll('.etq-item,.etq-rec').forEach(r=>r.addEventListener('click',()=>abrirEtqItem(r.dataset.cod)));
+}
+function abrirEtqItem(cod){
+  const it=getProd(cod);if(!it)return;
+  const p=etqPrazos(cod);
+  if(!p.padrao){showToast('Sem prazo de validade cadastrado — o gestor define em Gestão › Etiquetas');return;}
+  etqI={cod:String(cod),cons:p.padrao,abert:'agora',outra:'',valOrig:'',qty:1};
+  renderEtqItem();
+  document.getElementById('modal-etq-item').classList.add('on');
+}
+function etqBaseDate(){
+  if(etqI.abert==='ontem'){const d=new Date();d.setDate(d.getDate()-1);return d;}
+  if(etqI.abert==='outra'&&etqI.outra){const d=new Date(etqI.outra);if(!isNaN(d))return d;}
+  return new Date();
+}
+function etqValOrigDate(){return etqI.valOrig?new Date(etqI.valOrig+'T23:59:00'):null;}
+function renderEtqItem(){
+  const it=getProd(etqI.cod),p=etqPrazos(etqI.cod);
+  if(!p.dias[etqI.cons])etqI.cons=p.padrao;
+  const base=etqBaseDate(),vo=etqValOrigDate(),v=etqValidade(etqI.cod,etqI.cons,base,vo);
+  const agora=new Date();
+  const b=document.getElementById('etqi-body');
+  b.innerHTML=`
+    <div style="padding:12px 16px 4px"><div style="font-size:16px;font-weight:600">${esc(it.nome)}</div><div style="font-size:12px;color:var(--tx2)">${esc(it.grupo)} · COD ${esc(it.cod)}</div></div>
+    <div style="padding:0 16px"><div class="sec">Conservação</div>
+    <div class="chips" style="padding:0 0 4px;flex-wrap:wrap">${ETQ_CONS_ORD.filter(c=>p.dias[c]).map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome} · ${fmtNum(p.dias[c])} d</span>`).join('')}</div>
+    <div class="sec">Abertura / fracionamento</div>
+    <div class="etq-seg"><div class="${etqI.abert==='agora'?'on':''}" data-ea="agora">Agora · ${agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div><div class="${etqI.abert==='ontem'?'on':''}" data-ea="ontem">Ontem</div><div class="${etqI.abert==='outra'?'on':''}" data-ea="outra">Outra…</div></div>
+    ${etqI.abert==='outra'?`<input type="datetime-local" id="etqi-outra" class="fi" style="margin-top:6px;width:100%" value="${esc(etqI.outra)}"/>`:''}
+    <div class="card" style="padding:2px 14px;margin-top:8px">
+      <div class="etq-kv"><span class="k">Validade original (fabricante)</span><input type="date" id="etqi-vo" value="${esc(etqI.valOrig)}"/></div>
+      <div class="etq-kv"><span class="k">Validade na etiqueta</span><span class="v" style="color:${v&&v.limitada?'#92400E':'var(--acc)'}">${v?etqFmtDH(v.d):'—'}${v&&v.limitada?'<br><small style="font-weight:400">limitada pelo fabricante</small>':''}</span></div>
+      <div class="etq-kv"><span class="k">Quantidade de etiquetas</span><div class="etq-mst"><button id="etqi-m">−</button><span class="n">${etqI.qty}</span><button id="etqi-p">+</button></div></div>
+    </div>
+    <button class="bp" id="etqi-go" style="margin:12px 0 4px"><i class="ti ti-printer"></i> Imprimir ${etqI.qty} etiqueta${etqI.qty>1?'s':''}</button></div>`;
+  b.querySelectorAll('[data-ec]').forEach(el=>el.addEventListener('click',()=>{etqI.cons=el.dataset.ec;renderEtqItem();}));
+  b.querySelectorAll('[data-ea]').forEach(el=>el.addEventListener('click',()=>{etqI.abert=el.dataset.ea;renderEtqItem();}));
+  const ou=b.querySelector('#etqi-outra');if(ou)ou.addEventListener('change',()=>{etqI.outra=ou.value;renderEtqItem();});
+  b.querySelector('#etqi-vo').addEventListener('change',e=>{etqI.valOrig=e.target.value;renderEtqItem();});
+  b.querySelector('#etqi-m').addEventListener('click',()=>{etqI.qty=Math.max(1,etqI.qty-1);renderEtqItem();});
+  b.querySelector('#etqi-p').addEventListener('click',()=>{etqI.qty=Math.min(99,etqI.qty+1);renderEtqItem();});
+  b.querySelector('#etqi-go').addEventListener('click',etqImprimirInsumo);
+}
+function etqImprimirInsumo(){
+  const it=getProd(etqI.cod);const base=etqBaseDate(),vo=etqValOrigDate();
+  const v=etqValidade(etqI.cod,etqI.cons,base,vo);
+  if(!v){showToast('Sem prazo para esta conservação',{type:'err'});return;}
+  const n=etqI.qty,cons=etqI.cons,labels=[];
+  const tipo=PROC_GRUPOS.includes(it.grupo)?'producao':'insumo';
+  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo,nome:it.nome,grupo:it.grupo,cons,base,val:v.d,limitada:v.limitada,resp:currentUserNome,rodape:(vo&&!v.limitada)?'Val. orig. '+etqFmtD(vo):'',idx:k,tot:n}));
+  closeModal('modal-etq-item');
+  etqAbrirPreview(labels,it.nome,async()=>{
+    await etqRegistrar([{origem:tipo==='producao'?'reimpressao':'insumo',item:{cod:it.cod,nome:it.nome,unidade:it.unidade,grupo:it.grupo},cons,abertura:base.getTime(),validade:v.d.getTime(),qtd:n}]);
+    await carregarDiarioHoje();
+    if(document.getElementById('s-etq').classList.contains('on'))renderEtqLista();
+  });
+}
+
+// ── Produção: etiquetas no card (1 por porção produzida) ──────────────────
+function dprodQtdPorcoes(cod){
+  const y=rendimentoDe(cod),v=dprodVal(cod);let q;
+  if(y){if((Number(v.rec)||0)<=0)return 0;q=dprodReal(cod);}
+  else{q=parseQtdDiario(v.val);if(String(v.val??'').trim()===''||!isFinite(q)||q<=0)return 0;}
+  const p=etqPorcao(cod);
+  return Math.max(1,Math.round(q/p.q));
+}
+function dprodEtqN(cod){const v=dprodVal(cod);return (v.etq!=null&&v.etq!=='')?Number(v.etq):dprodQtdPorcoes(cod);}
+function dprodConsDe(cod){const v=dprodVal(cod),p=etqPrazos(cod);return (v.cons&&p.dias[v.cons])?v.cons:p.padrao;}
+function dprodEtqHTML(x){
+  const p=etqPrazos(x.cod);
+  if(!p.padrao)return `<div class="etq-line" style="margin-top:8px"><span class="sb-mis"><i class="ti ti-alert-triangle" style="font-size:10px"></i>Sem prazo de validade — etiqueta não sai (Gestão › Etiquetas)</span></div>`;
+  const v=dprodVal(x.cod),cons=dprodConsDe(x.cod),n=dprodEtqN(x.cod),por=etqPorcao(x.cod);
+  const val=etqValidade(x.cod,cons,new Date());
+  const consKeys=ETQ_CONS_ORD.filter(c=>p.dias[c]);
+  const chips=consKeys.length>1?`<div class="chips" style="padding:0 0 6px">${consKeys.map(c=>`<span class="chip ${cons===c?'on':''} dprod-cons" data-cod="${esc(x.cod)}" data-c="${c}">${ETQ_CONS[c].nome} · ${fmtNum(p.dias[c])} d</span>`).join('')}</div>`:'';
+  if(v.etqFeito)return `<div class="etq-box">${chips}<div class="etq-line"><div class="etq-l">Etiquetas<b style="color:#3B6D11"><i class="ti ti-check" style="font-size:12px"></i> ${v.etqFeito} impressa${v.etqFeito>1?'s':''} · ${ETQ_CONS[cons].nome}</b></div><button class="etq-pbtn dprod-etq-print" data-cod="${esc(x.cod)}" title="Imprimir de novo"><i class="ti ti-printer"></i></button></div></div>`;
+  const num=v.etqAdj
+    ?`<div class="etq-mst"><button class="dprod-etq-minus" data-cod="${esc(x.cod)}">−</button><span class="n" style="${n!==dprodQtdPorcoes(x.cod)?'color:#92400E':''}">${n}</span><button class="dprod-etq-plus" data-cod="${esc(x.cod)}">+</button></div>`
+    :`<span style="font-size:22px;font-weight:600;line-height:1">${n}</span><button class="dprod-etq-adj" data-cod="${esc(x.cod)}" style="background:none;border:none;color:var(--tx2);font-size:12px;text-decoration:underline;cursor:pointer;font-family:inherit;padding:4px 6px">ajustar</button>`;
+  const aviso=(!por.definida&&!ehContavel(x.unidade))?`<div style="font-size:11px;color:#92400E;margin-top:4px"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Porção de armazenamento não cadastrada — contando 1 etiqueta por ${esc(unidSigla(x.unidade).toLowerCase())}</div>`:'';
+  return `<div class="etq-box">${chips}<div class="etq-line"><div class="etq-l">Etiquetas · 1 por ${esc(por.nome)}<b>${ETQ_CONS[cons].nome} · vence ${etqFmtCurto(val.d)}</b></div>
+    <div style="display:flex;gap:6px;align-items:center">${num}<button class="etq-pbtn dprod-etq-print" data-cod="${esc(x.cod)}" title="Imprimir só este item agora"><i class="ti ti-printer"></i></button></div></div>${aviso}</div>`;
+}
+function wireDprodEtq(root){
+  root.querySelectorAll('.dprod-cons').forEach(el=>el.addEventListener('click',()=>{dprodVal(el.dataset.cod).cons=el.dataset.c;rerenderDprodCard(el.dataset.cod);}));
+  root.querySelectorAll('.dprod-etq-adj').forEach(el=>el.addEventListener('click',()=>{dprodVal(el.dataset.cod).etqAdj=true;rerenderDprodCard(el.dataset.cod);}));
+  root.querySelectorAll('.dprod-etq-minus').forEach(el=>el.addEventListener('click',()=>{const v=dprodVal(el.dataset.cod);v.etq=Math.max(0,dprodEtqN(el.dataset.cod)-1);rerenderDprodCard(el.dataset.cod);}));
+  root.querySelectorAll('.dprod-etq-plus').forEach(el=>el.addEventListener('click',()=>{const v=dprodVal(el.dataset.cod);v.etq=Math.min(200,dprodEtqN(el.dataset.cod)+1);rerenderDprodCard(el.dataset.cod);}));
+  root.querySelectorAll('.dprod-etq-print').forEach(el=>el.addEventListener('click',()=>dprodImprimirItem(el.dataset.cod)));
+}
+// Etiquetas de UM item preenchido: labels prontas + registro para o diário.
+function dprodEtiquetasDe(p){
+  const x=p.x,cod=String(x.cod);const pz=etqPrazos(cod);
+  if(!pz.padrao)return null;
+  const n=dprodEtqN(cod);if(n<=0)return null;
+  const cons=dprodConsDe(cod),base=new Date(),v=etqValidade(cod,cons,base);
+  if(!v)return null;
+  const por=etqPorcao(cod),labels=[];
+  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo:'producao',nome:x.nome,grupo:x.grupo,cons,base,val:v.d,resp:currentUserNome,rodape:por.nome,idx:k,tot:n}));
+  return {labels,reg:{origem:'producao',item:{cod:x.cod,nome:x.nome,unidade:x.unidade,grupo:x.grupo},cons,abertura:base.getTime(),validade:v.d.getTime(),qtd:n},n};
+}
+function dprodEtqPendentes(){
+  const out=[];
+  dprodPreenchidos().forEach(p=>{if(dprodVal(p.x.cod).etqFeito)return;const e=dprodEtiquetasDe(p);if(e)out.push({cod:String(p.x.cod),...e});});
+  return out;
+}
+function dprodImprimirItem(cod){
+  const p=dprodPreenchidos().find(q=>String(q.x.cod)===String(cod));
+  if(!p){showToast('Informe a produção deste item primeiro');return;}
+  const e=dprodEtiquetasDe(p);
+  if(!e){showToast('Nada para imprimir');return;}
+  etqAbrirPreview(e.labels,p.x.nome,async()=>{
+    await etqRegistrar([e.reg]);
+    dprodVal(cod).etqFeito=e.n;
+    rerenderDprodCard(cod);
+  });
+}
+
+// ── Gestão › Etiquetas ─────────────────────────────────────────────────────
+let getqBusca='',getqSaveT=null;
+function getqSalvar(){clearTimeout(getqSaveT);getqSaveT=setTimeout(()=>salvarDiarioCfg(),700);}
+function renderGestaoEtq(){
+  return `<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:4px">Etiquetas de identificação</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
+  <div class="sec">Categorias liberadas no módulo Etiquetas</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">O que a equipe vê ao imprimir etiqueta de insumo. Processados saem pela Produção — ligue aqui só para reimpressão avulsa.</div>
+  <div id="getq-grupos" class="chips" style="flex-wrap:wrap;padding:0 0 6px"></div>
+  <div class="sec">Prazo por categoria (dias)</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">Vale para todos os itens da categoria que não tenham prazo próprio. Vazio = não imprime nessa conservação. ● marca a conservação padrão.</div>
+  <div id="getq-gp" class="card" style="padding:4px 10px;overflow-x:auto"></div>
+  <div class="sec">Prazo e porção por item</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">Exceções à categoria e a porção de armazenamento dos processados em kg/L (pote 1 kg, bola 250 g…).</div>
+  <input id="getq-busca" class="srch" placeholder="Buscar item pelo nome…" autocomplete="off" value="${esc(getqBusca)}"/>
+  <div id="getq-itens" style="display:flex;flex-direction:column;gap:8px"></div>
+  <div class="sec">Como sai na impressora (60×40 mm)</div>
+  <div id="getq-amostra" style="display:flex;justify-content:center;padding:8px;background:var(--bg2);border-radius:var(--r1)"></div>`;
+}
+function wireGestaoEtq(c){
+  ensureDiarioCfg().then(()=>{
+    renderGetqGrupos(c.querySelector('#getq-grupos'));
+    renderGetqGP(c.querySelector('#getq-gp'));
+    renderGetqItens(c.querySelector('#getq-itens'));
+    const am=c.querySelector('#getq-amostra');
+    const ex=CATALOGO.find(x=>PROC_GRUPOS.includes(x.grupo)&&etqPrazos(x.cod).padrao)||CATALOGO[0];
+    if(am&&ex){const pz=etqPrazos(ex.cod);const now=new Date();const v=pz.padrao?etqValidade(ex.cod,pz.padrao,now):null;
+      am.innerHTML=etqLabelHTML({tipo:PROC_GRUPOS.includes(ex.grupo)?'producao':'insumo',nome:ex.nome,grupo:ex.grupo,cons:pz.padrao||'R',base:now,val:v&&v.d,resp:currentUserNome,rodape:etqPorcao(ex.cod).nome,idx:1,tot:1});}
+    const bi=c.querySelector('#getq-busca');
+    if(bi)bi.addEventListener('input',()=>{getqBusca=bi.value;renderGetqItens(c.querySelector('#getq-itens'));});
+  });
+}
+function renderGetqGrupos(el){
+  if(!el)return;
+  const cfg=etqCfg();
+  el.innerHTML=etqTodosGrupos().map(g=>`<span class="chip ${etqGrupoAtivo(g)?'on':''}" data-gg="${esc(g)}" style="padding:7px 11px;font-size:12.5px">${etqGrupoAtivo(g)?'<i class="ti ti-check" style="font-size:12px"></i>':''}${esc(g)}</span>`).join('');
+  el.querySelectorAll('[data-gg]').forEach(ch=>ch.addEventListener('click',()=>{
+    const g=ch.dataset.gg;
+    const atual=etqTodosGrupos().filter(etqGrupoAtivo);
+    cfg.grupos=atual.includes(g)?atual.filter(x=>x!==g):atual.concat([g]);
+    getqSalvar();renderGetqGrupos(el);
+    const gp=document.getElementById('getq-gp');if(gp)renderGetqGP(gp);
+  }));
+}
+function getqGruposComPrazo(){return etqTodosGrupos().filter(g=>etqGrupoAtivo(g)||PROC_GRUPOS.includes(g));}
+function renderGetqGP(el){
+  if(!el)return;
+  const cfg=etqCfg();
+  const grupos=getqGruposComPrazo();
+  let h=`<table class="getq-tbl"><thead><tr><th>Categoria</th><th>Resfr.</th><th>Cong.</th><th>Amb.</th><th>Padrão</th></tr></thead><tbody>`;
+  grupos.forEach(g=>{
+    const salvo=cfg.gruposPrazo[g]||null,sug=ETQ_PRAZO_GRUPO[g]||{};
+    const val=c=>salvo?(salvo[c]??''):(sug[c]??'');
+    const ef={};ETQ_CONS_ORD.forEach(c=>{if(etqNum(val(c)))ef[c]=1;});
+    const padrao=(salvo&&salvo.padrao&&ef[salvo.padrao])?salvo.padrao:(ETQ_CONS_ORD.find(c=>ef[c])||'');
+    h+=`<tr data-g="${esc(g)}"><td style="font-weight:500;line-height:1.25">${esc(g)}${!salvo&&Object.keys(sug).length?'<div style="font-size:10px;color:var(--tx2);font-weight:400">sugestão — confirme</div>':''}</td>
+      ${ETQ_CONS_ORD.map(c=>`<td><input type="text" inputmode="numeric" data-c="${c}" value="${esc(val(c))}" placeholder="—"/></td>`).join('')}
+      <td><select data-c="padrao">${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${padrao===c?'selected':''} ${ef[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></td></tr>`;
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+  const grava=tr=>{
+    const g=tr.dataset.g;const o={};
+    tr.querySelectorAll('input[data-c]').forEach(i=>{o[i.dataset.c]=i.value.trim();});
+    o.padrao=tr.querySelector('select').value;
+    cfg.gruposPrazo[g]=o;getqSalvar();
+  };
+  el.querySelectorAll('tr[data-g]').forEach(tr=>{
+    tr.querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>{grava(tr);renderGetqGP(el);}));
+    tr.querySelector('select').addEventListener('change',()=>grava(tr));
+  });
+}
+function renderGetqItens(el){
+  if(!el)return;
+  const cfg=etqCfg();const q=getqBusca.trim().toLowerCase();
+  let itens;
+  if(q)itens=CATALOGO.filter(x=>String(x.nome).toLowerCase().includes(q)||String(x.cod).includes(q)).slice(0,25);
+  else itens=CATALOGO.filter(x=>cfg.itens[String(x.cod)]&&Object.keys(cfg.itens[String(x.cod)]).length);
+  if(!itens.length){el.innerHTML=`<div class="empty" style="padding:14px"><span>${q?'Nenhum item com esse nome.':'Nenhuma exceção cadastrada. Busque um item para definir prazo próprio ou porção.'}</span></div>`;return;}
+  let h='';
+  itens.forEach(x=>{
+    const cod=String(x.cod),ov=cfg.itens[cod]||{},pz=etqPrazos(cod);
+    const gp=cfg.gruposPrazo[x.grupo]||ETQ_PRAZO_GRUPO[x.grupo]||{};
+    const proc=PROC_GRUPOS.includes(x.grupo),cont=ehContavel(x.unidade);
+    const ef={};ETQ_CONS_ORD.forEach(c=>{if(pz.dias[c])ef[c]=1;});
+    h+=`<div class="card getq-item" data-cod="${esc(cod)}">
+      <div style="font-size:13.5px;font-weight:500">${esc(x.nome)}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">${esc(x.grupo)} · ${esc(unidSigla(x.unidade))}${pz.proprio?' · <span style="color:var(--acc)">prazo próprio</span>':' · herda da categoria'}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">
+        ${ETQ_CONS_ORD.map(c=>`<label style="font-size:10.5px;color:var(--tx2)">${ETQ_CONS[c].nome}<input type="text" inputmode="numeric" data-c="${c}" value="${esc(ov[c]??'')}" placeholder="${esc(etqNum(gp[c])||'—')}" style="width:100%;margin-top:2px;font-size:15px;padding:6px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>`).join('')}
+        <label style="font-size:10.5px;color:var(--tx2)">Padrão<select data-c="padrao" style="width:100%;margin-top:2px;font-size:13px;padding:7px 4px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"><option value="">(categoria)</option>${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${ov.padrao===c?'selected':''} ${ef[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></label>
+      </div>
+      ${(proc&&!cont)?`<div style="display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-top:8px">
+        <label style="font-size:10.5px;color:var(--tx2)">Porção (${esc(unidSigla(x.unidade))})<input type="text" inputmode="decimal" data-p="q" value="${esc(ov.porcao?ov.porcao.q:'')}" placeholder="ex.: 0,25" style="width:100%;margin-top:2px;font-size:15px;padding:6px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
+        <label style="font-size:10.5px;color:var(--tx2)">Nome da porção<input type="text" data-p="nome" value="${esc(ov.porcao?ov.porcao.nome||'':'')}" placeholder="ex.: bola 250 g" style="width:100%;margin-top:2px;font-size:14px;padding:7px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label></div>
+        <div style="font-size:11px;color:var(--tx2);margin-top:4px">${rendimentoDe(cod)?'1 receita = '+fmtNum(rendimentoDe(cod))+' '+esc(unidSigla(x.unidade).toLowerCase())+(etqPorcao(cod).definida?' = '+Math.round(rendimentoDe(cod)/etqPorcao(cod).q)+' etiquetas':' — sem porção: 1 etiqueta por '+esc(unidSigla(x.unidade).toLowerCase())):'Sem rendimento de ficha sincronizado'}</div>`:''}
+    </div>`;
+  });
+  el.innerHTML=h;
+  el.querySelectorAll('.getq-item').forEach(card=>{
+    const cod=card.dataset.cod;
+    const grava=()=>{
+      const o=cfg.itens[cod]||{};
+      card.querySelectorAll('input[data-c]').forEach(i=>{o[i.dataset.c]=i.value.trim();});
+      o.padrao=card.querySelector('select[data-c="padrao"]').value;
+      const pq=card.querySelector('input[data-p="q"]'),pn=card.querySelector('input[data-p="nome"]');
+      if(pq){o.porcao={q:pq.value.trim(),nome:pn.value.trim()};}
+      cfg.itens[cod]=o;getqSalvar();
+    };
+    card.querySelectorAll('input,select').forEach(i=>i.addEventListener('change',()=>{grava();renderGetqItens(el);}));
+  });
+}
+
 function gruposProcessadosDoUsuario(){
   if(isAdminRole()||!currentUserSetor)return new Set(PROC_GRUPOS); // gestor vê os três
   const g='Processados '+currentUserSetor; // Cozinha/Bar/Forno; Salão não tem processados
@@ -7055,8 +7558,10 @@ function renderDprod(){
   bx.addEventListener('click',()=>{dprodBusca='';bi.value='';bx.style.display='none';renderDprodLista();bi.focus();});
   renderDprodLista();
   bb.innerHTML=`<button class="bp" id="dprod-salvar" style="background:${DIARIO_TIPOS.producao.cor}"><i class="ti ti-check"></i> Registrar produção</button>
+    <button class="bg_" id="dprod-salvar-sem" style="display:none;padding:6px">Registrar sem imprimir</button>
     <div id="dprod-status" style="font-size:12px;color:var(--tx2);text-align:center;min-height:14px"></div>`;
-  document.getElementById('dprod-salvar').addEventListener('click',salvarDprod);
+  document.getElementById('dprod-salvar').addEventListener('click',()=>salvarDprod(true));
+  document.getElementById('dprod-salvar-sem').addEventListener('click',()=>salvarDprod(false)); // v162
   atualizarDprodBar();
 }
 // Miolo do card. Fica separado porque a conferência de rendimento aparece e
@@ -7093,7 +7598,7 @@ function dprodCardHTML(x){
     const dv=v.val!=null?v.val:'';
     return cab+`<div class="decb"><div class="decl">Quantidade em ${esc(unidExtenso(x.unidade,2))}</div>
       <div class="decr"><input class="deci dprod-dec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" placeholder="0,000" value="${esc(dv)}"/>
-      <span class="decu">${esc(x.unidade)}</span></div></div>`;
+      <span class="decu">${esc(x.unidade)}</span></div></div>`+(dprodQtdPorcoes(x.cod)>0?dprodEtqHTML(x):''); // v162
   }
   const rec=Number(v.rec)||0;
   const esperado=rec*y;
@@ -7112,7 +7617,7 @@ function dprodCardHTML(x){
       <div class="decl">${ehContavel(x.unidade)?'Quantas saíram?':'Quanto rendeu?'}</div>
       <div class="decr"><input class="deci dprod-real" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${esc(v.real!=null&&String(v.real).trim()!==''?v.real:fmtNum(esperado))}"/>
       <span class="decu">${esc(unidExtenso(x.unidade,real))}</span></div>${alerta}</div>`;
-  return cab+stepper+conf;
+  return cab+stepper+conf+dprodEtqHTML(x); // v162: etiquetas = porções produzidas
 }
 function rerenderDprodCard(cod){
   const el=document.getElementById('dprod-pc-'+cod);
@@ -7123,15 +7628,19 @@ function rerenderDprodCard(cod){
   atualizarDprodBar();
 }
 function wireDprodCards(root){
+  wireDprodEtq(root); // v162
   root.querySelectorAll('.dprod-minus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,-0.5)));
   root.querySelectorAll('.dprod-plus').forEach(el=>el.addEventListener('click',()=>dprodStep(el.dataset.cod,0.5)));
   // v123: o teclado numérico do celular entrega ponto; a casa escreve com vírgula.
   // Trocamos na hora, preservando a posição do cursor. O parser já aceitava os dois,
   // isto é só para o que aparece na tela não contrariar o que se pede na digitação.
   const virgula=el=>{const p=el.selectionStart;el.value=el.value.replace(/\./g,',');try{el.setSelectionRange(p,p);}catch(e){}};
-  root.querySelectorAll('.dprod-dec').forEach(el=>el.addEventListener('input',()=>{virgula(el);dprodVal(el.dataset.cod).val=el.value;atualizarDprodBar();}));
+  root.querySelectorAll('.dprod-dec').forEach(el=>{
+    el.addEventListener('input',()=>{virgula(el);const v=dprodVal(el.dataset.cod);v.val=el.value;v.etq=null;atualizarDprodBar();});
+    el.addEventListener('blur',()=>rerenderDprodCard(el.dataset.cod)); // v162: mostra/atualiza o bloco de etiquetas
+  });
   root.querySelectorAll('.dprod-real').forEach(el=>{
-    el.addEventListener('input',()=>{virgula(el);const v=dprodVal(el.dataset.cod);v.real=el.value;v.realTocado=true;atualizarDprodBar();});
+    el.addEventListener('input',()=>{virgula(el);const v=dprodVal(el.dataset.cod);v.real=el.value;v.realTocado=true;v.etq=null;atualizarDprodBar();}); // v162: nº de etiquetas segue o real
     // o desvio só é recalculado ao sair do campo — atualizar a cada tecla faria
     // o aviso piscar no meio da digitação ("2" antes de "25")
     el.addEventListener('blur',()=>rerenderDprodCard(el.dataset.cod));
@@ -7143,6 +7652,7 @@ function dprodStep(cod,delta){
   const rec=Math.max(0,Math.round(((Number(v.rec)||0)+delta)*2)/2);
   v.rec=rec;
   if(!v.realTocado)v.real=null; // enquanto ninguém corrigiu, o real acompanha o esperado
+  v.etq=null; // v162: etiquetas recalculadas a partir das porções
   rerenderDprodCard(cod);
 }
 // v135: percorre TODOS os processados do usuário, não só os visíveis — o que foi
@@ -7165,8 +7675,13 @@ function atualizarDprodBar(){
   const n=dprodPreenchidos().length;
   const st=document.getElementById('dprod-status');
   if(st)st.textContent=n?n+' item'+(n>1?'s':'')+' com produção':'Preencha ao menos um item.';
+  // v162: o botão principal anuncia quantas etiquetas vão sair junto com o registro
+  const tot=dprodEtqPendentes().reduce((s,e)=>s+e.n,0);
+  const b=document.getElementById('dprod-salvar'),bs=document.getElementById('dprod-salvar-sem');
+  if(b)b.innerHTML=tot?`<i class="ti ti-printer"></i> Registrar e imprimir ${tot} etiqueta${tot>1?'s':''}`:'<i class="ti ti-check"></i> Registrar produção';
+  if(bs)bs.style.display=tot?'block':'none';
 }
-async function salvarDprod(){
+async function salvarDprod(imprimir){
   const preenchidos=dprodPreenchidos();
   const st=document.getElementById('dprod-status');
   if(!preenchidos.length){st.style.color='#ff3b30';st.textContent='Preencha ao menos um item.';return;}
@@ -7183,6 +7698,8 @@ async function salvarDprod(){
       qtd:esperado};             // o que vai para o Saipos: a receita inteira
   });
   const btn=document.getElementById('dprod-salvar');btn.disabled=true;btn.textContent='Salvando…';
+  // v162: etiquetas montadas ANTES de salvar — depois do fecharDreg o estado da tela se vai
+  const etqs=(imprimir!==false)?dprodEtqPendentes():[];
   try{
     const naConferencia=confListaCods().map(String);
     for(const r of regs){
@@ -7192,6 +7709,14 @@ async function salvarDprod(){
       if(naConferencia.includes(String(r.item.cod)))await ajustarSaldo(r.item.cod,(r.real!=null?r.real:r.qtd));
     }
     fecharDreg();
+    if(etqs.length){
+      const labels=etqs.flatMap(e=>e.labels);
+      etqAbrirPreview(labels,'Produção',async()=>{
+        await etqRegistrar(etqs.map(e=>e.reg));
+        await carregarDiarioHoje();
+        if(homeTabId==='diario')homeTab('diario');
+      });
+    }
   }catch(e){
     st.style.color='#ff3b30';st.textContent='Erro: '+e.message;
     btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Registrar produção';
@@ -9069,6 +9594,8 @@ document.getElementById('fopts-gal').addEventListener('click',()=>{closeModal('m
 document.getElementById('fopts-cancel').addEventListener('click',()=>closeModal('modal-foto-opts'));
 // v90 (2A): fechar menu "⋯" do item
 document.getElementById('im-cancel').addEventListener('click',()=>document.getElementById('modal-item-menu').classList.remove('on'));
+// v162: toque fora fecha as folhas de etiqueta
+['modal-etq-item','modal-etq-pv'].forEach(id=>{const m=document.getElementById(id);m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on');});});
 document.getElementById('modal-item-menu').addEventListener('click',e=>{if(e.target.id==='modal-item-menu')e.target.classList.remove('on');});
 // v91: modal de rotina (Gestão)
 document.getElementById('rt-fechar').addEventListener('click',()=>closeModal('modal-rotina'));
