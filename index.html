@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v164</title>
+<title>Gesto Operação v165</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -319,6 +319,16 @@
 .etq-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--bd3);font-size:14px}.etq-kv:last-child{border-bottom:none}
 .etq-kv .k{color:var(--tx2);font-size:13px}.etq-kv .v{font-weight:500;text-align:right}
 .etq-kv input{font-size:14px;padding:6px 8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:150px}
+.etq-blank{width:60mm;height:40mm;background:#fff;color:#000;border:.5px solid #999;padding:1.6mm 2mm;display:flex;flex-direction:column;justify-content:space-between;font-family:"Helvetica Neue",Arial,sans-serif;font-size:6.2pt;font-weight:700;line-height:1;flex-shrink:0;box-sizing:border-box;break-after:page;page-break-after:always}
+.etq-blank .l{display:flex;align-items:flex-end;gap:1mm;white-space:nowrap}
+.etq-blank .u{flex:1;border-bottom:.3mm solid #000;height:3.2mm;min-width:4mm}.etq-blank .u.d{flex:0 0 5.5mm}.etq-blank .u.h{flex:0 0 7mm}
+.etq-blank .ck{display:flex;gap:2mm;font-weight:600;font-size:5.6pt}.etq-blank .ck span::before{content:"";display:inline-block;width:2.4mm;height:2.4mm;border:.3mm solid #000;vertical-align:-.5mm;margin-right:.7mm}
+.etq-blank .g{font-size:5pt;font-weight:600;color:#333;letter-spacing:.06em}
+.etq-card-blank{border-style:dashed;border-color:var(--acc-bd);background:var(--acc-bg)}
+.etq-big{display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0}
+.etq-big button{width:64px;height:64px;border-radius:16px;border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:32px;cursor:pointer;font-family:inherit;line-height:1}.etq-big button:active{background:var(--bg3)}
+.etq-big .n{min-width:70px;text-align:center;font-size:40px;font-weight:600;line-height:1}
+@media print{body.etq-print #print-area .etq-blank{border:none;margin:0;break-after:page;page-break-after:always}body.etq-print #print-area .etq-blank:last-child{break-after:auto;page-break-after:auto}}
 @media print{body.etq-print #print-area .etq-lbl{border:none;margin:0;break-after:page;page-break-after:always}body.etq-print #print-area .etq-lbl:last-child{break-after:auto;page-break-after:auto}}
 /* ── Impressão: lista de conferência por local (v77) ── */
 #print-area{display:none}
@@ -593,6 +603,16 @@
     <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit"><i class="ti ti-home" style="font-size:15px"></i> Início</button>
   </div>
   <div class="content" id="etq-cnt"></div>
+</div>
+<div class="bs-modal-bg" id="modal-etq-blank">
+  <div class="bs-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-title">Etiqueta em branco · preencher à mão</div>
+    <div class="etq-big"><button id="etqb-m">−</button><span class="n" id="etqb-n">5</span><button id="etqb-p">+</button></div>
+    <div style="padding:0 16px 4px"><button class="bp" id="etqb-go"><i class="ti ti-printer"></i> Imprimir</button></div>
+    <button class="bs-btn-cancel" onclick="closeModal('modal-etq-blank')">Cancelar</button>
+    <div style="height:env(safe-area-inset-bottom,16px)"></div>
+  </div>
 </div>
 <div class="bs-modal-bg" id="modal-etq-item">
   <div class="bs-sheet">
@@ -1866,7 +1886,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v164';
+const APP_VERSION = 'v165';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6208,7 +6228,7 @@ function regLinhaHTML(r,admin){
     sub=(r.userNome||'')+' · '+hora+(r.setor?' · '+esc(r.setor):'');
   }else if(r.tipo==='etiqueta'){ // v162
     desc=esc((r.item&&r.item.nome)||'?')+' · '+(r.qtd||0)+' etiqueta'+(r.qtd==1?'':'s');
-    sub=['Etiqueta'+(r.origem==='producao'?' · produção':r.origem==='reimpressao'?' · reimpressão':''),r.validade?'vence '+etqFmtCurto(new Date(r.validade)):null,r.cons&&ETQ_CONS[r.cons]?ETQ_CONS[r.cons].nome:null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
+    sub=['Etiqueta'+(r.origem==='producao'?' · produção':r.origem==='reimpressao'?' · reimpressão':r.origem==='manual'?' · à mão':''),r.validade?'vence '+etqFmtCurto(new Date(r.validade)):null,r.cons&&ETQ_CONS[r.cons]?ETQ_CONS[r.cons].nome:null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
   }else{
     desc=esc((r.item&&r.item.nome)||'?')+(r.qtd!=null?' · '+fmtQtdDiario(r.qtd)+' '+esc(unidSigla(r.item&&r.item.unidade)):''); // v116: registros antigos do diário guardam o id
     sub=[t.label,r.motivo?esc(r.motivo):null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
@@ -6426,9 +6446,51 @@ async function etqRegistrar(regs){
 function etqRecentes(origem,max){
   const vistos=new Set(),out=[];
   diarioHoje.filter(r=>r.tipo==='etiqueta'&&r.status!=='cancelado'&&(!origem||r.origem===origem)).forEach(r=>{
-    const cod=String(r.item&&r.item.cod);if(!cod||vistos.has(cod))return;vistos.add(cod);out.push(r);
+    if(r.origem==='manual'||!r.item||!r.item.cod)return; // v165: em branco não entra em "repetir"
+    const cod=String(r.item.cod);if(vistos.has(cod))return;vistos.add(cod);out.push(r);
   });
   return out.slice(0,max||5);
+}
+
+// ── v165: etiqueta em branco (preenchimento à mão) ────────────────────────
+// Layout do modelo que a casa usa hoje: Produto · Manipulação/Abertura + hora ·
+// Validade · Marca/Lote/SIF · ☐ Descongelamento ☐ Dessalgue ☐ Parcialmente cozido ·
+// Responsável. Card tracejado no topo de Diário › Etiquetas; a folha só pergunta
+// quantas (− n +) e imprime. Fica no diário como origem:'manual'.
+function etqBlankHTML(){
+  return `<div class="etq-blank">
+    <div class="l"><span>PRODUTO:</span><span class="u"></span></div>
+    <div class="l"><span>MANIPULAÇÃO/ABERTURA:</span><span class="u d"></span>/<span class="u d"></span>/<span class="u d"></span> <span class="u h"></span>h</div>
+    <div class="l"><span>VALIDADE:</span><span class="u d"></span>/<span class="u d"></span>/<span class="u d"></span></div>
+    <div class="l"><span>MARCA:</span><span class="u"></span><span>LOTE:</span><span class="u"></span><span>SIF:</span><span class="u"></span></div>
+    <div class="ck"><span>Descongelamento</span><span>Dessalgue</span><span>Parcialmente cozido</span></div>
+    <div class="l"><span>RESPONSÁVEL:</span><span class="u"></span><span class="g">GESTO</span></div>
+  </div>`;
+}
+let etqBlankN=5;
+function abrirEtqBlank(){
+  etqBlankN=5;
+  const n=document.getElementById('etqb-n'),go=document.getElementById('etqb-go');
+  const draw=()=>{n.textContent=etqBlankN;go.innerHTML='<i class="ti ti-printer"></i> Imprimir '+etqBlankN+' etiqueta'+(etqBlankN>1?'s':'');};
+  document.getElementById('etqb-m').onclick=()=>{etqBlankN=Math.max(1,etqBlankN-1);draw();};
+  document.getElementById('etqb-p').onclick=()=>{etqBlankN=Math.min(100,etqBlankN+1);draw();};
+  go.onclick=()=>{
+    const q=etqBlankN,labels=[];for(let k=0;k<q;k++)labels.push(etqBlankHTML());
+    closeModal('modal-etq-blank');
+    etqAbrirPreview(labels,'Etiqueta em branco',async()=>{
+      await etqRegistrar([{origem:'manual',item:{cod:null,nome:'Etiqueta em branco',unidade:null,grupo:null},cons:null,abertura:null,validade:null,qtd:q}]);
+      await carregarDiarioHoje();
+    });
+  };
+  draw();
+  document.getElementById('modal-etq-blank').classList.add('on');
+}
+function etqBlankCardHTML(){
+  return `<div class="row etq-card-blank" id="etq-blank-card" style="cursor:pointer">
+    <div style="width:38px;height:38px;border-radius:9px;background:var(--bg1);border:.5px solid var(--acc-bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--acc)"><i class="ti ti-pencil" style="font-size:20px"></i></div>
+    <div style="flex:1"><div style="font-size:14.5px;font-weight:500;color:var(--acc-tx)">Etiqueta em branco</div>
+    <div style="font-size:12px;color:var(--tx2)">Para preencher à mão · item fora da lista ou sem prazo</div></div>
+    <i class="ti ti-chevron-right" style="color:var(--acc)"></i></div>`;
 }
 
 // ── Diário › Etiquetas (insumos abertos/fracionados) ───────────────────────
@@ -6439,14 +6501,15 @@ function renderEtq(){
   const c=document.getElementById('etq-cnt');
   const disp=etqItensDisponiveis();
   if(!disp.length){
-    c.innerHTML=`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-tag" style="font-size:28px;opacity:.5"></i></div>
+    c.innerHTML=etqBlankCardHTML()+`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-tag" style="font-size:28px;opacity:.5"></i></div>
       <div class="empty-title">Nenhuma categoria liberada</div>
       <div class="empty-sub">${isAdminRole()?'Libere as categorias em Gestão › Etiquetas.':'Peça ao gestor para liberar as categorias em Gestão › Etiquetas.'}</div></div>`;
+    document.getElementById('etq-blank-card').addEventListener('click',abrirEtqBlank);
     return;
   }
   const grupos=[...new Set(disp.map(x=>x.grupo))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   if(etqGrupo&&!grupos.includes(etqGrupo))etqGrupo=null;
-  let h=`<div style="position:relative">
+  let h=etqBlankCardHTML()+`<div style="position:relative">
     <input id="etq-busca" class="srch" placeholder="Buscar insumo pelo nome…" autocomplete="off" value="${esc(etqBusca)}"/>
     <button id="etq-busca-x" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx2);font-size:16px;cursor:pointer;padding:4px 6px;display:${etqBusca?'block':'none'};font-family:inherit">✕</button>
   </div>`;
@@ -6454,6 +6517,7 @@ function renderEtq(){
   h+='<div id="etq-lista" style="display:flex;flex-direction:column;gap:8px"></div>';
   c.innerHTML=h;
   c.querySelectorAll('[data-eg]').forEach(el=>el.addEventListener('click',()=>{etqGrupo=el.dataset.eg||null;renderEtq();}));
+  c.querySelector('#etq-blank-card').addEventListener('click',abrirEtqBlank); // v165
   const bi=c.querySelector('#etq-busca'),bx=c.querySelector('#etq-busca-x');
   bi.addEventListener('input',()=>{etqBusca=bi.value;bx.style.display=bi.value?'block':'none';renderEtqLista();});
   bx.addEventListener('click',()=>{etqBusca='';bi.value='';bx.style.display='none';renderEtqLista();bi.focus();});
@@ -9551,7 +9615,7 @@ document.getElementById('fopts-cancel').addEventListener('click',()=>closeModal(
 // v90 (2A): fechar menu "⋯" do item
 document.getElementById('im-cancel').addEventListener('click',()=>document.getElementById('modal-item-menu').classList.remove('on'));
 // v162: toque fora fecha as folhas de etiqueta
-['modal-etq-item'].forEach(id=>{const m=document.getElementById(id);m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on');});});
+['modal-etq-item','modal-etq-blank'].forEach(id=>{const m=document.getElementById(id);m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on');});});
 document.getElementById('modal-item-menu').addEventListener('click',e=>{if(e.target.id==='modal-item-menu')e.target.classList.remove('on');});
 // v91: modal de rotina (Gestão)
 document.getElementById('rt-fechar').addEventListener('click',()=>closeModal('modal-rotina'));
