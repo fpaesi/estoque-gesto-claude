@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v162</title>
+<title>Gesto Operação v163</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -319,7 +319,6 @@
 .etq-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--bd3);font-size:14px}.etq-kv:last-child{border-bottom:none}
 .etq-kv .k{color:var(--tx2);font-size:13px}.etq-kv .v{font-weight:500;text-align:right}
 .etq-kv input{font-size:14px;padding:6px 8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:150px}
-.etqpv-list{max-height:52vh;overflow:auto;padding:8px 16px;display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--bg2)}
 .getq-tbl{width:100%;border-collapse:collapse;font-size:12px}.getq-tbl th{font-weight:500;color:var(--tx2);text-align:left;padding:6px 3px;border-bottom:.5px solid var(--bd3);font-size:11px}
 .getq-tbl td{padding:7px 3px;border-bottom:.5px solid var(--bd3);vertical-align:middle}.getq-tbl tr:last-child td{border-bottom:none}
 .getq-tbl input{width:46px;text-align:center;font-size:15px;padding:6px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit}
@@ -604,17 +603,6 @@
     <div class="bs-handle"></div>
     <div id="etqi-body"></div>
     <button class="bs-btn-cancel" onclick="closeModal('modal-etq-item')">Cancelar</button>
-    <div style="height:env(safe-area-inset-bottom,16px)"></div>
-  </div>
-</div>
-<div class="bs-modal-bg" id="modal-etq-pv">
-  <div class="bs-sheet">
-    <div class="bs-handle"></div>
-    <div class="bs-title" id="etqpv-title">Pré-visualização</div>
-    <div style="font-size:12px;color:var(--tx2);padding:8px 16px 6px;text-align:center">Tamanho real 60×40 mm · cada etiqueta é uma página na impressora</div>
-    <div class="etqpv-list" id="etqpv-list"></div>
-    <div style="padding:12px 16px 4px"><button class="bp" id="etqpv-go"><i class="ti ti-printer"></i> Enviar para a impressora</button></div>
-    <button class="bs-btn-cancel" id="etqpv-cancel">Cancelar</button>
     <div style="height:env(safe-area-inset-bottom,16px)"></div>
   </div>
 </div>
@@ -1882,7 +1870,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v162';
+const APP_VERSION = 'v163';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6438,20 +6426,13 @@ function etqImprimir(labels){
   window.addEventListener('afterprint',done);
   setTimeout(()=>window.print(),80);
 }
-// Pré-visualização em tamanho real antes de gastar etiqueta. onOk roda DEPOIS de
-// mandar para a impressora: é quem grava o registro no diário.
-function etqAbrirPreview(labels,titulo,onOk){
-  document.getElementById('etqpv-title').textContent=titulo+' · '+labels.length+' etiqueta'+(labels.length!==1?'s':'');
-  document.getElementById('etqpv-list').innerHTML=labels.join('');
-  const go=document.getElementById('etqpv-go');
-  go.onclick=async()=>{
-    closeModal('modal-etq-pv');
-    etqImprimir(labels);
-    showToast(labels.length+' etiqueta'+(labels.length!==1?'s':'')+' enviada'+(labels.length!==1?'s':'')+' para a impressora',{type:'ok'});
-    if(onOk){try{await onOk();}catch(e){showToast('Impresso, mas não consegui registrar: '+e.message,{type:'err'});}}
-  };
-  document.getElementById('etqpv-cancel').onclick=()=>closeModal('modal-etq-pv');
-  document.getElementById('modal-etq-pv').classList.add('on');
+// v163: sem tela de pré-visualização — o Fabio pediu um toque a menos. Manda
+// direto para o diálogo de impressão do aparelho (que já mostra a página) e o
+// onOk grava o registro no diário em seguida.
+async function etqAbrirPreview(labels,titulo,onOk){
+  etqImprimir(labels);
+  showToast(labels.length+' etiqueta'+(labels.length!==1?'s':'')+' enviada'+(labels.length!==1?'s':'')+' para a impressora',{type:'ok'});
+  if(onOk){try{await onOk();}catch(e){showToast('Impresso, mas não consegui registrar: '+e.message,{type:'err'});}}
 }
 async function etqRegistrar(regs){
   for(const r of regs)await salvarRegistroDiario({tipo:'etiqueta',status:'na',...r});
@@ -9595,7 +9576,7 @@ document.getElementById('fopts-cancel').addEventListener('click',()=>closeModal(
 // v90 (2A): fechar menu "⋯" do item
 document.getElementById('im-cancel').addEventListener('click',()=>document.getElementById('modal-item-menu').classList.remove('on'));
 // v162: toque fora fecha as folhas de etiqueta
-['modal-etq-item','modal-etq-pv'].forEach(id=>{const m=document.getElementById(id);m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on');});});
+['modal-etq-item'].forEach(id=>{const m=document.getElementById(id);m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on');});});
 document.getElementById('modal-item-menu').addEventListener('click',e=>{if(e.target.id==='modal-item-menu')e.target.classList.remove('on');});
 // v91: modal de rotina (Gestão)
 document.getElementById('rt-fechar').addEventListener('click',()=>closeModal('modal-rotina'));
