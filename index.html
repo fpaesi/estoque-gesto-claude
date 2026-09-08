@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v176</title>
+<title>Gesto Operação v177</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1896,7 +1896,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v176';
+const APP_VERSION = 'v177';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6410,6 +6410,9 @@ function etqFmtCurto(d){return d.toLocaleDateString('pt-BR',{weekday:'short',day
 // A etiqueta em si. Campos exigidos: produto, data de manipulação/abertura, validade,
 // conservação, responsável. Numeração i/N ajuda a conferir se todas foram coladas.
 function etqLabelHTML(o){
+  const s=new String(etqLabelHTMLraw(o));s.data=o;return s; // v177: .data alimenta o PDF do iOS
+}
+function etqLabelHTMLraw(o){
   const grupo=String(o.grupo||'').replace(/^Processados\s*/i,'').toUpperCase();
   return `<div class="etq-lbl">
     <div class="eh"><span>GESTO · ${esc(grupo)}</span><span class="ec">${ETQ_CONS[o.cons].rot}</span></div>
@@ -6430,9 +6433,71 @@ function etqLimparModoImpressao(){
   const st=document.getElementById('etq-page-style');if(st)st.remove();
   document.title=ETQ_TITLE0;
 }
+// ══ v177: iOS não abre window.print() de forma confiável (nem no Safari, nem no
+// modo standalone). Caminho do iPhone/iPad: as etiquetas viram um PDF com uma
+// página de 60×40 mm por etiqueta e o app abre a folha de compartilhamento do
+// iOS — o usuário toca em "Imprimir" e escolhe a impressora AirPrint (O'Print).
+// jsPDF é pré-carregado no boot do iOS para que a chamada de share fique dentro
+// da janela de ativação do toque.
+const ETQ_IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
+let etqJsPdfP=null;
+function etqCarregarJsPdf(){
+  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve(window.jspdf.jsPDF);
+  if(etqJsPdfP)return etqJsPdfP;
+  etqJsPdfP=new Promise((ok,err)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';s.onload=()=>ok(window.jspdf.jsPDF);s.onerror=()=>{etqJsPdfP=null;err(new Error('jsPDF não carregou'));};document.head.appendChild(s);});
+  return etqJsPdfP;
+}
+if(ETQ_IOS)setTimeout(()=>{etqCarregarJsPdf().catch(()=>{});},3000);
+function etqPdfTxt(s){return String(s??'').normalize('NFC').replace(/\u2212/g,'-').replace(/\u2013|\u2014/g,'-');} // fontes padrão do PDF (WinAnsi) não têm o sinal de menos U+2212
+// Desenha uma etiqueta (dados de etqLabelHTML) numa página 60×40 do jsPDF.
+function etqPdfPagina(doc,o){
+  doc.setTextColor(0);doc.setDrawColor(0);
+  if(o.blank){
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setLineWidth(0.3);
+    const linha=(y,rotulo,ini)=>{doc.text(rotulo,2.5,y);const w=doc.getTextWidth(rotulo);const x0=2.5+w+1.2;doc.line(x0,y+0.4,ini||57.5,y+0.4);return x0;};
+    linha(6,'PRODUTO:');
+    const data=(y,rotulo)=>{doc.text(rotulo,2.5,y);let x=2.5+doc.getTextWidth(rotulo)+1.2;for(let i=0;i<3;i++){doc.line(x,y+0.4,x+6.5,y+0.4);x+=6.5;if(i<2){doc.text('/',x+0.6,y);x+=2.6;}}};
+    data(12.5,'ABERTURA:');data(19,'VALIDADE:');
+    doc.text('MANTER EM:',2.5,25.5);
+    doc.setFontSize(6.5);doc.setFont('helvetica','normal');
+    [['Ambiente',3],['Refrigerado',21],['Congelado',40.5]].forEach(([t,x])=>{doc.rect(x,28.2,2.6,2.6);doc.text(t,x+3.4,30.4);});
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);
+    doc.text('RESPONSÁVEL:',2.5,36.5);const w=doc.getTextWidth('RESPONSÁVEL:');doc.line(2.5+w+1.2,36.9,49,36.9);
+    doc.setFontSize(5.5);doc.setTextColor(60);doc.text('GESTO',57.5,36.5,{align:'right'});
+    return;
+  }
+  const grupo=etqPdfTxt(String(o.grupo||'').replace(/^Processados\s*/i,'').toUpperCase());
+  doc.setFont('helvetica','bold');doc.setFontSize(7);
+  doc.text('GESTO · '+grupo,2.5,4.6);
+  const rot=etqPdfTxt(ETQ_CONS[o.cons]?ETQ_CONS[o.cons].rot:'');doc.setFontSize(6.5);
+  const bw=doc.getTextWidth(rot)+3;doc.setFillColor(0);doc.rect(57.5-bw,2.2,bw,3.4,'F');doc.setTextColor(255);doc.text(rot,57.5-bw/2,4.7,{align:'center'});doc.setTextColor(0);
+  doc.setFontSize(11);const nome=doc.splitTextToSize(etqPdfTxt(o.nome).toUpperCase(),55).slice(0,2);doc.text(nome,2.5,10.5);
+  doc.setLineWidth(0.3);doc.line(2.5,25.2,57.5,25.2);
+  doc.setFontSize(5.5);doc.setTextColor(50);doc.text(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',2.5,27.8);doc.text('VALIDADE'+(o.limitada?' (FABR.)':''),31,27.8);doc.setTextColor(0);
+  doc.setFontSize(8.5);doc.text(etqFmtDH(o.base),2.5,31.3);
+  doc.setFontSize(10.5);doc.text(o.val?etqFmtDH(o.val):'—',31,31.6);
+  doc.setFontSize(6.5);doc.setFont('helvetica','normal');doc.text('Resp.: ',2.5,37.2);const rw=doc.getTextWidth('Resp.: ');doc.setFont('helvetica','bold');doc.text(etqPdfTxt(o.resp||''),2.5+rw,37.2);
+  doc.setFont('helvetica','normal');doc.text(etqPdfTxt(o.rodape||''),30,37.2,{align:'center'});doc.text(o.idx+'/'+o.tot,57.5,37.2,{align:'right'});
+}
+async function etqImprimirIOS(labels){
+  let jsPDF;
+  try{jsPDF=await etqCarregarJsPdf();}catch(e){showToast('Sem conexão para preparar o PDF. Tente de novo.',{type:'err'});return false;}
+  const doc=new jsPDF({unit:'mm',format:[60,40],orientation:'landscape'});
+  labels.forEach((l,i)=>{if(i>0)doc.addPage([60,40],'landscape');etqPdfPagina(doc,(l&&l.data)||{blank:true});});
+  const blob=doc.output('blob');
+  const file=new File([blob],'etiquetas-gesto.pdf',{type:'application/pdf'});
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'Etiquetas GESTO'});return true;}
+    catch(e){if(e&&e.name==='AbortError')return false;}
+  }
+  // fallback: abre o PDF numa aba — o usuário usa Compartilhar › Imprimir do Safari
+  const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);
+  return true;
+}
 function etqImprimir(labels){
+  if(ETQ_IOS){etqImprimirIOS(labels);return true;}
   const area=document.getElementById('print-area');
-  area.innerHTML=labels.join('');
+  area.innerHTML=labels.map(String).join('');
   let st=document.getElementById('etq-page-style');
   if(!st){st=document.createElement('style');st.id='etq-page-style';document.head.appendChild(st);}
   st.textContent='@page{size:60mm 40mm;margin:0}';
@@ -6458,7 +6523,8 @@ function etqImprimir(labels){
 // onOk grava o registro no diário em seguida.
 async function etqAbrirPreview(labels,titulo,onOk){
   etqImprimir(labels);
-  showToast(labels.length+' etiqueta'+(labels.length!==1?'s':'')+' enviada'+(labels.length!==1?'s':'')+' para a impressora',{type:'ok'});
+  if(ETQ_IOS)showToast('Toque em "Imprimir" na folha que abriu e escolha a impressora',{type:'ok',duration:5000});
+  else showToast(labels.length+' etiqueta'+(labels.length!==1?'s':'')+' enviada'+(labels.length!==1?'s':'')+' para a impressora',{type:'ok'});
   if(onOk){try{await onOk();}catch(e){showToast('Impresso, mas não consegui registrar: '+e.message,{type:'err'});}}
 }
 async function etqRegistrar(regs){
@@ -6479,6 +6545,9 @@ function etqRecentes(origem,max){
 // Responsável. Card tracejado no topo de Diário › Etiquetas; a folha só pergunta
 // quantas (− n +) e imprime. Fica no diário como origem:'manual'.
 function etqBlankHTML(){
+  const s=new String(etqBlankHTMLraw());s.data={blank:true};return s; // v177
+}
+function etqBlankHTMLraw(){
   return `<div class="etq-blank">
     <div class="l"><span>PRODUTO:</span><span class="u"></span></div>
     <div class="l"><span>ABERTURA:</span><span class="u d"></span>/<span class="u d"></span>/<span class="u d"></span></div>
