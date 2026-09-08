@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v171</title>
+<title>Gesto Operação v172</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1894,7 +1894,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v171';
+const APP_VERSION = 'v172';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6436,14 +6436,19 @@ function etqLimparModoImpressao(){
 // v171: padrão voltou a PAISAGEM 60×40 — o caminho que funcionou de fato foi criar um
 // papel personalizado 60×40 mm no driver; com a página do app no mesmo tamanho, o
 // navegador casa os dois e não gira nada. As opções de giro ficam p/ driver sem papel custom.
-function etqOrient(){const o=etqCfg().orient;return ['paisagem','dir','esq'].includes(o)?o:'paisagem';}
+// v172: 'livre' = NÃO força tamanho de página (só margem 0). Quando o app força
+// @page, o Chrome trava "Layout: Retrato/Paisagem" no diálogo — e com o papel
+// 60x40mm do driver da Elgin cadastrado em pé, era justamente esse controle que
+// faltava. Sem @page, o Chrome usa o papel selecionado e deixa o Fabio escolher
+// Paisagem uma vez; ele memoriza para as próximas impressões.
+function etqOrient(){const o=etqCfg().orient;return ['livre','paisagem','dir','esq'].includes(o)?o:'livre';}
 function etqImprimir(labels){
   const area=document.getElementById('print-area');
   const o=etqOrient();
-  area.innerHTML=o==='paisagem'?labels.join(''):labels.map(l=>`<div class="etq-pg ${o}">${l}</div>`).join('');
+  area.innerHTML=(o==='paisagem'||o==='livre')?labels.join(''):labels.map(l=>`<div class="etq-pg ${o}">${l}</div>`).join('');
   let st=document.getElementById('etq-page-style');
   if(!st){st=document.createElement('style');st.id='etq-page-style';document.head.appendChild(st);}
-  st.textContent=o==='paisagem'?'@page{size:60mm 40mm;margin:0}':'@page{size:40mm 60mm;margin:0}';
+  st.textContent=o==='livre'?'@page{margin:0}':o==='paisagem'?'@page{size:60mm 40mm;margin:0}':'@page{size:40mm 60mm;margin:0}';
   document.body.classList.add('etq-print');
   document.title='Etiquetas GESTO';
   const done=()=>{window.removeEventListener('afterprint',done);etqLimparModoImpressao();};
@@ -6696,7 +6701,7 @@ function renderGestaoEtq(){
   return `<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:4px">Etiquetas de identificação</div>
     <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Prazo é por item, definido abaixo; item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
   <div class="sec">Impressora</div>
-  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">Rolo 60×40 mm. O que funciona: criar no driver da impressora um <b>papel personalizado 60×40 mm</b> e, na primeira impressão, escolher esse papel, margens “nenhuma” e escala 100% — o navegador guarda a escolha para as próximas. Só troque a orientação aqui se o driver não permitir papel personalizado.</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">Rolo 60×40 mm. Em <b>Livre</b> o app não força o tamanho da página, então o diálogo do Chrome libera <b>Layout</b>: na primeira impressão escolha papel <b>60x40mm</b>, Layout <b>Paisagem</b>, Margens <b>Nenhuma</b>, Escala <b>100</b> — o Chrome memoriza. As outras opções forçam a página e travam o Layout; use só se o driver exigir.</div>
   <div class="chips" id="getq-orient" style="padding:0 0 6px"></div>
   <button class="bs" id="getq-teste" style="width:100%;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-printer"></i> Imprimir etiqueta de teste</button>
   <div class="sec">Categorias liberadas no módulo Etiquetas</div>
@@ -6714,7 +6719,7 @@ function renderGestaoEtq(){
 function wireGestaoEtq(c){
   ensureDiarioCfg().then(()=>{
     renderGetqOrient(c.querySelector('#getq-orient'));
-    const bt=c.querySelector('#getq-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:etqOrient()==='paisagem'?'paisagem':etqOrient()==='dir'?'retrato · girada à direita':'retrato · girada à esquerda',idx:1,tot:1})]);});
+    const bt=c.querySelector('#getq-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:({livre:'livre · layout do Chrome',paisagem:'forçado 60×40',dir:'retrato · girada à direita',esq:'retrato · girada à esquerda'})[etqOrient()],idx:1,tot:1})]);});
     renderGetqGrupos(c.querySelector('#getq-grupos'));
     renderGetqFiltros(c);
     renderGetqItens(c.querySelector('#getq-itens'));
@@ -6730,7 +6735,7 @@ function wireGestaoEtq(c){
 function renderGetqOrient(el){
   if(!el)return;
   const cfg=etqCfg(),o=etqOrient();
-  const ops=[['paisagem','Paisagem 60×40 (papel personalizado 60×40 no driver)'],['dir','Retrato · girada à direita'],['esq','Retrato · girada à esquerda']];
+  const ops=[['livre','Livre · escolha Paisagem no Chrome (recomendado)'],['paisagem','Forçar 60×40 deitado'],['dir','Retrato · girada à direita'],['esq','Retrato · girada à esquerda']];
   el.innerHTML=ops.map(([k,l])=>`<span class="chip ${o===k?'on':''}" data-or="${k}" style="padding:7px 11px;font-size:12.5px">${l}</span>`).join('');
   el.querySelectorAll('[data-or]').forEach(ch=>ch.addEventListener('click',()=>{cfg.orient=ch.dataset.or;getqSalvar();renderGetqOrient(el);}));
 }
