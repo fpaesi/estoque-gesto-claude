@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v175</title>
+<title>Gesto Operação v176</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1896,7 +1896,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v175';
+const APP_VERSION = 'v176';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6440,7 +6440,18 @@ function etqImprimir(labels){
   document.title='Etiquetas GESTO';
   const done=()=>{window.removeEventListener('afterprint',done);etqLimparModoImpressao();};
   window.addEventListener('afterprint',done);
-  setTimeout(()=>window.print(),80);
+  // v176: window.print() SÍNCRONO, dentro do gesto do toque. No Safari do iOS um
+  // print disparado por setTimeout (mesmo 80 ms) é ignorado em silêncio — o toast
+  // aparecia e nenhuma folha de impressão abria. O DOM já está montado acima;
+  // não há o que esperar. Em modo standalone (ícone na tela de início) o iOS não
+  // imprime de jeito nenhum: avisamos para abrir no Safari.
+  if(navigator.standalone===true){
+    etqLimparModoImpressao();
+    showToast('O iPhone/iPad não imprime pelo ícone da tela de início. Abra o app no Safari para imprimir.',{type:'err',duration:6000});
+    return false;
+  }
+  window.print();
+  return true;
 }
 // v163: sem tela de pré-visualização — o Fabio pediu um toque a menos. Manda
 // direto para o diálogo de impressão do aparelho (que já mostra a página) e o
