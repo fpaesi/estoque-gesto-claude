@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v174</title>
+<title>Gesto Operação v175</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -330,7 +330,14 @@
 .etq-big{display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0}
 .etq-big button{width:64px;height:64px;border-radius:16px;border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:32px;cursor:pointer;font-family:inherit;line-height:1}.etq-big button:active{background:var(--bg3)}
 .etq-big .n{min-width:70px;text-align:center;font-size:40px;font-weight:600;line-height:1}
-@media print{body.etq-print #print-area .etq-blank{border:none;margin:0;break-after:page;page-break-after:always}body.etq-print #print-area .etq-blank:last-child{break-after:auto;page-break-after:auto}}
+/* v175: na impressão a etiqueta é 0,5 mm menor que a página em cada eixo. Com 40 mm
+   exatos numa página de 40 mm, o arredondamento do driver empurrava uma linha vazia
+   para uma 2ª página — cada etiqueta saía em duas. html/body sem altura e sem
+   overflow garantem que só os elementos de etiqueta ocupem páginas. */
+@media print{body.etq-print{margin:0!important;padding:0!important}body.etq-print html,body.etq-print body{height:auto!important;overflow:hidden!important}
+body.etq-print #print-area{margin:0;padding:0;line-height:0;font-size:0}
+body.etq-print #print-area .etq-blank,body.etq-print #print-area .etq-lbl{width:59.5mm;height:39.5mm;border:none;margin:0;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
+body.etq-print #print-area .etq-blank:last-child,body.etq-print #print-area .etq-lbl:last-child{break-after:auto;page-break-after:auto}}
 @media print{body.etq-print #print-area .etq-lbl{border:none;margin:0;break-after:page;page-break-after:always}body.etq-print #print-area .etq-lbl:last-child{break-after:auto;page-break-after:auto}}
 /* ── Impressão: lista de conferência por local (v77) ── */
 #print-area{display:none}
@@ -1889,7 +1896,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v174';
+const APP_VERSION = 'v175';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
