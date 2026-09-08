@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v179</title>
+<title>Gesto Operação v180</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1896,7 +1896,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v179';
+const APP_VERSION = 'v180';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6498,7 +6498,25 @@ function etqCanvasEtiqueta(o){
 //   D0   página deitada 60×40, sem giro          D180 deitada, de cabeça p/ baixo
 //   P90  página em pé 40×60, etiqueta girada +90  P270 em pé, girada −90
 const ETQ_IOS_MODOS=[['P90','Em pé · giro à direita'],['P270','Em pé · giro à esquerda'],['D0','Deitada · sem giro'],['D180','Deitada · 180°']];
-function etqIosModo(){const m=etqCfg().iosModo;return ETQ_IOS_MODOS.some(x=>x[0]===m)?m:'P90';}
+function etqIosModo(){const m=etqCfg().iosModo;return ETQ_IOS_MODOS.some(x=>x[0]===m)?m:'D0';}
+// v180: CALIBRAÇÃO. O caminho AirPrint → O'Print → driver estica a página para um
+// papel de proporção diferente (letras altas e estreitas). Imprime-se um retângulo
+// de 50×30 mm; o gestor mede o que saiu e digita. sx/sy = medido/esperado. A página
+// do PDF passa a ter 60/sx × 40/sy: depois de esticada pelo caminho, vira 60×40.
+function etqIosCal(){const c=etqCfg().iosCal||{};const sx=etqNum(c.sx),sy=etqNum(c.sy);return {sx:(sx&&sx>0.3&&sx<3)?sx:1,sy:(sy&&sy>0.3&&sy<3)?sy:1};}
+function etqCanvasCalibracao(){
+  const W=60,H=40,cv=document.createElement('canvas');cv.width=W*ETQ_PXMM;cv.height=H*ETQ_PXMM;
+  const c=cv.getContext('2d');c.scale(ETQ_PXMM,ETQ_PXMM);c.fillStyle='#fff';c.fillRect(0,0,W,H);
+  c.strokeStyle='#000';c.lineWidth=0.5;c.strokeRect(5,5,50,30);
+  c.fillStyle='#000';c.font='bold 2.2px Helvetica,Arial,sans-serif';c.textAlign='center';
+  c.fillText('LARGURA: meça esta linha = 50 mm',30,3.6);
+  c.save();c.translate(2.6,20);c.rotate(-Math.PI/2);c.fillText('ALTURA = 30 mm',0,0);c.restore();
+  c.font='bold 3px Helvetica,Arial,sans-serif';c.fillText('CALIBRAÇÃO GESTO',30,19);
+  c.font='2px Helvetica,Arial,sans-serif';c.fillText('Digite as duas medidas em Gestão › Etiquetas',30,23.5);
+  const cal=etqIosCal();c.fillText('atual: sx '+cal.sx.toFixed(3)+' · sy '+cal.sy.toFixed(3)+' · '+etqIosModo(),30,38.5);
+  c.beginPath();c.moveTo(5,35);c.lineTo(55,35);c.stroke();c.beginPath();c.moveTo(5,34);c.lineTo(5,36);c.moveTo(55,34);c.lineTo(55,36);c.stroke();
+  return cv;
+}
 function etqCanvasGirado(src,graus){
   const cv=document.createElement('canvas');const q=((graus%360)+360)%360;
   if(q===90||q===270){cv.width=src.height;cv.height=src.width;}else{cv.width=src.width;cv.height=src.height;}
@@ -6508,10 +6526,16 @@ function etqCanvasGirado(src,graus){
   else if(q===180){c.translate(cv.width,cv.height);c.rotate(Math.PI);}
   c.drawImage(src,0,0);return cv;
 }
-function etqIosPagina(){const m=etqIosModo();return m[0]==='P'?{fmt:[40,60],ori:'portrait',w:40,h:60,g:m==='P90'?90:270}:{fmt:[60,40],ori:'landscape',w:60,h:40,g:m==='D180'?180:0};}
+function etqIosPagina(){
+  const m=etqIosModo(),cal=etqIosCal();
+  // a compensação é aplicada na página já na orientação final (largura/altura do que sai)
+  const w=+(60/cal.sx).toFixed(2),hh=+(40/cal.sy).toFixed(2);
+  return m[0]==='P'?{fmt:[hh,w],ori:'portrait',w:hh,h:w,g:m==='P90'?90:270}:{fmt:[w,hh],ori:'landscape',w:w,h:hh,g:m==='D180'?180:0};
+}
 function etqPdfPagina(doc,o){
   const pg=etqIosPagina();
-  const img=etqCanvasGirado(etqCanvasEtiqueta(o),pg.g);
+  const src=o&&o.calibracao?etqCanvasCalibracao():etqCanvasEtiqueta(o);
+  const img=etqCanvasGirado(src,pg.g);
   doc.addImage(img.toDataURL('image/png'),'PNG',0,0,pg.w,pg.h);
 }
 async function etqImprimirIOS(labels){
@@ -6807,6 +6831,14 @@ function renderGestaoEtq(){
   <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">No iOS a etiqueta vai como PDF pela folha de compartilhamento. Se sair de lado ou de cabeça para baixo, troque o modo e imprima o teste até sair deitada e proporcional. Vale para todos os aparelhos.</div>
   <div class="chips" id="getq-ios" style="padding:0 0 6px;flex-wrap:wrap"></div>
   <button class="bs" id="getq-ios-teste" style="width:100%;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-printer"></i> Imprimir etiqueta de teste (este aparelho)</button>
+  <div class="card" style="margin-top:8px"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Calibração de tamanho</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.45;margin-bottom:8px">Se a etiqueta sai esticada ou encolhida: imprima a calibração, meça com régua o retângulo impresso (largura e altura, em mm) e digite aqui. O app compensa nas próximas impressões. Deixe em branco para desligar.</div>
+    <button class="bs" id="getq-ios-cal" style="width:100%;padding:10px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px"><i class="ti ti-ruler"></i> Imprimir etiqueta de calibração (50 × 30 mm)</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <label style="font-size:11px;color:var(--tx2)">Largura medida (esperado 50)<input id="getq-cal-w" type="text" inputmode="decimal" placeholder="50" style="width:100%;margin-top:2px;font-size:16px;padding:8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
+      <label style="font-size:11px;color:var(--tx2)">Altura medida (esperado 30)<input id="getq-cal-h" type="text" inputmode="decimal" placeholder="30" style="width:100%;margin-top:2px;font-size:16px;padding:8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
+    </div>
+    <div id="getq-cal-info" style="font-size:12px;color:var(--tx2);margin-top:6px"></div></div>
   <div class="sec">Categorias liberadas no módulo Etiquetas</div>
   <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">O que a equipe vê ao imprimir etiqueta de insumo. Processados saem pela Produção — ligue aqui só para reimpressão avulsa.</div>
   <div id="getq-grupos" class="chips" style="flex-wrap:wrap;padding:0 0 6px"></div>
@@ -6822,6 +6854,12 @@ function renderGestaoEtq(){
 function wireGestaoEtq(c){
   ensureDiarioCfg().then(()=>{
     renderGetqIos(c.querySelector('#getq-ios'));
+    const bc=c.querySelector('#getq-ios-cal');if(bc)bc.addEventListener('click',()=>{const s=new String('<div></div>');s.data={calibracao:true};etqImprimir([s]);});
+    const cw=c.querySelector('#getq-cal-w'),chh=c.querySelector('#getq-cal-h'),ci=c.querySelector('#getq-cal-info');
+    const cfgC=etqCfg();if(cfgC.iosCal){if(cw)cw.value=cfgC.iosCal.w||'';if(chh)chh.value=cfgC.iosCal.h||'';}
+    const infoCal=()=>{const cal=etqIosCal();const pg=etqIosPagina();if(ci)ci.textContent=(cal.sx===1&&cal.sy===1)?'Sem compensação (página 60 × 40 mm).':'Compensando: fator largura '+cal.sx.toFixed(3)+', altura '+cal.sy.toFixed(3)+' → página do PDF '+pg.fmt[0]+' × '+pg.fmt[1]+' mm.';};
+    const gravaCal=()=>{const w=etqNum(cw.value),hh=etqNum(chh.value);cfgC.iosCal={w:cw.value.trim(),h:chh.value.trim(),sx:w?+(w/50).toFixed(4):'',sy:hh?+(hh/30).toFixed(4):''};getqSalvar();infoCal();};
+    if(cw&&chh){cw.addEventListener('change',gravaCal);chh.addEventListener('change',gravaCal);infoCal();}
     const bt=c.querySelector('#getq-ios-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();const m=ETQ_IOS_MODOS.find(x=>x[0]===etqIosModo());etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:m?m[1]:'',idx:1,tot:1})]);});
     renderGetqGrupos(c.querySelector('#getq-grupos'));
     renderGetqFiltros(c);
