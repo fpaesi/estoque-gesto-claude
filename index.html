@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v180</title>
+<title>Gesto Operação v181</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -298,14 +298,15 @@
 .modal-icon{font-size:32px;color:var(--acc);display:block;text-align:center;margin-bottom:4px}
 
 /* ── v162: etiquetas de identificação 60×40 mm ── */
-.etq-lbl{width:60mm;height:40mm;background:#fff;color:#000;border:.5px solid #999;padding:2mm 2.5mm;display:flex;flex-direction:column;font-family:"Helvetica Neue",Arial,sans-serif;flex-shrink:0;box-sizing:border-box;break-after:page;page-break-after:always}
-.etq-lbl .eh{display:flex;justify-content:space-between;align-items:center;font-size:7pt;font-weight:700;letter-spacing:.06em}
-.etq-lbl .eh .ec{background:#000;color:#fff;padding:.5mm 1.5mm;border-radius:1mm;font-size:6.5pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.etq-lbl .en{font-size:11pt;font-weight:800;line-height:1.1;text-transform:uppercase;margin:1.5mm 0 1mm;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
-.etq-lbl .eg{display:grid;grid-template-columns:1fr 1fr;gap:1mm;border-top:.3mm solid #000;padding-top:1mm}
+.etq-lbl{width:40mm;height:60mm;background:#fff;color:#000;border:.5px solid #999;padding:2.2mm 2mm;display:flex;flex-direction:column;font-family:"Helvetica Neue",Arial,sans-serif;flex-shrink:0;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always}
+.etq-lbl .eh{font-size:6.5pt;font-weight:700;letter-spacing:.05em;line-height:1.1}
+.etq-lbl .ec{display:inline-block;background:#000;color:#fff;padding:.6mm 1.5mm;border-radius:1mm;font-size:6.5pt;font-weight:700;margin-top:1.2mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.etq-lbl .en{font-size:11pt;font-weight:800;line-height:1.1;text-transform:uppercase;margin:2mm 0 1.5mm;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.etq-lbl .eg{border-top:.3mm solid #000;padding-top:1.2mm;display:flex;flex-direction:column;gap:1.4mm}
 .etq-lbl .eg small{display:block;font-size:5.5pt;font-weight:700;letter-spacing:.05em;color:#333}
-.etq-lbl .eg div{font-size:8.5pt;font-weight:600;line-height:1.15}.etq-lbl .eg .ev{font-size:10.5pt;font-weight:800}
-.etq-lbl .ef{display:flex;justify-content:space-between;gap:2mm;font-size:6.5pt;margin-top:1mm;color:#222;white-space:nowrap;overflow:hidden}
+.etq-lbl .eg div{font-size:9pt;font-weight:600;line-height:1.15}.etq-lbl .eg .ev{font-size:12pt;font-weight:800}
+.etq-lbl .ef{border-top:.3mm solid #000;margin-top:1.4mm;padding-top:1mm;font-size:6.5pt;color:#222;line-height:1.35}
+.etq-lbl .ef .r{display:flex;justify-content:space-between;gap:1mm;white-space:nowrap;overflow:hidden}
 .etq-box{border-top:.5px solid var(--bd3);padding-top:8px;margin-top:2px}
 .etq-line{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg2);border-radius:var(--r2);padding:6px 6px 6px 12px}
 .etq-l{font-size:12px;color:var(--tx2);line-height:1.3}.etq-l b{display:block;font-size:13px;color:var(--tx1);font-weight:500}
@@ -319,13 +320,13 @@
 .etq-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--bd3);font-size:14px}.etq-kv:last-child{border-bottom:none}
 .etq-kv .k{color:var(--tx2);font-size:13px}.etq-kv .v{font-weight:500;text-align:right}
 .etq-kv input{font-size:14px;padding:6px 8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:150px}
-.etq-blank{width:60mm;height:40mm;background:#fff;color:#000;border:.5px solid #999;padding:2.2mm 2.5mm;display:flex;flex-direction:column;justify-content:space-between;font-family:"Helvetica Neue",Arial,sans-serif;font-size:7.5pt;font-weight:700;line-height:1;flex-shrink:0;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always}
+.etq-blank{width:40mm;height:60mm;background:#fff;color:#000;border:.5px solid #999;padding:2.4mm 2mm;display:flex;flex-direction:column;justify-content:space-between;font-family:"Helvetica Neue",Arial,sans-serif;font-size:7.5pt;font-weight:700;line-height:1;flex-shrink:0;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always}
 .etq-blank .l{display:flex;align-items:flex-end;gap:1.2mm;white-space:nowrap;min-width:0}
-.etq-blank .u{flex:1;min-width:0;border-bottom:.3mm solid #000;height:3.2mm}.etq-blank .u.d{flex:0 0 6.5mm}
-.etq-blank .ck{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:6.5pt;white-space:nowrap;padding:0 1mm 0 0}.etq-blank .ck span{flex:1;min-width:0;overflow:hidden}
-.etq-blank .ck span::before{content:"";display:inline-block;width:2.6mm;height:2.6mm;border:.3mm solid #000;vertical-align:-.5mm;margin-right:.6mm}
-.etq-blank .ck .t{font-size:7.5pt;margin-right:.5mm}
-.etq-blank .g{font-size:5.5pt;font-weight:600;color:#333;letter-spacing:.06em;flex:0 0 auto}
+.etq-blank .u{flex:1;min-width:0;border-bottom:.3mm solid #000;height:3.4mm}.etq-blank .u.d{flex:0 0 6mm}
+.etq-blank .full{border-bottom:.3mm solid #000;height:4.2mm;margin-top:.6mm}
+.etq-blank .ck{display:flex;align-items:center;gap:1.4mm;font-weight:600;font-size:7pt;padding-left:1.5mm}
+.etq-blank .ck::before{content:"";display:inline-block;width:3mm;height:3mm;border:.3mm solid #000;flex-shrink:0}
+.etq-blank .g{font-size:5.5pt;font-weight:600;color:#333;letter-spacing:.06em;text-align:right}
 .etq-card-blank{border-style:dashed;border-color:var(--acc-bd);background:var(--acc-bg)}
 .etq-big{display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0}
 .etq-big button{width:64px;height:64px;border-radius:16px;border:.5px solid var(--bd3);background:var(--bg2);color:var(--tx1);font-size:32px;cursor:pointer;font-family:inherit;line-height:1}.etq-big button:active{background:var(--bg3)}
@@ -336,7 +337,7 @@
    overflow garantem que só os elementos de etiqueta ocupem páginas. */
 @media print{body.etq-print{margin:0!important;padding:0!important}body.etq-print html,body.etq-print body{height:auto!important;overflow:hidden!important}
 body.etq-print #print-area{margin:0;padding:0;line-height:0;font-size:0}
-body.etq-print #print-area .etq-blank,body.etq-print #print-area .etq-lbl{width:59.5mm;height:39.5mm;border:none;margin:0;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
+body.etq-print #print-area .etq-blank,body.etq-print #print-area .etq-lbl{width:39.5mm;height:59.5mm;border:none;margin:0;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
 body.etq-print #print-area .etq-blank:last-child,body.etq-print #print-area .etq-lbl:last-child{break-after:auto;page-break-after:auto}}
 @media print{body.etq-print #print-area .etq-lbl{border:none;margin:0;break-after:page;page-break-after:always}body.etq-print #print-area .etq-lbl:last-child{break-after:auto;page-break-after:auto}}
 /* ── Impressão: lista de conferência por local (v77) ── */
@@ -1896,7 +1897,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v180';
+const APP_VERSION = 'v181';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6415,18 +6416,19 @@ function etqLabelHTML(o){
 function etqLabelHTMLraw(o){
   const grupo=String(o.grupo||'').replace(/^Processados\s*/i,'').toUpperCase();
   return `<div class="etq-lbl">
-    <div class="eh"><span>GESTO · ${esc(grupo)}</span><span class="ec">${ETQ_CONS[o.cons].rot}</span></div>
+    <div class="eh">GESTO · ${esc(grupo)}</div>
+    <div><span class="ec">${ETQ_CONS[o.cons]?ETQ_CONS[o.cons].rot:''}</span></div>
     <div class="en">${esc(o.nome)}</div>
     <div class="eg">
       <div><small>${o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA'}</small><div>${etqFmtDH(o.base)}</div></div>
       <div><small>VALIDADE${o.limitada?' (FABR.)':''}</small><div class="ev">${o.val?etqFmtDH(o.val):'—'}</div></div>
     </div>
-    <div class="ef"><span>Resp.: <b>${esc(o.resp||'')}</b></span><span>${esc(o.rodape||'')}</span><span>${o.idx}/${o.tot}</span></div>
+    <div class="ef"><div class="r"><span>Resp.: <b>${esc(o.resp||'')}</b></span><span>${o.idx}/${o.tot}</span></div>${o.rodape?`<div class="r"><span>${esc(o.rodape)}</span></div>`:''}</div>
   </div>`;
 }
 // ── impressão ──────────────────────────────────────────────────────────────
 // O @page da lista de conferência (A4 paisagem) está no CSS estático. Aqui um
-// <style> temporário no fim do <head> vence a cascata e vira 60×40 mm; sai no
+// <style> temporário no fim do <head> vence a cascata e vira 40×60 mm (em pé); sai no
 // afterprint e, por garantia, no começo de exportarListaLocalPDF.
 function etqLimparModoImpressao(){
   document.body.classList.remove('etq-print');
@@ -6449,94 +6451,70 @@ function etqCarregarJsPdf(){
 }
 if(ETQ_IOS)setTimeout(()=>{etqCarregarJsPdf().catch(()=>{});},3000);
 function etqPdfTxt(s){return String(s??'').normalize('NFC').replace(/−/g,'-');}
-// v178: a etiqueta é desenhada num canvas (60×40 mm a 16 px/mm) e entra no PDF
-// GIRADA 90° numa página EM PÉ de 40×60 mm. Motivo: o driver da Elgin (no Windows
-// e no Mac) define o papel "60x40" em pé; o iOS não deixa escolher outro papel e
-// espremia a página deitada para caber — saía distorcida. Com a página igual ao
-// papel, a escala é 1:1; a etiqueta não tem lado de cima, é só virar o rolo.
+// v178/v181: a etiqueta é desenhada num canvas EM PÉ (40×60 mm a 16 px/mm) e entra
+// no PDF como imagem numa página 40×60 — a mesma proporção com que o driver da Elgin
+// define o papel, então nenhuma etapa (AirPrint, O'Print, driver) precisa girar ou
+// esticar. Os modos de giro da v179 saíram; a calibração (v180) fica como reserva.
 const ETQ_PXMM=16;
 function etqCanvasEtiqueta(o){
-  const W=60,H=40,cv=document.createElement('canvas');cv.width=W*ETQ_PXMM;cv.height=H*ETQ_PXMM;
+  const W=40,H=60,cv=document.createElement('canvas');cv.width=W*ETQ_PXMM;cv.height=H*ETQ_PXMM;
   const c=cv.getContext('2d');c.scale(ETQ_PXMM,ETQ_PXMM);
   c.fillStyle='#fff';c.fillRect(0,0,W,H);c.fillStyle='#000';c.strokeStyle='#000';c.lineWidth=0.3;c.textBaseline='alphabetic';
-  const pt=n=>n*0.3528; // pt → mm
+  const pt=n=>n*0.3528;
   const font=(sz,bold)=>{c.font=(bold?'bold ':'')+pt(sz)+'px "Helvetica Neue",Helvetica,Arial,sans-serif';};
   const txt=(s,x,y,al)=>{c.textAlign=al||'left';c.fillText(etqPdfTxt(s),x,y);};
   const tw=s=>c.measureText(etqPdfTxt(s)).width;
   const line=(x1,y,x2)=>{c.beginPath();c.moveTo(x1,y);c.lineTo(x2,y);c.stroke();};
+  const L=2,R=38;
   if(o.blank){
     font(7.5,true);
-    const campo=(y,rot)=>{txt(rot,2.5,y);line(2.5+tw(rot)+1.2,y+0.4,57.5);};
-    campo(6,'PRODUTO:');
-    const data=(y,rot)=>{txt(rot,2.5,y);let x=2.5+tw(rot)+1.2;for(let i=0;i<3;i++){line(x,y+0.4,x+6.5);x+=6.5;if(i<2){txt('/',x+0.6,y);x+=2.6;}}};
-    data(12.5,'ABERTURA:');data(19,'VALIDADE:');
-    txt('MANTER EM:',2.5,25.5);
-    font(6.5,false);
-    [['Ambiente',3],['Refrigerado',21],['Congelado',40.5]].forEach(([t,x])=>{c.strokeRect(x,28.2,2.6,2.6);txt(t,x+3.4,30.4);});
-    font(7.5,true);txt('RESPONSÁVEL:',2.5,36.5);line(2.5+tw('RESPONSÁVEL:')+1.2,36.9,49);
-    font(5.5,true);c.fillStyle='#333';txt('GESTO',57.5,36.5,'right');c.fillStyle='#000';
+    txt('PRODUTO:',L,6);line(L,10.6,R);
+    const data=(y,rot)=>{txt(rot,L,y);let x=L+tw(rot)+1.2;for(let i=0;i<3;i++){line(x,y+0.4,Math.min(x+6,R));x+=6;if(i<2){txt('/',x+0.5,y);x+=2.4;}}};
+    data(17,'ABERTURA:');data(24,'VALIDADE:');
+    txt('MANTER EM:',L,31.5);
+    font(7,false);[['Ambiente',36],['Refrigerado',41.5],['Congelado',47]].forEach(([t,y])=>{c.strokeRect(L+1.5,y-2.8,3,3);txt(t,L+6.2,y);});
+    font(7.5,true);txt('RESPONSÁVEL:',L,54);line(L,58,R);
+    font(5.5,true);c.fillStyle='#333';txt('GESTO',R,59.3,'right');c.fillStyle='#000';
     return cv;
   }
   const grupo=String(o.grupo||'').replace(/^Processados\s*/i,'').toUpperCase();
-  font(7,true);txt('GESTO · '+grupo,2.5,4.6);
-  const rot=ETQ_CONS[o.cons]?ETQ_CONS[o.cons].rot:'';font(6.5,true);const bw=tw(rot)+3;
-  c.fillRect(57.5-bw,2.2,bw,3.4);c.fillStyle='#fff';txt(rot,57.5-bw/2,4.7,'center');c.fillStyle='#000';
-  // nome em até 2 linhas
+  font(6.5,true);txt('GESTO · '+grupo,L,4.6);
+  const rot=ETQ_CONS[o.cons]?ETQ_CONS[o.cons].rot:'';font(6.5,true);const bw=Math.min(tw(rot)+3,36);
+  c.fillRect(L,6,bw,3.6);c.fillStyle='#fff';txt(rot,L+bw/2,8.6,'center');c.fillStyle='#000';
   font(11,true);const words=String(o.nome||'').toUpperCase().split(/\s+/);const linhas=[];let cur='';
-  words.forEach(w=>{const t=cur?cur+' '+w:w;if(tw(t)<=55||!cur)cur=t;else{linhas.push(cur);cur=w;}});if(cur)linhas.push(cur);
-  linhas.slice(0,2).forEach((l,i)=>{let s=l;while(tw(s)>55&&s.length>3)s=s.slice(0,-2)+'…';txt(s,2.5,10.5+i*4.6);});
-  line(2.5,25.2,57.5);
-  font(5.5,true);c.fillStyle='#333';txt(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',2.5,27.8);txt('VALIDADE'+(o.limitada?' (FABR.)':''),31,27.8);c.fillStyle='#000';
-  font(8.5,true);txt(etqFmtDH(o.base),2.5,31.3);
-  font(10.5,true);txt(o.val?etqFmtDH(o.val):'—',31,31.6);
-  font(6.5,false);txt('Resp.: ',2.5,37.2);const rw=tw('Resp.: ');font(6.5,true);txt(o.resp||'',2.5+rw,37.2);
-  font(6.5,false);txt(o.rodape||'',30,37.2,'center');txt(o.idx+'/'+o.tot,57.5,37.2,'right');
+  words.forEach(w=>{const t=cur?cur+' '+w:w;if(tw(t)<=36||!cur)cur=t;else{linhas.push(cur);cur=w;}});if(cur)linhas.push(cur);
+  linhas.slice(0,3).forEach((l,i)=>{let s=l;while(tw(s)>36&&s.length>3)s=s.slice(0,-2)+'…';txt(s,L,15.5+i*4.6);});
+  line(L,30.5,R);
+  font(5.5,true);c.fillStyle='#333';txt(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',L,33.4);c.fillStyle='#000';
+  font(9,true);txt(etqFmtDH(o.base),L,37.2);
+  font(5.5,true);c.fillStyle='#333';txt('VALIDADE'+(o.limitada?' (FABR.)':''),L,41.6);c.fillStyle='#000';
+  font(12,true);txt(o.val?etqFmtDH(o.val):'—',L,46.6);
+  line(L,50,R);
+  font(6.5,false);txt('Resp.: ',L,53.4);const rw=tw('Resp.: ');font(6.5,true);txt(o.resp||'',L+rw,53.4);
+  font(6.5,false);txt(o.idx+'/'+o.tot,R,53.4,'right');
+  if(o.rodape)txt(o.rodape,L,57.2);
   return cv;
 }
-// v179: o giro no iOS é configurável (Gestão › Etiquetas › iPhone/iPad). Quatro
-// combinações cobrem tudo o que o caminho AirPrint → O'Print → driver pode fazer:
-//   D0   página deitada 60×40, sem giro          D180 deitada, de cabeça p/ baixo
-//   P90  página em pé 40×60, etiqueta girada +90  P270 em pé, girada −90
-const ETQ_IOS_MODOS=[['P90','Em pé · giro à direita'],['P270','Em pé · giro à esquerda'],['D0','Deitada · sem giro'],['D180','Deitada · 180°']];
-function etqIosModo(){const m=etqCfg().iosModo;return ETQ_IOS_MODOS.some(x=>x[0]===m)?m:'D0';}
-// v180: CALIBRAÇÃO. O caminho AirPrint → O'Print → driver estica a página para um
-// papel de proporção diferente (letras altas e estreitas). Imprime-se um retângulo
-// de 50×30 mm; o gestor mede o que saiu e digita. sx/sy = medido/esperado. A página
-// do PDF passa a ter 60/sx × 40/sy: depois de esticada pelo caminho, vira 60×40.
+// CALIBRAÇÃO (v180): retângulo 30×50; o gestor mede o que saiu e digita. sx/sy =
+// medido/esperado; a página do PDF passa a 40/sx × 60/sy para compensar.
 function etqIosCal(){const c=etqCfg().iosCal||{};const sx=etqNum(c.sx),sy=etqNum(c.sy);return {sx:(sx&&sx>0.3&&sx<3)?sx:1,sy:(sy&&sy>0.3&&sy<3)?sy:1};}
 function etqCanvasCalibracao(){
-  const W=60,H=40,cv=document.createElement('canvas');cv.width=W*ETQ_PXMM;cv.height=H*ETQ_PXMM;
+  const W=40,H=60,cv=document.createElement('canvas');cv.width=W*ETQ_PXMM;cv.height=H*ETQ_PXMM;
   const c=cv.getContext('2d');c.scale(ETQ_PXMM,ETQ_PXMM);c.fillStyle='#fff';c.fillRect(0,0,W,H);
-  c.strokeStyle='#000';c.lineWidth=0.5;c.strokeRect(5,5,50,30);
-  c.fillStyle='#000';c.font='bold 2.2px Helvetica,Arial,sans-serif';c.textAlign='center';
-  c.fillText('LARGURA: meça esta linha = 50 mm',30,3.6);
-  c.save();c.translate(2.6,20);c.rotate(-Math.PI/2);c.fillText('ALTURA = 30 mm',0,0);c.restore();
-  c.font='bold 3px Helvetica,Arial,sans-serif';c.fillText('CALIBRAÇÃO GESTO',30,19);
-  c.font='2px Helvetica,Arial,sans-serif';c.fillText('Digite as duas medidas em Gestão › Etiquetas',30,23.5);
-  const cal=etqIosCal();c.fillText('atual: sx '+cal.sx.toFixed(3)+' · sy '+cal.sy.toFixed(3)+' · '+etqIosModo(),30,38.5);
-  c.beginPath();c.moveTo(5,35);c.lineTo(55,35);c.stroke();c.beginPath();c.moveTo(5,34);c.lineTo(5,36);c.moveTo(55,34);c.lineTo(55,36);c.stroke();
+  c.strokeStyle='#000';c.lineWidth=0.5;c.strokeRect(5,5,30,50);
+  c.fillStyle='#000';c.font='bold 2px Helvetica,Arial,sans-serif';c.textAlign='center';
+  c.fillText('LARGURA = 30 mm',20,3.6);
+  c.save();c.translate(2.6,30);c.rotate(-Math.PI/2);c.fillText('ALTURA = 50 mm',0,0);c.restore();
+  c.font='bold 2.6px Helvetica,Arial,sans-serif';c.fillText('CALIBRAÇÃO',20,28);c.fillText('GESTO',20,31.5);
+  c.font='1.8px Helvetica,Arial,sans-serif';c.fillText('meça o retângulo e digite',20,36);c.fillText('em Gestão › Etiquetas',20,38.8);
+  const cal=etqIosCal();c.fillText('sx '+cal.sx.toFixed(3)+' · sy '+cal.sy.toFixed(3),20,58.5);
   return cv;
 }
-function etqCanvasGirado(src,graus){
-  const cv=document.createElement('canvas');const q=((graus%360)+360)%360;
-  if(q===90||q===270){cv.width=src.height;cv.height=src.width;}else{cv.width=src.width;cv.height=src.height;}
-  const c=cv.getContext('2d');
-  if(q===90){c.translate(cv.width,0);c.rotate(Math.PI/2);}
-  else if(q===270){c.translate(0,cv.height);c.rotate(-Math.PI/2);}
-  else if(q===180){c.translate(cv.width,cv.height);c.rotate(Math.PI);}
-  c.drawImage(src,0,0);return cv;
-}
-function etqIosPagina(){
-  const m=etqIosModo(),cal=etqIosCal();
-  // a compensação é aplicada na página já na orientação final (largura/altura do que sai)
-  const w=+(60/cal.sx).toFixed(2),hh=+(40/cal.sy).toFixed(2);
-  return m[0]==='P'?{fmt:[hh,w],ori:'portrait',w:hh,h:w,g:m==='P90'?90:270}:{fmt:[w,hh],ori:'landscape',w:w,h:hh,g:m==='D180'?180:0};
-}
+function etqIosPagina(){const cal=etqIosCal();const w=+(40/cal.sx).toFixed(2),hh=+(60/cal.sy).toFixed(2);return {fmt:[w,hh],ori:'portrait',w:w,h:hh};}
 function etqPdfPagina(doc,o){
   const pg=etqIosPagina();
   const src=o&&o.calibracao?etqCanvasCalibracao():etqCanvasEtiqueta(o);
-  const img=etqCanvasGirado(src,pg.g);
-  doc.addImage(img.toDataURL('image/png'),'PNG',0,0,pg.w,pg.h);
+  doc.addImage(src.toDataURL('image/png'),'PNG',0,0,pg.w,pg.h);
 }
 async function etqImprimirIOS(labels){
   let jsPDF;
@@ -6560,7 +6538,7 @@ function etqImprimir(labels){
   area.innerHTML=labels.map(String).join('');
   let st=document.getElementById('etq-page-style');
   if(!st){st=document.createElement('style');st.id='etq-page-style';document.head.appendChild(st);}
-  st.textContent='@page{size:60mm 40mm;margin:0}';
+  st.textContent='@page{size:40mm 60mm;margin:0}';
   document.body.classList.add('etq-print');
   document.title='Etiquetas GESTO';
   const done=()=>{window.removeEventListener('afterprint',done);etqLimparModoImpressao();};
@@ -6609,12 +6587,12 @@ function etqBlankHTML(){
 }
 function etqBlankHTMLraw(){
   return `<div class="etq-blank">
-    <div class="l"><span>PRODUTO:</span><span class="u"></span></div>
+    <div><div class="l"><span>PRODUTO:</span></div><div class="full"></div></div>
     <div class="l"><span>ABERTURA:</span><span class="u d"></span>/<span class="u d"></span>/<span class="u d"></span></div>
     <div class="l"><span>VALIDADE:</span><span class="u d"></span>/<span class="u d"></span>/<span class="u d"></span></div>
-    <div class="l"><span>MANTER EM:</span></div>
-    <div class="ck"><span>Ambiente</span><span>Refrigerado</span><span>Congelado</span></div>
-    <div class="l"><span>RESPONSÁVEL:</span><span class="u"></span><span class="g">GESTO</span></div>
+    <div><div class="l" style="margin-bottom:1.2mm"><span>MANTER EM:</span></div>
+      <div class="ck">Ambiente</div><div class="ck" style="margin-top:1mm">Refrigerado</div><div class="ck" style="margin-top:1mm">Congelado</div></div>
+    <div><div class="l"><span>RESPONSÁVEL:</span></div><div class="full"></div><div class="g">GESTO</div></div>
   </div>`;
 }
 let etqBlankN=5;
@@ -6828,15 +6806,14 @@ function renderGestaoEtq(){
   return `<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:4px">Etiquetas de identificação</div>
     <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Prazo é por item, definido abaixo; item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
   <div class="sec">Impressão pelo iPhone / iPad</div>
-  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">No iOS a etiqueta vai como PDF pela folha de compartilhamento. Se sair de lado ou de cabeça para baixo, troque o modo e imprima o teste até sair deitada e proporcional. Vale para todos os aparelhos.</div>
-  <div class="chips" id="getq-ios" style="padding:0 0 6px;flex-wrap:wrap"></div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">No iPhone/iPad a etiqueta vai como PDF pela folha de compartilhamento (toque em Imprimir e escolha a impressora). A etiqueta é em pé, 40 × 60 mm, como o driver da Elgin define o papel.</div>
   <button class="bs" id="getq-ios-teste" style="width:100%;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-printer"></i> Imprimir etiqueta de teste (este aparelho)</button>
   <div class="card" style="margin-top:8px"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Calibração de tamanho</div>
     <div style="font-size:12px;color:var(--tx2);line-height:1.45;margin-bottom:8px">Se a etiqueta sai esticada ou encolhida: imprima a calibração, meça com régua o retângulo impresso (largura e altura, em mm) e digite aqui. O app compensa nas próximas impressões. Deixe em branco para desligar.</div>
-    <button class="bs" id="getq-ios-cal" style="width:100%;padding:10px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px"><i class="ti ti-ruler"></i> Imprimir etiqueta de calibração (50 × 30 mm)</button>
+    <button class="bs" id="getq-ios-cal" style="width:100%;padding:10px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px"><i class="ti ti-ruler"></i> Imprimir etiqueta de calibração (30 × 50 mm)</button>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <label style="font-size:11px;color:var(--tx2)">Largura medida (esperado 50)<input id="getq-cal-w" type="text" inputmode="decimal" placeholder="50" style="width:100%;margin-top:2px;font-size:16px;padding:8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
-      <label style="font-size:11px;color:var(--tx2)">Altura medida (esperado 30)<input id="getq-cal-h" type="text" inputmode="decimal" placeholder="30" style="width:100%;margin-top:2px;font-size:16px;padding:8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
+      <label style="font-size:11px;color:var(--tx2)">Largura medida (esperado 30)<input id="getq-cal-w" type="text" inputmode="decimal" placeholder="30" style="width:100%;margin-top:2px;font-size:16px;padding:8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
+      <label style="font-size:11px;color:var(--tx2)">Altura medida (esperado 50)<input id="getq-cal-h" type="text" inputmode="decimal" placeholder="50" style="width:100%;margin-top:2px;font-size:16px;padding:8px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);text-align:center;font-family:inherit"/></label>
     </div>
     <div id="getq-cal-info" style="font-size:12px;color:var(--tx2);margin-top:6px"></div></div>
   <div class="sec">Categorias liberadas no módulo Etiquetas</div>
@@ -6848,19 +6825,18 @@ function renderGestaoEtq(){
   <input id="getq-busca" class="srch" placeholder="Buscar item pelo nome…" autocomplete="off" value="${esc(getqBusca)}"/>
   <div class="chips" id="getq-fchips" style="padding:2px 0 4px"></div>
   <div id="getq-itens" style="display:flex;flex-direction:column;gap:8px"></div>
-  <div class="sec">Como sai na impressora (60×40 mm)</div>
+  <div class="sec">Como sai na impressora (40×60 mm, em pé)</div>
   <div id="getq-amostra" style="display:flex;justify-content:center;padding:8px;background:var(--bg2);border-radius:var(--r1)"></div>`;
 }
 function wireGestaoEtq(c){
   ensureDiarioCfg().then(()=>{
-    renderGetqIos(c.querySelector('#getq-ios'));
     const bc=c.querySelector('#getq-ios-cal');if(bc)bc.addEventListener('click',()=>{const s=new String('<div></div>');s.data={calibracao:true};etqImprimir([s]);});
     const cw=c.querySelector('#getq-cal-w'),chh=c.querySelector('#getq-cal-h'),ci=c.querySelector('#getq-cal-info');
     const cfgC=etqCfg();if(cfgC.iosCal){if(cw)cw.value=cfgC.iosCal.w||'';if(chh)chh.value=cfgC.iosCal.h||'';}
-    const infoCal=()=>{const cal=etqIosCal();const pg=etqIosPagina();if(ci)ci.textContent=(cal.sx===1&&cal.sy===1)?'Sem compensação (página 60 × 40 mm).':'Compensando: fator largura '+cal.sx.toFixed(3)+', altura '+cal.sy.toFixed(3)+' → página do PDF '+pg.fmt[0]+' × '+pg.fmt[1]+' mm.';};
-    const gravaCal=()=>{const w=etqNum(cw.value),hh=etqNum(chh.value);cfgC.iosCal={w:cw.value.trim(),h:chh.value.trim(),sx:w?+(w/50).toFixed(4):'',sy:hh?+(hh/30).toFixed(4):''};getqSalvar();infoCal();};
+    const infoCal=()=>{const cal=etqIosCal();const pg=etqIosPagina();if(ci)ci.textContent=(cal.sx===1&&cal.sy===1)?'Sem compensação (página 40 × 60 mm).':'Compensando: fator largura '+cal.sx.toFixed(3)+', altura '+cal.sy.toFixed(3)+' → página do PDF '+pg.fmt[0]+' × '+pg.fmt[1]+' mm.';};
+    const gravaCal=()=>{const w=etqNum(cw.value),hh=etqNum(chh.value);cfgC.iosCal={w:cw.value.trim(),h:chh.value.trim(),sx:w?+(w/30).toFixed(4):'',sy:hh?+(hh/50).toFixed(4):''};getqSalvar();infoCal();};
     if(cw&&chh){cw.addEventListener('change',gravaCal);chh.addEventListener('change',gravaCal);infoCal();}
-    const bt=c.querySelector('#getq-ios-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();const m=ETQ_IOS_MODOS.find(x=>x[0]===etqIosModo());etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:m?m[1]:'',idx:1,tot:1})]);});
+    const bt=c.querySelector('#getq-ios-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:'em pé 40×60 · '+APP_VERSION,idx:1,tot:1})]);});
     renderGetqGrupos(c.querySelector('#getq-grupos'));
     renderGetqFiltros(c);
     renderGetqItens(c.querySelector('#getq-itens'));
@@ -6872,11 +6848,6 @@ function wireGestaoEtq(c){
     const bi=c.querySelector('#getq-busca');
     if(bi)bi.addEventListener('input',()=>{getqBusca=bi.value;renderGetqItens(c.querySelector('#getq-itens'));});
   });
-}
-function renderGetqIos(el){
-  if(!el)return;const cfg=etqCfg(),m=etqIosModo();
-  el.innerHTML=ETQ_IOS_MODOS.map(([k,l])=>`<span class="chip ${m===k?'on':''}" data-im="${k}" style="padding:7px 11px;font-size:12.5px">${l}</span>`).join('');
-  el.querySelectorAll('[data-im]').forEach(ch=>ch.addEventListener('click',()=>{cfg.iosModo=ch.dataset.im;getqSalvar();renderGetqIos(el);}));
 }
 function renderGetqGrupos(el){
   if(!el)return;
