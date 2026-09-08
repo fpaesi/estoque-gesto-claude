@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v172</title>
+<title>Gesto Operação v173</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -340,7 +340,9 @@
 /* ── Impressão: lista de conferência por local (v77) ── */
 #print-area{display:none}
 @media print{
-  @page{size:A4 landscape;margin:12mm}
+  /* v173: o @page{size:A4 landscape} que ficava aqui foi para exportarListaLocalPDF
+     (injetado só na hora). Regra @page com size no CSS estático faz o Chrome travar
+     "Layout: Retrato/Paisagem" no diálogo — inclusive ao imprimir etiquetas. */
   html,body{background:#fff!important;height:auto!important}
   #app{display:none!important}
   #print-area{display:block!important;color:#000;font-family:-apple-system,Arial,sans-serif}
@@ -1894,7 +1896,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v172';
+const APP_VERSION = 'v173';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2693,7 +2695,13 @@ function exportarListaLocalPDF(lid){
     </thead>
     <tbody>${body}</tbody>
   </table>`;
-  etqLimparModoImpressao(); // v162: garante @page A4 mesmo se a última impressão foi de etiqueta
+  etqLimparModoImpressao(); // v162: limpa qualquer modo de etiqueta
+  // v173: página A4 paisagem só durante ESTA impressão (ver nota no CSS de impressão)
+  let stA4=document.getElementById('etq-page-style');
+  if(!stA4){stA4=document.createElement('style');stA4.id='etq-page-style';document.head.appendChild(stA4);}
+  stA4.textContent='@page{size:A4 landscape;margin:12mm}';
+  const limparA4=()=>{window.removeEventListener('afterprint',limparA4);const s=document.getElementById('etq-page-style');if(s)s.remove();};
+  window.addEventListener('afterprint',limparA4);
   const area=document.getElementById('print-area');
   area.innerHTML=html;
   document.title=`Conferência ${l.nome} - ${dataStr}`;
@@ -6701,7 +6709,7 @@ function renderGestaoEtq(){
   return `<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:4px">Etiquetas de identificação</div>
     <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Prazo é por item, definido abaixo; item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
   <div class="sec">Impressora</div>
-  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">Rolo 60×40 mm. Em <b>Livre</b> o app não força o tamanho da página, então o diálogo do Chrome libera <b>Layout</b>: na primeira impressão escolha papel <b>60x40mm</b>, Layout <b>Paisagem</b>, Margens <b>Nenhuma</b>, Escala <b>100</b> — o Chrome memoriza. As outras opções forçam a página e travam o Layout; use só se o driver exigir.</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">Rolo 60×40 mm. Em <b>Livre</b> o app não força tamanho de página nenhum, então o diálogo do Chrome libera <b>Layout</b>: na primeira impressão escolha papel <b>60x40mm</b>, Layout <b>Paisagem</b>, Margens <b>Nenhuma</b>, Escala <b>100</b> — o Chrome memoriza. As outras opções forçam a página e travam o Layout; use só se o driver exigir.</div>
   <div class="chips" id="getq-orient" style="padding:0 0 6px"></div>
   <button class="bs" id="getq-teste" style="width:100%;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-printer"></i> Imprimir etiqueta de teste</button>
   <div class="sec">Categorias liberadas no módulo Etiquetas</div>
