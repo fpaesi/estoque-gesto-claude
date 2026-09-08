@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v170</title>
+<title>Gesto Operação v171</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1894,7 +1894,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v170';
+const APP_VERSION = 'v171';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6433,7 +6433,10 @@ function etqLimparModoImpressao(){
 // etiqueta saiu de lado e cortada. Agora a página impressa é retrato 40×60 e é
 // o app que gira o conteúdo (90° p/ direita ou esquerda, conforme o driver).
 // Configurável em Gestão › Etiquetas › Impressora, com etiqueta de teste.
-function etqOrient(){const o=etqCfg().orient;return ['paisagem','dir','esq'].includes(o)?o:'dir';}
+// v171: padrão voltou a PAISAGEM 60×40 — o caminho que funcionou de fato foi criar um
+// papel personalizado 60×40 mm no driver; com a página do app no mesmo tamanho, o
+// navegador casa os dois e não gira nada. As opções de giro ficam p/ driver sem papel custom.
+function etqOrient(){const o=etqCfg().orient;return ['paisagem','dir','esq'].includes(o)?o:'paisagem';}
 function etqImprimir(labels){
   const area=document.getElementById('print-area');
   const o=etqOrient();
@@ -6693,7 +6696,7 @@ function renderGestaoEtq(){
   return `<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:4px">Etiquetas de identificação</div>
     <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Prazo é por item, definido abaixo; item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
   <div class="sec">Impressora</div>
-  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">Se a etiqueta sair de lado ou cortada, troque a orientação e imprima um teste. Rolo 60×40 mm.</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">Rolo 60×40 mm. O que funciona: criar no driver da impressora um <b>papel personalizado 60×40 mm</b> e, na primeira impressão, escolher esse papel, margens “nenhuma” e escala 100% — o navegador guarda a escolha para as próximas. Só troque a orientação aqui se o driver não permitir papel personalizado.</div>
   <div class="chips" id="getq-orient" style="padding:0 0 6px"></div>
   <button class="bs" id="getq-teste" style="width:100%;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-printer"></i> Imprimir etiqueta de teste</button>
   <div class="sec">Categorias liberadas no módulo Etiquetas</div>
@@ -6727,7 +6730,7 @@ function wireGestaoEtq(c){
 function renderGetqOrient(el){
   if(!el)return;
   const cfg=etqCfg(),o=etqOrient();
-  const ops=[['dir','Retrato · girada à direita'],['esq','Retrato · girada à esquerda'],['paisagem','Paisagem 60×40 (sem giro)']];
+  const ops=[['paisagem','Paisagem 60×40 (papel personalizado 60×40 no driver)'],['dir','Retrato · girada à direita'],['esq','Retrato · girada à esquerda']];
   el.innerHTML=ops.map(([k,l])=>`<span class="chip ${o===k?'on':''}" data-or="${k}" style="padding:7px 11px;font-size:12.5px">${l}</span>`).join('');
   el.querySelectorAll('[data-or]').forEach(ch=>ch.addEventListener('click',()=>{cfg.orient=ch.dataset.or;getqSalvar();renderGetqOrient(el);}));
 }
