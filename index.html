@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v177</title>
+<title>Gesto Operação v178</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1896,7 +1896,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v177';
+const APP_VERSION = 'v178';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6448,42 +6448,66 @@ function etqCarregarJsPdf(){
   return etqJsPdfP;
 }
 if(ETQ_IOS)setTimeout(()=>{etqCarregarJsPdf().catch(()=>{});},3000);
-function etqPdfTxt(s){return String(s??'').normalize('NFC').replace(/\u2212/g,'-').replace(/\u2013|\u2014/g,'-');} // fontes padrão do PDF (WinAnsi) não têm o sinal de menos U+2212
-// Desenha uma etiqueta (dados de etqLabelHTML) numa página 60×40 do jsPDF.
-function etqPdfPagina(doc,o){
-  doc.setTextColor(0);doc.setDrawColor(0);
+function etqPdfTxt(s){return String(s??'').normalize('NFC').replace(/−/g,'-');}
+// v178: a etiqueta é desenhada num canvas (60×40 mm a 16 px/mm) e entra no PDF
+// GIRADA 90° numa página EM PÉ de 40×60 mm. Motivo: o driver da Elgin (no Windows
+// e no Mac) define o papel "60x40" em pé; o iOS não deixa escolher outro papel e
+// espremia a página deitada para caber — saía distorcida. Com a página igual ao
+// papel, a escala é 1:1; a etiqueta não tem lado de cima, é só virar o rolo.
+const ETQ_PXMM=16;
+function etqCanvasEtiqueta(o){
+  const W=60,H=40,cv=document.createElement('canvas');cv.width=W*ETQ_PXMM;cv.height=H*ETQ_PXMM;
+  const c=cv.getContext('2d');c.scale(ETQ_PXMM,ETQ_PXMM);
+  c.fillStyle='#fff';c.fillRect(0,0,W,H);c.fillStyle='#000';c.strokeStyle='#000';c.lineWidth=0.3;c.textBaseline='alphabetic';
+  const pt=n=>n*0.3528; // pt → mm
+  const font=(sz,bold)=>{c.font=(bold?'bold ':'')+pt(sz)+'px "Helvetica Neue",Helvetica,Arial,sans-serif';};
+  const txt=(s,x,y,al)=>{c.textAlign=al||'left';c.fillText(etqPdfTxt(s),x,y);};
+  const tw=s=>c.measureText(etqPdfTxt(s)).width;
+  const line=(x1,y,x2)=>{c.beginPath();c.moveTo(x1,y);c.lineTo(x2,y);c.stroke();};
   if(o.blank){
-    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setLineWidth(0.3);
-    const linha=(y,rotulo,ini)=>{doc.text(rotulo,2.5,y);const w=doc.getTextWidth(rotulo);const x0=2.5+w+1.2;doc.line(x0,y+0.4,ini||57.5,y+0.4);return x0;};
-    linha(6,'PRODUTO:');
-    const data=(y,rotulo)=>{doc.text(rotulo,2.5,y);let x=2.5+doc.getTextWidth(rotulo)+1.2;for(let i=0;i<3;i++){doc.line(x,y+0.4,x+6.5,y+0.4);x+=6.5;if(i<2){doc.text('/',x+0.6,y);x+=2.6;}}};
+    font(7.5,true);
+    const campo=(y,rot)=>{txt(rot,2.5,y);line(2.5+tw(rot)+1.2,y+0.4,57.5);};
+    campo(6,'PRODUTO:');
+    const data=(y,rot)=>{txt(rot,2.5,y);let x=2.5+tw(rot)+1.2;for(let i=0;i<3;i++){line(x,y+0.4,x+6.5);x+=6.5;if(i<2){txt('/',x+0.6,y);x+=2.6;}}};
     data(12.5,'ABERTURA:');data(19,'VALIDADE:');
-    doc.text('MANTER EM:',2.5,25.5);
-    doc.setFontSize(6.5);doc.setFont('helvetica','normal');
-    [['Ambiente',3],['Refrigerado',21],['Congelado',40.5]].forEach(([t,x])=>{doc.rect(x,28.2,2.6,2.6);doc.text(t,x+3.4,30.4);});
-    doc.setFont('helvetica','bold');doc.setFontSize(7.5);
-    doc.text('RESPONSÁVEL:',2.5,36.5);const w=doc.getTextWidth('RESPONSÁVEL:');doc.line(2.5+w+1.2,36.9,49,36.9);
-    doc.setFontSize(5.5);doc.setTextColor(60);doc.text('GESTO',57.5,36.5,{align:'right'});
-    return;
+    txt('MANTER EM:',2.5,25.5);
+    font(6.5,false);
+    [['Ambiente',3],['Refrigerado',21],['Congelado',40.5]].forEach(([t,x])=>{c.strokeRect(x,28.2,2.6,2.6);txt(t,x+3.4,30.4);});
+    font(7.5,true);txt('RESPONSÁVEL:',2.5,36.5);line(2.5+tw('RESPONSÁVEL:')+1.2,36.9,49);
+    font(5.5,true);c.fillStyle='#333';txt('GESTO',57.5,36.5,'right');c.fillStyle='#000';
+    return cv;
   }
-  const grupo=etqPdfTxt(String(o.grupo||'').replace(/^Processados\s*/i,'').toUpperCase());
-  doc.setFont('helvetica','bold');doc.setFontSize(7);
-  doc.text('GESTO · '+grupo,2.5,4.6);
-  const rot=etqPdfTxt(ETQ_CONS[o.cons]?ETQ_CONS[o.cons].rot:'');doc.setFontSize(6.5);
-  const bw=doc.getTextWidth(rot)+3;doc.setFillColor(0);doc.rect(57.5-bw,2.2,bw,3.4,'F');doc.setTextColor(255);doc.text(rot,57.5-bw/2,4.7,{align:'center'});doc.setTextColor(0);
-  doc.setFontSize(11);const nome=doc.splitTextToSize(etqPdfTxt(o.nome).toUpperCase(),55).slice(0,2);doc.text(nome,2.5,10.5);
-  doc.setLineWidth(0.3);doc.line(2.5,25.2,57.5,25.2);
-  doc.setFontSize(5.5);doc.setTextColor(50);doc.text(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',2.5,27.8);doc.text('VALIDADE'+(o.limitada?' (FABR.)':''),31,27.8);doc.setTextColor(0);
-  doc.setFontSize(8.5);doc.text(etqFmtDH(o.base),2.5,31.3);
-  doc.setFontSize(10.5);doc.text(o.val?etqFmtDH(o.val):'—',31,31.6);
-  doc.setFontSize(6.5);doc.setFont('helvetica','normal');doc.text('Resp.: ',2.5,37.2);const rw=doc.getTextWidth('Resp.: ');doc.setFont('helvetica','bold');doc.text(etqPdfTxt(o.resp||''),2.5+rw,37.2);
-  doc.setFont('helvetica','normal');doc.text(etqPdfTxt(o.rodape||''),30,37.2,{align:'center'});doc.text(o.idx+'/'+o.tot,57.5,37.2,{align:'right'});
+  const grupo=String(o.grupo||'').replace(/^Processados\s*/i,'').toUpperCase();
+  font(7,true);txt('GESTO · '+grupo,2.5,4.6);
+  const rot=ETQ_CONS[o.cons]?ETQ_CONS[o.cons].rot:'';font(6.5,true);const bw=tw(rot)+3;
+  c.fillRect(57.5-bw,2.2,bw,3.4);c.fillStyle='#fff';txt(rot,57.5-bw/2,4.7,'center');c.fillStyle='#000';
+  // nome em até 2 linhas
+  font(11,true);const words=String(o.nome||'').toUpperCase().split(/\s+/);const linhas=[];let cur='';
+  words.forEach(w=>{const t=cur?cur+' '+w:w;if(tw(t)<=55||!cur)cur=t;else{linhas.push(cur);cur=w;}});if(cur)linhas.push(cur);
+  linhas.slice(0,2).forEach((l,i)=>{let s=l;while(tw(s)>55&&s.length>3)s=s.slice(0,-2)+'…';txt(s,2.5,10.5+i*4.6);});
+  line(2.5,25.2,57.5);
+  font(5.5,true);c.fillStyle='#333';txt(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',2.5,27.8);txt('VALIDADE'+(o.limitada?' (FABR.)':''),31,27.8);c.fillStyle='#000';
+  font(8.5,true);txt(etqFmtDH(o.base),2.5,31.3);
+  font(10.5,true);txt(o.val?etqFmtDH(o.val):'—',31,31.6);
+  font(6.5,false);txt('Resp.: ',2.5,37.2);const rw=tw('Resp.: ');font(6.5,true);txt(o.resp||'',2.5+rw,37.2);
+  font(6.5,false);txt(o.rodape||'',30,37.2,'center');txt(o.idx+'/'+o.tot,57.5,37.2,'right');
+  return cv;
+}
+// Gira o canvas 60×40 em 90° → 40×60 (em pé), como o papel do driver.
+function etqCanvasGirado(src){
+  const cv=document.createElement('canvas');cv.width=src.height;cv.height=src.width;
+  const c=cv.getContext('2d');c.translate(cv.width,0);c.rotate(Math.PI/2);c.drawImage(src,0,0);
+  return cv;
+}
+function etqPdfPagina(doc,o){
+  const img=etqCanvasGirado(etqCanvasEtiqueta(o));
+  doc.addImage(img.toDataURL('image/png'),'PNG',0,0,40,60);
 }
 async function etqImprimirIOS(labels){
   let jsPDF;
   try{jsPDF=await etqCarregarJsPdf();}catch(e){showToast('Sem conexão para preparar o PDF. Tente de novo.',{type:'err'});return false;}
-  const doc=new jsPDF({unit:'mm',format:[60,40],orientation:'landscape'});
-  labels.forEach((l,i)=>{if(i>0)doc.addPage([60,40],'landscape');etqPdfPagina(doc,(l&&l.data)||{blank:true});});
+  const doc=new jsPDF({unit:'mm',format:[40,60],orientation:'portrait'});
+  labels.forEach((l,i)=>{if(i>0)doc.addPage([40,60],'portrait');etqPdfPagina(doc,(l&&l.data)||{blank:true});});
   const blob=doc.output('blob');
   const file=new File([blob],'etiquetas-gesto.pdf',{type:'application/pdf'});
   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
