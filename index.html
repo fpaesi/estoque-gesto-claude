@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v178</title>
+<title>Gesto Operação v179</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1896,7 +1896,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v178';
+const APP_VERSION = 'v179';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6493,21 +6493,33 @@ function etqCanvasEtiqueta(o){
   font(6.5,false);txt(o.rodape||'',30,37.2,'center');txt(o.idx+'/'+o.tot,57.5,37.2,'right');
   return cv;
 }
-// Gira o canvas 60×40 em 90° → 40×60 (em pé), como o papel do driver.
-function etqCanvasGirado(src){
-  const cv=document.createElement('canvas');cv.width=src.height;cv.height=src.width;
-  const c=cv.getContext('2d');c.translate(cv.width,0);c.rotate(Math.PI/2);c.drawImage(src,0,0);
-  return cv;
+// v179: o giro no iOS é configurável (Gestão › Etiquetas › iPhone/iPad). Quatro
+// combinações cobrem tudo o que o caminho AirPrint → O'Print → driver pode fazer:
+//   D0   página deitada 60×40, sem giro          D180 deitada, de cabeça p/ baixo
+//   P90  página em pé 40×60, etiqueta girada +90  P270 em pé, girada −90
+const ETQ_IOS_MODOS=[['P90','Em pé · giro à direita'],['P270','Em pé · giro à esquerda'],['D0','Deitada · sem giro'],['D180','Deitada · 180°']];
+function etqIosModo(){const m=etqCfg().iosModo;return ETQ_IOS_MODOS.some(x=>x[0]===m)?m:'P90';}
+function etqCanvasGirado(src,graus){
+  const cv=document.createElement('canvas');const q=((graus%360)+360)%360;
+  if(q===90||q===270){cv.width=src.height;cv.height=src.width;}else{cv.width=src.width;cv.height=src.height;}
+  const c=cv.getContext('2d');
+  if(q===90){c.translate(cv.width,0);c.rotate(Math.PI/2);}
+  else if(q===270){c.translate(0,cv.height);c.rotate(-Math.PI/2);}
+  else if(q===180){c.translate(cv.width,cv.height);c.rotate(Math.PI);}
+  c.drawImage(src,0,0);return cv;
 }
+function etqIosPagina(){const m=etqIosModo();return m[0]==='P'?{fmt:[40,60],ori:'portrait',w:40,h:60,g:m==='P90'?90:270}:{fmt:[60,40],ori:'landscape',w:60,h:40,g:m==='D180'?180:0};}
 function etqPdfPagina(doc,o){
-  const img=etqCanvasGirado(etqCanvasEtiqueta(o));
-  doc.addImage(img.toDataURL('image/png'),'PNG',0,0,40,60);
+  const pg=etqIosPagina();
+  const img=etqCanvasGirado(etqCanvasEtiqueta(o),pg.g);
+  doc.addImage(img.toDataURL('image/png'),'PNG',0,0,pg.w,pg.h);
 }
 async function etqImprimirIOS(labels){
   let jsPDF;
   try{jsPDF=await etqCarregarJsPdf();}catch(e){showToast('Sem conexão para preparar o PDF. Tente de novo.',{type:'err'});return false;}
-  const doc=new jsPDF({unit:'mm',format:[40,60],orientation:'portrait'});
-  labels.forEach((l,i)=>{if(i>0)doc.addPage([40,60],'portrait');etqPdfPagina(doc,(l&&l.data)||{blank:true});});
+  const pg=etqIosPagina();
+  const doc=new jsPDF({unit:'mm',format:pg.fmt,orientation:pg.ori});
+  labels.forEach((l,i)=>{if(i>0)doc.addPage(pg.fmt,pg.ori);etqPdfPagina(doc,(l&&l.data)||{blank:true});});
   const blob=doc.output('blob');
   const file=new File([blob],'etiquetas-gesto.pdf',{type:'application/pdf'});
   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
@@ -6791,6 +6803,10 @@ function getqSalvar(){clearTimeout(getqSaveT);getqSaveT=setTimeout(()=>salvarDia
 function renderGestaoEtq(){
   return `<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:4px">Etiquetas de identificação</div>
     <div style="font-size:12px;color:var(--tx2);line-height:1.45">Validade = momento da impressão + dias da conservação. Na Produção sai <b>1 etiqueta por porção</b> produzida (quantidade ÷ porção de armazenamento). Prazo é por item, definido abaixo; item sem prazo não imprime. Cada impressão fica registrada no Diário.</div></div>
+  <div class="sec">Impressão pelo iPhone / iPad</div>
+  <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px;line-height:1.45">No iOS a etiqueta vai como PDF pela folha de compartilhamento. Se sair de lado ou de cabeça para baixo, troque o modo e imprima o teste até sair deitada e proporcional. Vale para todos os aparelhos.</div>
+  <div class="chips" id="getq-ios" style="padding:0 0 6px;flex-wrap:wrap"></div>
+  <button class="bs" id="getq-ios-teste" style="width:100%;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-printer"></i> Imprimir etiqueta de teste (este aparelho)</button>
   <div class="sec">Categorias liberadas no módulo Etiquetas</div>
   <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">O que a equipe vê ao imprimir etiqueta de insumo. Processados saem pela Produção — ligue aqui só para reimpressão avulsa.</div>
   <div id="getq-grupos" class="chips" style="flex-wrap:wrap;padding:0 0 6px"></div>
@@ -6805,6 +6821,8 @@ function renderGestaoEtq(){
 }
 function wireGestaoEtq(c){
   ensureDiarioCfg().then(()=>{
+    renderGetqIos(c.querySelector('#getq-ios'));
+    const bt=c.querySelector('#getq-ios-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();const m=ETQ_IOS_MODOS.find(x=>x[0]===etqIosModo());etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:m?m[1]:'',idx:1,tot:1})]);});
     renderGetqGrupos(c.querySelector('#getq-grupos'));
     renderGetqFiltros(c);
     renderGetqItens(c.querySelector('#getq-itens'));
@@ -6816,6 +6834,11 @@ function wireGestaoEtq(c){
     const bi=c.querySelector('#getq-busca');
     if(bi)bi.addEventListener('input',()=>{getqBusca=bi.value;renderGetqItens(c.querySelector('#getq-itens'));});
   });
+}
+function renderGetqIos(el){
+  if(!el)return;const cfg=etqCfg(),m=etqIosModo();
+  el.innerHTML=ETQ_IOS_MODOS.map(([k,l])=>`<span class="chip ${m===k?'on':''}" data-im="${k}" style="padding:7px 11px;font-size:12.5px">${l}</span>`).join('');
+  el.querySelectorAll('[data-im]').forEach(ch=>ch.addEventListener('click',()=>{cfg.iosModo=ch.dataset.im;getqSalvar();renderGetqIos(el);}));
 }
 function renderGetqGrupos(el){
   if(!el)return;
