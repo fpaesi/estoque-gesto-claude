@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v168</title>
+<title>Gesto Operação v169</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -322,8 +322,8 @@
 .etq-blank{width:60mm;height:40mm;background:#fff;color:#000;border:.5px solid #999;padding:2.2mm 2.5mm;display:flex;flex-direction:column;justify-content:space-between;font-family:"Helvetica Neue",Arial,sans-serif;font-size:7.5pt;font-weight:700;line-height:1;flex-shrink:0;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always}
 .etq-blank .l{display:flex;align-items:flex-end;gap:1.2mm;white-space:nowrap;min-width:0}
 .etq-blank .u{flex:1;min-width:0;border-bottom:.3mm solid #000;height:3.2mm}.etq-blank .u.d{flex:0 0 6.5mm}
-.etq-blank .ck{display:flex;align-items:center;gap:3mm;font-weight:600;font-size:7pt;white-space:nowrap;padding-left:2mm}
-.etq-blank .ck span::before{content:"";display:inline-block;width:2.8mm;height:2.8mm;border:.3mm solid #000;vertical-align:-.6mm;margin-right:.7mm}
+.etq-blank .ck{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:6.5pt;white-space:nowrap;padding:0 1mm 0 0}.etq-blank .ck span{flex:1;min-width:0;overflow:hidden}
+.etq-blank .ck span::before{content:"";display:inline-block;width:2.6mm;height:2.6mm;border:.3mm solid #000;vertical-align:-.5mm;margin-right:.6mm}
 .etq-blank .ck .t{font-size:7.5pt;margin-right:.5mm}
 .etq-blank .g{font-size:5.5pt;font-weight:600;color:#333;letter-spacing:.06em;flex:0 0 auto}
 .etq-card-blank{border-style:dashed;border-color:var(--acc-bd);background:var(--acc-bg)}
@@ -1889,7 +1889,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v168';
+const APP_VERSION = 'v169';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
