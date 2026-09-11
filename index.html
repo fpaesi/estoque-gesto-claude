@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v182</title>
+<title>Gesto Operação v183</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -301,11 +301,13 @@
 .etq-lbl{width:60mm;height:40mm;background:#fff;color:#000;border:.5px solid #999;padding:2mm 2.5mm;display:flex;flex-direction:column;font-family:"Helvetica Neue",Arial,sans-serif;flex-shrink:0;box-sizing:border-box;break-after:page;page-break-after:always}
 .etq-lbl .eh{display:flex;justify-content:space-between;align-items:center;font-size:7pt;font-weight:700;letter-spacing:.06em}
 .etq-lbl .eh .ec{background:#000;color:#fff;padding:.5mm 1.5mm;border-radius:1mm;font-size:6.5pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.etq-lbl .en{font-size:11pt;font-weight:800;line-height:1.1;text-transform:uppercase;margin:1.5mm 0 1mm;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.etq-lbl .en{font-size:10.5pt;font-weight:800;line-height:1.1;text-transform:uppercase;margin:1.2mm 0 .8mm;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
 .etq-lbl .eg{display:grid;grid-template-columns:1fr 1fr;gap:1mm;border-top:.3mm solid #000;padding-top:1mm}
 .etq-lbl .eg small{display:block;font-size:5.5pt;font-weight:700;letter-spacing:.05em;color:#333}
 .etq-lbl .eg div{font-size:8.5pt;font-weight:600;line-height:1.15}.etq-lbl .eg .ev{font-size:10.5pt;font-weight:800}
-.etq-lbl .ef{display:flex;justify-content:space-between;gap:2mm;font-size:6.5pt;margin-top:1mm;color:#222;white-space:nowrap;overflow:hidden}
+.etq-lbl .ef{display:flex;justify-content:space-between;gap:2mm;font-size:6.5pt;margin-top:.8mm;color:#222;white-space:nowrap;overflow:hidden}
+.etq-lbl .eb{font-size:4.3pt;line-height:1.2;color:#222;border-top:.2mm solid #999;margin-top:.6mm;padding-top:.4mm;overflow:hidden;max-height:5.6mm;font-weight:500}
+.etq-lbl .eb div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .etq-box{border-top:.5px solid var(--bd3);padding-top:8px;margin-top:2px}
 .etq-line{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg2);border-radius:var(--r2);padding:6px 6px 6px 12px}
 .etq-l{font-size:12px;color:var(--tx2);line-height:1.3}.etq-l b{display:block;font-size:13px;color:var(--tx1);font-weight:500}
@@ -1896,7 +1898,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v182';
+const APP_VERSION = 'v183';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6356,6 +6358,32 @@ const ETQ_GRUPOS_FORA=['Louça','Material de Limpeza','Embalagens','Utensílios'
 // v164: prazo é SEMPRE por item (decisão do Fabio — categoria não serve: dentro de
 // 'Lácteos' o creme dura 3 dias e o parmesão 30). Item sem prazo não imprime.
 const ETQ_TITLE0=document.title;
+// v183: BASE NORMATIVA impressa na etiqueta (letras miúdas). Cada item guarda códigos
+// em cfg.itens[cod].base ("P10.09; P10.10"); o texto curto vem daqui. Fonte:
+// Saipos/Base_Normativa_Prazos_Etiquetas.md (RS: SES 799/2023 complementa a RDC 216).
+const ETQ_BASES={
+  'P10.09':{norma:'SES-RS 799/2023 it. 10.09',diz:'preparado refrigerado ≤5 °C: até 3 dias'},
+  'P10.10':{norma:'SES-RS 799/2023 it. 10.10',diz:'preparado congelado ≤−18 °C: até 90 dias'},
+  'P10.11':{norma:'SES-RS 799/2023 it. 10.11',diz:'descongelado: usar em seguida, não recongelar'},
+  'P10.15':{norma:'SES-RS 799/2023 it. 10.15',diz:'fruta fracionada: embalada, rotulada e refrigerada'},
+  'P9.9':{norma:'SES-RS 799/2023 it. 9.9',diz:'insumo aberto: data de abertura + prazo do fabricante'},
+  'P9.8':{norma:'SES-RS 799/2023 it. 9.8',diz:'insumo seco: vale a validade da embalagem original'},
+  'R4.8.6':{norma:'RDC 216/2004 it. 4.8.6',diz:'fracionado: designação, data e prazo após abertura'},
+  'R4.8.17':{norma:'RDC 216/2004 it. 4.8.17',diz:'preparado refrigerado ≤4 °C: até 5 dias'},
+  'R4.8.18':{norma:'RDC 216/2004 it. 4.8.18',diz:'preparado: designação, data de preparo e validade'},
+  'CVS3':{norma:'Ref. CVS 3/2026 (SP) art. 44',diz:'3 dias refrigerado'},
+  'OVO':{norma:'SES-RS 799/2023 it. 10.16',diz:'ovos pela validade do rótulo; sem ovo cru'},
+  'BEB':{norma:'Bebida alcoólica industrializada',diz:'estável; sem prazo pós-abertura'},
+  'NA':{norma:'—',diz:'não etiquetar'},
+};
+function etqBaseCodigos(cod){const b=(etqCfg().itens[String(cod)]||{}).base;return String(b||'').split(/[;,]/).map(s=>s.trim()).filter(s=>s&&ETQ_BASES[s]);}
+// Linhas do rodapé normativo: a RDC 216 que exige a etiqueta + as bases do item.
+function etqBaseLinhas(cod,tipo){
+  const out=[];const rdc=ETQ_BASES[tipo==='producao'?'R4.8.18':'R4.8.6'];
+  out.push(rdc.norma+' — '+rdc.diz);
+  etqBaseCodigos(cod).forEach(k=>{const b=ETQ_BASES[k];out.push(b.norma+' — '+b.diz);});
+  return out;
+}
 function etqCfg(){
   if(!diarioCfg)diarioCfg={};
   if(!diarioCfg.etiquetas||typeof diarioCfg.etiquetas!=='object')diarioCfg.etiquetas={};
@@ -6422,6 +6450,7 @@ function etqLabelHTMLraw(o){
       <div><small>VALIDADE${o.limitada?' (FABR.)':''}</small><div class="ev">${o.val?etqFmtDH(o.val):'—'}</div></div>
     </div>
     <div class="ef"><span>Resp.: <b>${esc(o.resp||'')}</b></span><span>${esc(o.rodape||'')}</span><span>${o.idx}/${o.tot}</span></div>
+    ${o.bases&&o.bases.length?`<div class="eb">${o.bases.slice(0,3).map(l=>`<div>${esc(l)}</div>`).join('')}</div>`:''}
   </div>`;
 }
 // ── impressão ──────────────────────────────────────────────────────────────
@@ -6484,13 +6513,17 @@ function etqCanvasEtiqueta(o){
   // nome em até 2 linhas
   font(11,true);const words=String(o.nome||'').toUpperCase().split(/\s+/);const linhas=[];let cur='';
   words.forEach(w=>{const t=cur?cur+' '+w:w;if(tw(t)<=55||!cur)cur=t;else{linhas.push(cur);cur=w;}});if(cur)linhas.push(cur);
-  linhas.slice(0,2).forEach((l,i)=>{let s=l;while(tw(s)>55&&s.length>3)s=s.slice(0,-2)+'…';txt(s,2.5,10.5+i*4.6);});
-  line(2.5,25.2,57.5);
-  font(5.5,true);c.fillStyle='#333';txt(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',2.5,27.8);txt('VALIDADE'+(o.limitada?' (FABR.)':''),31,27.8);c.fillStyle='#000';
-  font(8.5,true);txt(etqFmtDH(o.base),2.5,31.3);
-  font(10.5,true);txt(o.val?etqFmtDH(o.val):'—',31,31.6);
-  font(6.5,false);txt('Resp.: ',2.5,37.2);const rw=tw('Resp.: ');font(6.5,true);txt(o.resp||'',2.5+rw,37.2);
-  font(6.5,false);txt(o.rodape||'',30,37.2,'center');txt(o.idx+'/'+o.tot,57.5,37.2,'right');
+  linhas.slice(0,2).forEach((l,i)=>{let s=l;while(tw(s)>55&&s.length>3)s=s.slice(0,-2)+'…';txt(s,2.5,10.2+i*4.4);});
+  line(2.5,21.6,57.5);
+  font(5.5,true);c.fillStyle='#333';txt(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',2.5,24);txt('VALIDADE'+(o.limitada?' (FABR.)':''),31,24);c.fillStyle='#000';
+  font(8.5,true);txt(etqFmtDH(o.base),2.5,27.4);
+  font(10.5,true);txt(o.val?etqFmtDH(o.val):'—',31,27.7);
+  font(6.5,false);txt('Resp.: ',2.5,31.6);const rw=tw('Resp.: ');font(6.5,true);txt(o.resp||'',2.5+rw,31.6);
+  font(6.5,false);txt(o.rodape||'',30,31.6,'center');txt(o.idx+'/'+o.tot,57.5,31.6,'right');
+  // v183: base normativa em letras miúdas (até 3 linhas de 4.3 pt)
+  const bases=(o.bases||[]).slice(0,3);
+  if(bases.length){c.lineWidth=0.2;c.strokeStyle='#999';line(2.5,32.8,57.5);c.strokeStyle='#000';c.lineWidth=0.3;
+    font(4.3,false);bases.forEach((l,i)=>{let s=etqPdfTxt(l);while(tw(s)>55&&s.length>4)s=s.slice(0,-2)+'…';txt(s,2.5,34.6+i*1.75);});}
   return cv;
 }
 // v182: o caminho AirPrint → O'Print → driver ESTICA a página para a etiqueta física
@@ -6745,7 +6778,7 @@ function etqImprimirInsumo(){
   if(!v){showToast('Sem prazo para esta conservação',{type:'err'});return;}
   const n=etqI.qty,cons=etqI.cons,labels=[];
   const tipo=PROC_GRUPOS.includes(it.grupo)?'producao':'insumo';
-  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo,nome:it.nome,grupo:it.grupo,cons,base,val:v.d,limitada:v.limitada,resp:currentUserNome,rodape:(vo&&!v.limitada)?'Val. orig. '+etqFmtD(vo):'',idx:k,tot:n}));
+  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo,nome:it.nome,grupo:it.grupo,cons,base,val:v.d,limitada:v.limitada,resp:currentUserNome,rodape:(vo&&!v.limitada)?'Val. orig. '+etqFmtD(vo):'',idx:k,tot:n,bases:etqBaseLinhas(it.cod,tipo)}));
   closeModal('modal-etq-item');
   etqAbrirPreview(labels,it.nome,async()=>{
     await etqRegistrar([{origem:tipo==='producao'?'reimpressao':'insumo',item:{cod:it.cod,nome:it.nome,unidade:it.unidade,grupo:it.grupo},cons,abertura:base.getTime(),validade:v.d.getTime(),qtd:n}]);
@@ -6794,7 +6827,7 @@ function dprodEtiquetasDe(p){
   const cons=dprodConsDe(cod),base=new Date(),v=etqValidade(cod,cons,base);
   if(!v)return null;
   const por=etqPorcao(cod),labels=[];
-  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo:'producao',nome:x.nome,grupo:x.grupo,cons,base,val:v.d,resp:currentUserNome,rodape:por.nome,idx:k,tot:n}));
+  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo:'producao',nome:x.nome,grupo:x.grupo,cons,base,val:v.d,resp:currentUserNome,rodape:por.nome,idx:k,tot:n,bases:etqBaseLinhas(x.cod,'producao')}));
   return {labels,reg:{origem:'producao',item:{cod:x.cod,nome:x.nome,unidade:x.unidade,grupo:x.grupo},cons,abertura:base.getTime(),validade:v.d.getTime(),qtd:n},n};
 }
 function dprodEtqPendentes(){
@@ -6837,6 +6870,12 @@ function renderGestaoEtq(){
   <div class="sec">Prazo de validade por item (dias)</div>
   <div style="font-size:12px;color:var(--tx2);padding:0 2px 4px">Cada insumo tem o seu prazo em cada conservação. Vazio = não imprime nessa conservação; item sem nenhum prazo não imprime. Processados em kg/L também definem a porção de armazenamento (pote 1 kg, bola 250 g…).</div>
   <div id="getq-resumo" style="font-size:12px;color:var(--tx2);padding:0 2px 4px"></div>
+  <datalist id="etq-bases-dl">${Object.keys(ETQ_BASES).map(k=>`<option value="${k}">${esc(ETQ_BASES[k].norma)}</option>`).join('')}</datalist>
+  <div class="card" style="padding:10px 14px"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Importar prazos da planilha</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.45;margin-bottom:8px">Carrega de uma vez prazos, conservação padrão, porção e base normativa a partir do arquivo <b>etiquetas_prazos.json</b> (gerado da planilha Etiquetas_Prazos_por_Item.xlsx). Itens já configurados são sobrescritos apenas nos campos presentes no arquivo.</div>
+    <button class="bs" id="getq-import" style="width:100%;padding:10px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-upload"></i> Escolher arquivo .json</button>
+    <input type="file" id="getq-import-file" accept=".json,application/json" style="display:none"/>
+    <div id="getq-import-info" style="font-size:12px;color:var(--tx2);margin-top:6px"></div></div>
   <input id="getq-busca" class="srch" placeholder="Buscar item pelo nome…" autocomplete="off" value="${esc(getqBusca)}"/>
   <div class="chips" id="getq-fchips" style="padding:2px 0 4px"></div>
   <div id="getq-itens" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -6851,17 +6890,33 @@ function wireGestaoEtq(c){
     const infoCal=()=>{const cal=etqIosCal();const pg=etqIosPagina();if(ci)ci.textContent=(cal.sx===1&&cal.sy===1)?'Sem compensação extra (página 40 × 60 mm com a etiqueta deitada comprimida).':'Compensando: fator largura '+cal.sx.toFixed(3)+', altura '+cal.sy.toFixed(3)+' → página do PDF '+pg.fmt[0]+' × '+pg.fmt[1]+' mm.';};
     const gravaCal=()=>{const w=etqNum(cw.value),hh=etqNum(chh.value);cfgC.iosCal={w:cw.value.trim(),h:chh.value.trim(),sx:w?+(w/50).toFixed(4):'',sy:hh?+(hh/30).toFixed(4):''};getqSalvar();infoCal();};
     if(cw&&chh){cw.addEventListener('change',gravaCal);chh.addEventListener('change',gravaCal);infoCal();}
-    const bt=c.querySelector('#getq-ios-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:APP_VERSION+' · deitada comprimida',idx:1,tot:1})]);});
+    const bt=c.querySelector('#getq-ios-teste');if(bt)bt.addEventListener('click',()=>{const now=new Date();etqImprimir([etqLabelHTML({tipo:'insumo',nome:'ETIQUETA DE TESTE',grupo:'Impressora',cons:'R',base:now,val:new Date(now.getTime()+3*86400000),resp:currentUserNome,rodape:APP_VERSION,idx:1,tot:1,bases:[ETQ_BASES['R4.8.6'].norma+' — '+ETQ_BASES['R4.8.6'].diz,ETQ_BASES['P9.9'].norma+' — '+ETQ_BASES['P9.9'].diz]})]);});
     renderGetqGrupos(c.querySelector('#getq-grupos'));
     renderGetqFiltros(c);
     renderGetqItens(c.querySelector('#getq-itens'));
     const am=c.querySelector('#getq-amostra');
     const ex=CATALOGO.find(x=>etqPrazos(x.cod).padrao);const now=new Date();
     if(am)am.innerHTML=ex
-      ?etqLabelHTML({tipo:PROC_GRUPOS.includes(ex.grupo)?'producao':'insumo',nome:ex.nome,grupo:ex.grupo,cons:etqPrazos(ex.cod).padrao,base:now,val:etqValidade(ex.cod,etqPrazos(ex.cod).padrao,now).d,resp:currentUserNome,rodape:etqPorcao(ex.cod).nome,idx:1,tot:1})
-      :etqLabelHTML({tipo:'producao',nome:'EXEMPLO — ALMÔNDEGA POLPETINI 150g',grupo:'Processados Cozinha',cons:'C',base:now,val:new Date(now.getTime()+30*86400000),resp:currentUserNome,rodape:'porção',idx:1,tot:20});
+      ?etqLabelHTML({tipo:PROC_GRUPOS.includes(ex.grupo)?'producao':'insumo',nome:ex.nome,grupo:ex.grupo,cons:etqPrazos(ex.cod).padrao,base:now,val:etqValidade(ex.cod,etqPrazos(ex.cod).padrao,now).d,resp:currentUserNome,rodape:etqPorcao(ex.cod).nome,idx:1,tot:1,bases:etqBaseLinhas(ex.cod,PROC_GRUPOS.includes(ex.grupo)?'producao':'insumo')})
+      :etqLabelHTML({tipo:'producao',nome:'EXEMPLO — ALMÔNDEGA POLPETINI 150g',grupo:'Processados Cozinha',cons:'C',base:now,val:new Date(now.getTime()+90*86400000),resp:currentUserNome,rodape:'porção',idx:1,tot:20,bases:[ETQ_BASES['R4.8.18'].norma+' — '+ETQ_BASES['R4.8.18'].diz,ETQ_BASES['P10.10'].norma+' — '+ETQ_BASES['P10.10'].diz]});
     const bi=c.querySelector('#getq-busca');
     if(bi)bi.addEventListener('input',()=>{getqBusca=bi.value;renderGetqItens(c.querySelector('#getq-itens'));});
+    // v183: importação em massa
+    const ib=c.querySelector('#getq-import'),iff=c.querySelector('#getq-import-file'),ii=c.querySelector('#getq-import-info');
+    if(ib&&iff){ib.addEventListener('click',()=>iff.click());
+      iff.addEventListener('change',()=>{const f=iff.files[0];if(!f)return;const rd=new FileReader();
+        rd.onload=async()=>{try{
+          const j=JSON.parse(rd.result);const itens=j.itens||j;const cfg=etqCfg();let n=0,semCat=0;
+          const cods=new Set(CATALOGO.map(x=>String(x.cod)));
+          Object.keys(itens).forEach(cod=>{if(!cods.has(String(cod))){semCat++;return;}const src=itens[cod]||{};const o=cfg.itens[cod]||{};
+            ['R','C','A','padrao','base'].forEach(k=>{if(src[k]!==undefined&&src[k]!==null)o[k]=String(src[k]);});
+            if(src.porcao&&(src.porcao.q||src.porcao.nome))o.porcao={q:String(src.porcao.q||''),nome:String(src.porcao.nome||'')};
+            cfg.itens[cod]=o;n++;});
+          await salvarDiarioCfg();
+          ii.textContent='Importados '+n+' itens'+(semCat?' · '+semCat+' códigos não estão no catálogo (ignorados)':'')+'.';
+          renderGetqFiltros(c);renderGetqItens(c.querySelector('#getq-itens'));showToast('Prazos importados: '+n+' itens',{type:'ok'});
+        }catch(e){ii.textContent='Arquivo inválido: '+e.message;}};
+        rd.readAsText(f);iff.value='';});}
   });
 }
 function renderGetqGrupos(el){
@@ -6912,6 +6967,8 @@ function renderGetqItens(el){
         ${ETQ_CONS_ORD.map(c=>`<label style="font-size:10.5px;color:var(--tx2)">${ETQ_CONS[c].nome}<input type="text" inputmode="numeric" data-c="${c}" value="${esc(ov[c]??'')}" placeholder="—" ${inp}/></label>`).join('')}
         <label style="font-size:10.5px;color:var(--tx2)">Padrão<select data-c="padrao" style="width:100%;margin-top:2px;font-size:13px;padding:7px 2px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"><option value="">auto</option>${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${ov.padrao===c?'selected':''} ${pz.dias[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></label>
       </div>
+      <label style="font-size:10.5px;color:var(--tx2);display:block;margin-top:8px">Base normativa (códigos separados por ;) — vai impressa na etiqueta<input type="text" data-b="base" list="etq-bases-dl" value="${esc(ov.base||'')}" placeholder="ex.: P10.09; P10.10" style="width:100%;margin-top:2px;font-size:14px;padding:7px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label>
+      ${etqBaseCodigos(cod).length?`<div style="font-size:10.5px;color:var(--tx2);margin-top:3px;line-height:1.35">${etqBaseCodigos(cod).map(k=>esc(ETQ_BASES[k].norma+' — '+ETQ_BASES[k].diz)).join('<br>')}</div>`:''}
       ${(proc&&!cont)?`<div style="display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-top:8px">
         <label style="font-size:10.5px;color:var(--tx2)">Porção (${esc(unidSigla(x.unidade))})<input type="text" inputmode="decimal" data-p="q" value="${esc(ov.porcao?ov.porcao.q:'')}" placeholder="ex.: 0,25" ${inp}/></label>
         <label style="font-size:10.5px;color:var(--tx2)">Nome da porção<input type="text" data-p="nome" value="${esc(ov.porcao?ov.porcao.nome||'':'')}" placeholder="ex.: bola 250 g" style="width:100%;margin-top:2px;font-size:14px;padding:7px;border:.5px solid var(--bd3);border-radius:6px;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label></div>
@@ -6928,6 +6985,7 @@ function renderGetqItens(el){
       o.padrao=card.querySelector('select[data-c="padrao"]').value;
       const pq=card.querySelector('input[data-p="q"]'),pn=card.querySelector('input[data-p="nome"]');
       if(pq){o.porcao={q:pq.value.trim(),nome:pn.value.trim()};}
+      const pb=card.querySelector('input[data-b="base"]');if(pb)o.base=pb.value.trim();
       cfg.itens[cod]=o;getqSalvar();
     };
     // redesenha só este card (foco/rolagem ficam no lugar) e atualiza os contadores
