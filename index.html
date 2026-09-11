@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v183</title>
+<title>Gesto Operação v184</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1898,7 +1898,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v183';
+const APP_VERSION = 'v184';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -6374,6 +6374,7 @@ const ETQ_BASES={
   'CVS3':{norma:'Ref. CVS 3/2026 (SP) art. 44',diz:'3 dias refrigerado'},
   'OVO':{norma:'SES-RS 799/2023 it. 10.16',diz:'ovos pela validade do rótulo; sem ovo cru'},
   'BEB':{norma:'Bebida alcoólica industrializada',diz:'estável; sem prazo pós-abertura'},
+  'RT':{norma:'Validação técnica do RT',diz:'prazo definido pelo responsável técnico (SES-RS 799 it. 10.2/10.4)'},
   'NA':{norma:'—',diz:'não etiquetar'},
 };
 function etqBaseCodigos(cod){const b=(etqCfg().itens[String(cod)]||{}).base;return String(b||'').split(/[;,]/).map(s=>s.trim()).filter(s=>s&&ETQ_BASES[s]);}
@@ -6408,13 +6409,20 @@ function etqGrupoAtivo(g){
 }
 function etqNum(v){const n=Number(String(v??'').replace(',','.'));return (isFinite(n)&&n>0)?n:null;}
 // Prazos do item (só dele).
+// v184: dois estados novos por item, definidos na planilha do Fabio:
+//   bloq = "Não"        → item não aparece para etiquetar (lata, destilado, gelo, lenha…)
+//   fab  = "Fabricante" → sem prazo em dias; o colaborador DIGITA a validade do
+//                         fabricante ao imprimir (obrigatório) — SES 799 item 9.9
 function etqPrazos(cod){
   const ov=etqCfg().itens[String(cod)]||{};
   const dias={};
   ETQ_CONS_ORD.forEach(c=>{const v=etqNum(ov[c]);if(v)dias[c]=v;});
+  const bloq=ov.bloq===true||ov.bloq==='1'||ov.bloq==='true';
+  const fab=ov.fab===true||ov.fab==='1'||ov.fab==='true';
   let padrao=(ov.padrao&&dias[ov.padrao])?ov.padrao:null;
   if(!padrao)padrao=ETQ_CONS_ORD.find(c=>dias[c])||null;
-  return {dias,padrao,proprio:!!padrao};
+  if(fab&&!padrao)padrao=ETQ_CONS[ov.padrao]?ov.padrao:'R';
+  return {dias,padrao,proprio:!!padrao,bloq,fab};
 }
 // Porção de armazenamento: converte a produção em nº de etiquetas.
 // PÇ/UN → 1 por unidade. KG/L → pote/bola/garrafa cadastrada; sem cadastro, 1 por kg/L.
@@ -6427,6 +6435,7 @@ function etqPorcao(cod){
 // Validade = base (abertura/manipulação) + dias; nunca passa da validade original do fabricante.
 function etqValidade(cod,cons,base,valOrig){
   const p=etqPrazos(cod);const d=p.dias[cons];
+  if(p.fab&&!d)return valOrig?{d:valOrig,limitada:true}:null; // v184: validade do fabricante é obrigatória
   if(!d)return null;
   const v=new Date(base.getTime()+d*86400000);
   if(valOrig&&valOrig<v)return {d:valOrig,limitada:true};
@@ -6673,7 +6682,7 @@ function etqBlankCardHTML(){
 // ── Diário › Etiquetas (insumos abertos/fracionados) ───────────────────────
 let etqBusca='',etqGrupo=null,etqI=null;
 function abrirEtq(){etqBusca='';etqGrupo=null;show('s-etq');renderEtq();}
-function etqItensDisponiveis(){return CATALOGO.filter(x=>x.grupo&&etqGrupoAtivo(x.grupo));}
+function etqItensDisponiveis(){return CATALOGO.filter(x=>x.grupo&&etqGrupoAtivo(x.grupo)&&!etqPrazos(x.cod).bloq);}
 function renderEtq(){
   const c=document.getElementById('etq-cnt');
   const disp=etqItensDisponiveis();
@@ -6702,6 +6711,7 @@ function renderEtq(){
 }
 function etqLinhaSub(cod){
   const p=etqPrazos(cod);
+  if(p.fab)return '<span class="sb-dec"><i class="ti ti-calendar" style="font-size:10px"></i>validade do fabricante · informar ao imprimir</span>';
   if(!p.padrao)return '<span class="sb-mis"><i class="ti ti-alert-triangle" style="font-size:10px"></i>sem prazo — peça ao gestor</span>';
   return esc(ETQ_CONS[p.padrao].nome)+' · '+fmtNum(p.dias[p.padrao])+' d após aberto'+(Object.keys(p.dias).length>1?' · +'+(Object.keys(p.dias).length-1):'');
 }
@@ -6734,6 +6744,7 @@ function renderEtqLista(){
 function abrirEtqItem(cod){
   const it=getProd(cod);if(!it)return;
   const p=etqPrazos(cod);
+  if(p.bloq){showToast('Este item não recebe etiqueta');return;}
   if(!p.padrao){showToast('Sem prazo de validade cadastrado — o gestor define em Gestão › Etiquetas');return;}
   etqI={cod:String(cod),cons:p.padrao,abert:'agora',outra:'',valOrig:'',qty:1};
   renderEtqItem();
@@ -6747,23 +6758,24 @@ function etqBaseDate(){
 function etqValOrigDate(){return etqI.valOrig?new Date(etqI.valOrig+'T23:59:00'):null;}
 function renderEtqItem(){
   const it=getProd(etqI.cod),p=etqPrazos(etqI.cod);
-  if(!p.dias[etqI.cons])etqI.cons=p.padrao;
+  if(!p.dias[etqI.cons]&&!p.fab)etqI.cons=p.padrao;
   const base=etqBaseDate(),vo=etqValOrigDate(),v=etqValidade(etqI.cod,etqI.cons,base,vo);
   const agora=new Date();
   const b=document.getElementById('etqi-body');
   b.innerHTML=`
     <div style="padding:12px 16px 4px"><div style="font-size:16px;font-weight:600">${esc(it.nome)}</div><div style="font-size:12px;color:var(--tx2)">${esc(it.grupo)} · COD ${esc(it.cod)}</div></div>
     <div style="padding:0 16px"><div class="sec">Conservação</div>
-    <div class="chips" style="padding:0 0 4px;flex-wrap:wrap">${ETQ_CONS_ORD.filter(c=>p.dias[c]).map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome} · ${fmtNum(p.dias[c])} d</span>`).join('')}</div>
+    <div class="chips" style="padding:0 0 4px;flex-wrap:wrap">${p.fab?ETQ_CONS_ORD.map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome}</span>`).join(''):ETQ_CONS_ORD.filter(c=>p.dias[c]).map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome} · ${fmtNum(p.dias[c])} d</span>`).join('')}</div>
+    ${p.fab?`<div style="background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.4;margin:4px 0 2px">Este insumo usa a <b>validade do fabricante</b>: copie do rótulo a data de validade após aberto (obrigatório).</div>`:''}
     <div class="sec">Abertura / fracionamento</div>
     <div class="etq-seg"><div class="${etqI.abert==='agora'?'on':''}" data-ea="agora">Agora · ${agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div><div class="${etqI.abert==='ontem'?'on':''}" data-ea="ontem">Ontem</div><div class="${etqI.abert==='outra'?'on':''}" data-ea="outra">Outra…</div></div>
     ${etqI.abert==='outra'?`<input type="datetime-local" id="etqi-outra" class="fi" style="margin-top:6px;width:100%" value="${esc(etqI.outra)}"/>`:''}
     <div class="card" style="padding:2px 14px;margin-top:8px">
-      <div class="etq-kv"><span class="k">Validade original (fabricante)</span><input type="date" id="etqi-vo" value="${esc(etqI.valOrig)}"/></div>
+      <div class="etq-kv"><span class="k">${p.fab?'<b>Validade do fabricante</b> (obrigatória)':'Validade original (fabricante)'}</span><input type="date" id="etqi-vo" value="${esc(etqI.valOrig)}" style="${p.fab&&!etqI.valOrig?'border-color:#1D4ED8;border-width:1.5px':''}"/></div>
       <div class="etq-kv"><span class="k">Validade na etiqueta</span><span class="v" style="color:${v&&v.limitada?'#92400E':'var(--acc)'}">${v?etqFmtDH(v.d):'—'}${v&&v.limitada?'<br><small style="font-weight:400">limitada pelo fabricante</small>':''}</span></div>
       <div class="etq-kv"><span class="k">Quantidade de etiquetas</span><div class="etq-mst"><button id="etqi-m">−</button><span class="n">${etqI.qty}</span><button id="etqi-p">+</button></div></div>
     </div>
-    <button class="bp" id="etqi-go" style="margin:12px 0 4px"><i class="ti ti-printer"></i> Imprimir ${etqI.qty} etiqueta${etqI.qty>1?'s':''}</button></div>`;
+    <button class="bp" id="etqi-go" style="margin:12px 0 4px" ${p.fab&&!etqI.valOrig?'disabled':''}><i class="ti ti-printer"></i> ${p.fab&&!etqI.valOrig?'Informe a validade do fabricante':'Imprimir '+etqI.qty+' etiqueta'+(etqI.qty>1?'s':'')}</button></div>`;
   b.querySelectorAll('[data-ec]').forEach(el=>el.addEventListener('click',()=>{etqI.cons=el.dataset.ec;renderEtqItem();}));
   b.querySelectorAll('[data-ea]').forEach(el=>el.addEventListener('click',()=>{etqI.abert=el.dataset.ea;renderEtqItem();}));
   const ou=b.querySelector('#etqi-outra');if(ou)ou.addEventListener('change',()=>{etqI.outra=ou.value;renderEtqItem();});
@@ -6775,7 +6787,7 @@ function renderEtqItem(){
 function etqImprimirInsumo(){
   const it=getProd(etqI.cod);const base=etqBaseDate(),vo=etqValOrigDate();
   const v=etqValidade(etqI.cod,etqI.cons,base,vo);
-  if(!v){showToast('Sem prazo para esta conservação',{type:'err'});return;}
+  if(!v){showToast(etqPrazos(etqI.cod).fab?'Informe a validade do fabricante':'Sem prazo para esta conservação',{type:'err'});return;}
   const n=etqI.qty,cons=etqI.cons,labels=[];
   const tipo=PROC_GRUPOS.includes(it.grupo)?'producao':'insumo';
   for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo,nome:it.nome,grupo:it.grupo,cons,base,val:v.d,limitada:v.limitada,resp:currentUserNome,rodape:(vo&&!v.limitada)?'Val. orig. '+etqFmtD(vo):'',idx:k,tot:n,bases:etqBaseLinhas(it.cod,tipo)}));
@@ -6799,6 +6811,7 @@ function dprodEtqN(cod){const v=dprodVal(cod);return (v.etq!=null&&v.etq!=='')?N
 function dprodConsDe(cod){const v=dprodVal(cod),p=etqPrazos(cod);return (v.cons&&p.dias[v.cons])?v.cons:p.padrao;}
 function dprodEtqHTML(x){
   const p=etqPrazos(x.cod);
+  if(p.bloq)return '';
   if(!p.padrao)return `<div class="etq-line" style="margin-top:8px"><span class="sb-mis"><i class="ti ti-alert-triangle" style="font-size:10px"></i>Sem prazo de validade — etiqueta não sai (Gestão › Etiquetas)</span></div>`;
   const v=dprodVal(x.cod),cons=dprodConsDe(x.cod),n=dprodEtqN(x.cod),por=etqPorcao(x.cod);
   const val=etqValidade(x.cod,cons,new Date());
@@ -6822,7 +6835,7 @@ function wireDprodEtq(root){
 // Etiquetas de UM item preenchido: labels prontas + registro para o diário.
 function dprodEtiquetasDe(p){
   const x=p.x,cod=String(x.cod);const pz=etqPrazos(cod);
-  if(!pz.padrao)return null;
+  if(!pz.padrao||pz.bloq||pz.fab)return null;
   const n=dprodEtqN(cod);if(n<=0)return null;
   const cons=dprodConsDe(cod),base=new Date(),v=etqValidade(cod,cons,base);
   if(!v)return null;
@@ -6910,6 +6923,7 @@ function wireGestaoEtq(c){
           const cods=new Set(CATALOGO.map(x=>String(x.cod)));
           Object.keys(itens).forEach(cod=>{if(!cods.has(String(cod))){semCat++;return;}const src=itens[cod]||{};const o=cfg.itens[cod]||{};
             ['R','C','A','padrao','base'].forEach(k=>{if(src[k]!==undefined&&src[k]!==null)o[k]=String(src[k]);});
+            if(src.bloq!==undefined)o.bloq=!!src.bloq;if(src.fab!==undefined)o.fab=!!src.fab;if(src.obs!==undefined)o.obs=String(src.obs||'');
             if(src.porcao&&(src.porcao.q||src.porcao.nome))o.porcao={q:String(src.porcao.q||''),nome:String(src.porcao.nome||'')};
             cfg.itens[cod]=o;n++;});
           await salvarDiarioCfg();
@@ -6936,7 +6950,7 @@ let getqFiltro=null; // null = todos · '__sem' = só sem prazo · nome do grupo
 function getqItensBase(){const gs=getqGruposComPrazo();return CATALOGO.filter(x=>gs.includes(x.grupo));}
 function renderGetqFiltros(root){
   const el=root.querySelector('#getq-fchips');if(!el)return;
-  const base=getqItensBase();const sem=base.filter(x=>!etqPrazos(x.cod).padrao).length;
+  const base=getqItensBase().filter(x=>!etqPrazos(x.cod).bloq);const sem=base.filter(x=>!etqPrazos(x.cod).padrao).length;
   const grupos=getqGruposComPrazo();
   if(getqFiltro&&getqFiltro!=='__sem'&&!grupos.includes(getqFiltro))getqFiltro=null;
   el.innerHTML=`<span class="chip ${getqFiltro?'':'on'}" data-gf="">Todos</span><span class="chip ${getqFiltro==='__sem'?'on':''}" data-gf="__sem" style="${sem?'border-color:#FCD34D;':''}">Sem prazo (${sem})</span>`+grupos.map(g=>`<span class="chip ${getqFiltro===g?'on':''}" data-gf="${esc(g)}">${esc(g)}</span>`).join('');
@@ -6949,7 +6963,7 @@ function renderGetqItens(el){
   const cfg=etqCfg();const q=getqBusca.trim().toLowerCase();
   let itens=getqItensBase();
   if(q)itens=itens.filter(x=>String(x.nome).toLowerCase().includes(q)||String(x.cod).includes(q));
-  else if(getqFiltro==='__sem')itens=itens.filter(x=>!etqPrazos(x.cod).padrao);
+  else if(getqFiltro==='__sem')itens=itens.filter(x=>{const p=etqPrazos(x.cod);return !p.padrao&&!p.bloq;});
   else if(getqFiltro)itens=itens.filter(x=>x.grupo===getqFiltro);
   itens.sort((a,b)=>a.grupo.localeCompare(b.grupo,'pt-BR')||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
   if(!itens.length){el.innerHTML=`<div class="empty" style="padding:14px"><span>${q?'Nenhum item com esse nome.':getqFiltro==='__sem'?'Todos os itens têm prazo.':'Nenhum item.'}</span></div>`;return;}
@@ -6960,8 +6974,9 @@ function renderGetqItens(el){
     if(x.grupo!==lastG&&!getqFiltro&&!q){h+=`<div class="gsep">${esc(x.grupo)}</div>`;lastG=x.grupo;}
     const cod=String(x.cod),ov=cfg.itens[cod]||{},pz=etqPrazos(cod);
     const proc=PROC_GRUPOS.includes(x.grupo),cont=ehContavel(x.unidade);
-    h+=`<div class="card getq-item" data-cod="${esc(cod)}" style="${pz.padrao?'':'border-left:3px solid #F59E0B'}">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="font-size:13.5px;font-weight:500;line-height:1.25">${esc(x.nome)}</div>${pz.padrao?'':'<span class="sb-mis" style="flex-shrink:0">sem prazo</span>'}</div>
+    h+=`<div class="card getq-item" data-cod="${esc(cod)}" style="${pz.bloq?'opacity:.6':pz.padrao?'':'border-left:3px solid #F59E0B'}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="font-size:13.5px;font-weight:500;line-height:1.25">${esc(x.nome)}</div>${pz.bloq?'<span class="sb-mis" style="flex-shrink:0;background:var(--bg2);color:var(--tx2);border-color:var(--bd3)">não etiquetar</span>':pz.fab?'<span class="sb-dec" style="flex-shrink:0">validade do fabricante</span>':pz.padrao?'':'<span class="sb-mis" style="flex-shrink:0">sem prazo</span>'}</div>
+      <div style="display:flex;gap:12px;margin:4px 0 6px;font-size:12px;color:var(--tx2)"><label style="display:flex;align-items:center;gap:5px"><input type="checkbox" data-f="bloq" ${pz.bloq?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)"/> Não etiquetar</label><label style="display:flex;align-items:center;gap:5px"><input type="checkbox" data-f="fab" ${pz.fab?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)"/> Validade do fabricante (digitada ao imprimir)</label></div>
       <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">${esc(x.grupo)} · ${esc(unidSigla(x.unidade))}</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">
         ${ETQ_CONS_ORD.map(c=>`<label style="font-size:10.5px;color:var(--tx2)">${ETQ_CONS[c].nome}<input type="text" inputmode="numeric" data-c="${c}" value="${esc(ov[c]??'')}" placeholder="—" ${inp}/></label>`).join('')}
@@ -6986,6 +7001,8 @@ function renderGetqItens(el){
       const pq=card.querySelector('input[data-p="q"]'),pn=card.querySelector('input[data-p="nome"]');
       if(pq){o.porcao={q:pq.value.trim(),nome:pn.value.trim()};}
       const pb=card.querySelector('input[data-b="base"]');if(pb)o.base=pb.value.trim();
+      const fb=card.querySelector('input[data-f="bloq"]'),ff=card.querySelector('input[data-f="fab"]');
+      o.bloq=!!(fb&&fb.checked);o.fab=!!(ff&&ff.checked);
       cfg.itens[cod]=o;getqSalvar();
     };
     // redesenha só este card (foco/rolagem ficam no lugar) e atualiza os contadores
