@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v184</title>
+<title>Gesto Operação v185</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -610,7 +610,7 @@ body.etq-print #print-area .etq-blank:last-child,body.etq-print #print-area .etq
 <div id="s-etq" class="scr">
   <div class="topbar">
     <button class="tbtn" onclick="fecharDreg()"><span style="font-size:22px;line-height:1">←</span></button>
-    <div style="text-align:center"><div class="tt">Etiquetas</div><div class="ts">Insumos abertos ou fracionados</div></div>
+    <div style="text-align:center"><div class="tt">Manuseio</div><div class="ts">Porcionamento · etiquetas</div></div>
     <button onclick="goHome()" style="background:none;border:.5px solid var(--bd3);border-radius:var(--r2);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--tx1);display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit"><i class="ti ti-home" style="font-size:15px"></i> Início</button>
   </div>
   <div class="content" id="etq-cnt"></div>
@@ -1898,7 +1898,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v184';
+const APP_VERSION = 'v185';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5194,7 +5194,7 @@ const DIARIO_TIPOS={
   erro:{label:'Erro de prato',icon:'ti-alert-triangle',cor:'#854F0B',bg:'#FAEEDA',verbo:'Registrar erro'},
   desperdicio:{label:'Desperdício',icon:'ti-trash',cor:'#A32D2D',bg:'#FCEBEB',verbo:'Registrar desperdício'},
   consumo:{label:'Saída do congelador',icon:'ti-arrow-down-circle',cor:'#185FA5',bg:'#E6F1FB',verbo:'Registrar consumo'}, // v136
-  etiqueta:{label:'Etiquetas',icon:'ti-tag',cor:'#5B21B6',bg:'#EDE9FE',verbo:'Imprimir etiquetas'}, // v162
+  etiqueta:{label:'Manuseio',icon:'ti-tag',cor:'#5B21B6',bg:'#EDE9FE',verbo:'Registrar manuseio'}, // v162 · v185: porcionamento/manuseio
 };
 let SETORES=['Cozinha','Bar','Forno','Salão']; // v94: editável em Gestão › Usuários (persistido em cfg_diario.setoresLista)
 const MOTIVOS_ERRO=['Comanda errada','Preparo errado','Devolvido pelo cliente','Outro'];
@@ -6240,7 +6240,7 @@ function regLinhaHTML(r,admin){
     sub=(r.userNome||'')+' · '+hora+(r.setor?' · '+esc(r.setor):'');
   }else if(r.tipo==='etiqueta'){ // v162
     desc=esc((r.item&&r.item.nome)||'?')+' · '+(r.qtd||0)+' etiqueta'+(r.qtd==1?'':'s');
-    sub=['Etiqueta'+(r.origem==='producao'?' · produção':r.origem==='reimpressao'?' · reimpressão':r.origem==='manual'?' · à mão':''),r.validade?'vence '+etqFmtCurto(new Date(r.validade)):null,r.cons&&ETQ_CONS[r.cons]?ETQ_CONS[r.cons].nome:null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
+    sub=[(r.evento&&ETQ_EVENTOS[r.evento]?ETQ_EVENTOS[r.evento].nome:'Etiqueta')+(r.origem==='producao'?' · produção':r.origem==='reimpressao'?' · reimpressão':r.origem==='manual'?' · à mão':''),r.validade?'vence '+etqFmtCurto(new Date(r.validade)):null,r.cons&&ETQ_CONS[r.cons]?ETQ_CONS[r.cons].nome:null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
   }else{
     desc=esc((r.item&&r.item.nome)||'?')+(r.qtd!=null?' · '+fmtQtdDiario(r.qtd)+' '+esc(unidSigla(r.item&&r.item.unidade)):''); // v116: registros antigos do diário guardam o id
     sub=[t.label,r.motivo?esc(r.motivo):null,r.userNome?esc(r.userNome):null,hora].filter(Boolean).join(' · ');
@@ -6271,7 +6271,7 @@ function renderDiarioBody(c){
     {tipo:'conferencia',sub:'Saldo do congelador — marque o que saiu'},
     {tipo:'erro',sub:'Prato feito por engano ou devolvido'},
     {tipo:'desperdicio',sub:'Vencidos, estragados, quebras'},
-    {tipo:'etiqueta',sub:'Identificação de insumos abertos ou fracionados'}, // v162
+    {tipo:'etiqueta',sub:'Abrir, fracionar, congelar ou descongelar · etiquetas'}, // v162 · v185
   ];
   cards.forEach(cd=>{
     const t=DIARIO_TIPOS[cd.tipo];
@@ -6379,10 +6379,13 @@ const ETQ_BASES={
 };
 function etqBaseCodigos(cod){const b=(etqCfg().itens[String(cod)]||{}).base;return String(b||'').split(/[;,]/).map(s=>s.trim()).filter(s=>s&&ETQ_BASES[s]);}
 // Linhas do rodapé normativo: a RDC 216 que exige a etiqueta + as bases do item.
-function etqBaseLinhas(cod,tipo){
+function etqBaseLinhas(cod,tipo,ev){
   const out=[];const rdc=ETQ_BASES[tipo==='producao'?'R4.8.18':'R4.8.6'];
   out.push(rdc.norma+' — '+rdc.diz);
-  etqBaseCodigos(cod).forEach(k=>{const b=ETQ_BASES[k];out.push(b.norma+' — '+b.diz);});
+  const cods=etqBaseCodigos(cod);
+  const extra=ev==='descongelar'?'P10.11':ev==='congelar'?'P10.10':null; // v185: a norma do evento vem primeiro
+  if(extra&&!cods.includes(extra))cods.unshift(extra);
+  cods.forEach(k=>{const b=ETQ_BASES[k];out.push(b.norma+' — '+b.diz);});
   return out;
 }
 function etqCfg(){
@@ -6424,6 +6427,49 @@ function etqPrazos(cod){
   if(fab&&!padrao)padrao=ETQ_CONS[ov.padrao]?ov.padrao:'R';
   return {dias,padrao,proprio:!!padrao,bloq,fab};
 }
+// ══ v185: EVENTOS DE MANUSEIO (Diário › Manuseio) ═══════════════════════════
+// A etiqueta é da TRANSIÇÃO de estado, não do item: cada manuseio que muda o
+// estado do insumo (abrir, fracionar, congelar, descongelar) recomeça o prazo
+// sob uma nova conservação. Ex.: calabresa chega em peça (sem etiqueta) → fatia
+// e congela (CONGELAMENTO, 90 d) → descongela (DESCONGELAMENTO, 3 d, não recongela).
+// Os eventos possíveis de um item saem dos prazos já cadastrados em
+// cfg_diario.etiquetas.itens[cod] (R/C/A) — nada novo para cadastrar:
+//   R ou A → Abrir (ou Fracionar, se a base for hortifruti/pré-preparo)
+//   C      → Congelar
+//   C e R  → Descongelar (terminal: nunca volta ao freezer — SES 799 it. 10.11)
+// Abrir/fracionar/congelar/descongelar NÃO movimentam estoque no Saipos (o insumo
+// é o mesmo); só ficam no diário (tipo:'etiqueta', campo `evento`).
+const ETQ_EVENTOS={
+  abrir:{nome:'Abrir',rot:'ABERTURA',icon:'ti-package'},
+  fracionar:{nome:'Fracionar / higienizar',rot:'FRACIONAMENTO',icon:'ti-cut'},
+  congelar:{nome:'Congelar',rot:'CONGELAMENTO',icon:'ti-snowflake'},
+  descongelar:{nome:'Descongelar',rot:'DESCONGELAMENTO',icon:'ti-droplet'},
+  produzir:{nome:'Produzir',rot:'MANIPULAÇÃO',icon:'ti-tools-kitchen-2'},
+};
+const ETQ_EV_ORD=['produzir','abrir','fracionar','congelar','descongelar'];
+function etqEventos(cod){
+  const it=getProd(cod);const p=etqPrazos(cod);const out=[];
+  if(p.bloq)return out;
+  const codes=etqBaseCodigos(cod);
+  const proc=!!(it&&PROC_GRUPOS.includes(it.grupo));
+  if(proc){
+    if(p.padrao)out.push({ev:'produzir',cons:p.padrao,dias:p.dias[p.padrao]||null});
+    if(p.dias.C&&p.padrao!=='C')out.push({ev:'congelar',cons:'C',dias:p.dias.C});
+  }else if(p.fab){
+    out.push({ev:'abrir',cons:p.padrao||'R',dias:null,fab:true});
+    if(p.dias.C)out.push({ev:'congelar',cons:'C',dias:p.dias.C});
+  }else{
+    const frac=codes.includes('P10.15')||(codes.includes('P10.09')&&!codes.includes('P9.9'));
+    const evAb=frac?'fracionar':'abrir';
+    if(p.dias.R)out.push({ev:evAb,cons:'R',dias:p.dias.R});
+    if(p.dias.A)out.push({ev:evAb,cons:'A',dias:p.dias.A});
+    if(p.dias.C)out.push({ev:'congelar',cons:'C',dias:p.dias.C});
+    if(p.padrao==='C'){const i=out.findIndex(e=>e.ev==='congelar');if(i>0)out.unshift(out.splice(i,1)[0]);}
+  }
+  if(p.dias.C&&p.dias.R)out.push({ev:'descongelar',cons:'R',dias:p.dias.R,terminal:true});
+  return out;
+}
+function etqEvAtual(){const evs=etqEventos(etqI.cod);return evs.find(e=>e.ev===etqI.ev&&e.cons===etqI.cons)||evs[0]||null;}
 // Porção de armazenamento: converte a produção em nº de etiquetas.
 // PÇ/UN → 1 por unidade. KG/L → pote/bola/garrafa cadastrada; sem cadastro, 1 por kg/L.
 function etqPorcao(cod){
@@ -6455,7 +6501,7 @@ function etqLabelHTMLraw(o){
     <div class="eh"><span>GESTO · ${esc(grupo)}</span><span class="ec">${ETQ_CONS[o.cons].rot}</span></div>
     <div class="en">${esc(o.nome)}</div>
     <div class="eg">
-      <div><small>${o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA'}</small><div>${etqFmtDH(o.base)}</div></div>
+      <div><small>${o.evRot||(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA')}</small><div>${etqFmtDH(o.base)}</div></div>
       <div><small>VALIDADE${o.limitada?' (FABR.)':''}</small><div class="ev">${o.val?etqFmtDH(o.val):'—'}</div></div>
     </div>
     <div class="ef"><span>Resp.: <b>${esc(o.resp||'')}</b></span><span>${esc(o.rodape||'')}</span><span>${o.idx}/${o.tot}</span></div>
@@ -6524,7 +6570,7 @@ function etqCanvasEtiqueta(o){
   words.forEach(w=>{const t=cur?cur+' '+w:w;if(tw(t)<=55||!cur)cur=t;else{linhas.push(cur);cur=w;}});if(cur)linhas.push(cur);
   linhas.slice(0,2).forEach((l,i)=>{let s=l;while(tw(s)>55&&s.length>3)s=s.slice(0,-2)+'…';txt(s,2.5,10.2+i*4.4);});
   line(2.5,21.6,57.5);
-  font(5.5,true);c.fillStyle='#333';txt(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA',2.5,24);txt('VALIDADE'+(o.limitada?' (FABR.)':''),31,24);c.fillStyle='#000';
+  font(5.5,true);c.fillStyle='#333';txt(o.evRot||(o.tipo==='producao'?'MANIPULAÇÃO':'ABERTURA'),2.5,24);txt('VALIDADE'+(o.limitada?' (FABR.)':''),31,24);c.fillStyle='#000';
   font(8.5,true);txt(etqFmtDH(o.base),2.5,27.4);
   font(10.5,true);txt(o.val?etqFmtDH(o.val):'—',31,27.7);
   font(6.5,false);txt('Resp.: ',2.5,31.6);const rw=tw('Resp.: ');font(6.5,true);txt(o.resp||'',2.5+rw,31.6);
@@ -6680,22 +6726,70 @@ function etqBlankCardHTML(){
 }
 
 // ── Diário › Etiquetas (insumos abertos/fracionados) ───────────────────────
-let etqBusca='',etqGrupo=null,etqI=null;
-function abrirEtq(){etqBusca='';etqGrupo=null;show('s-etq');renderEtq();}
+let etqBusca='',etqGrupo=null,etqI=null,etqModo='registrar',etqAcEv=null; // v185: etqModo registrar|acompanhar
+function abrirEtq(){etqBusca='';etqGrupo=null;etqModo='registrar';etqAcEv=null;show('s-etq');renderEtq();}
+// v185: alternância Registrar | Acompanhar no topo da tela
+function etqSegHTML(){
+  return `<div class="etq-seg" id="etq-modo" style="margin-bottom:8px"><div class="${etqModo==='registrar'?'on':''}" data-em="registrar"><i class="ti ti-printer" style="font-size:13px"></i> Registrar</div><div class="${etqModo==='acompanhar'?'on':''}" data-em="acompanhar"><i class="ti ti-table" style="font-size:13px"></i> Acompanhar</div></div>`;
+}
+function etqWireSeg(c){c.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('click',()=>{etqModo=el.dataset.em;renderEtq();}));}
+// Tabela de acompanhamento: manuseios dos últimos 14 dias, ordenados pela validade
+// (o que vence primeiro no topo), com filtro por evento. Só leitura; a correção
+// continua pelo menu ⋯ do registro no Diário.
+async function renderEtqAcomp(c){
+  c.innerHTML=etqSegHTML()+'<div class="empty" style="padding:20px"><span>Carregando…</span></div>';
+  etqWireSeg(c);
+  if(diarioHistDias<14)diarioHistDias=14;
+  await carregarDiarioHist(diarioHistDias);
+  if(etqModo!=='acompanhar')return;
+  const vistos=new Set();
+  const regs=[...diarioHoje,...diarioHist].filter(r=>{
+    if(r.tipo!=='etiqueta'||r.status==='cancelado'||!r.item||!r.item.cod)return false;
+    if(vistos.has(r.id))return false;vistos.add(r.id);return true;
+  });
+  const evDe=r=>r.evento||(r.origem==='producao'||r.origem==='reimpressao'?'produzir':'abrir');
+  const evsPresentes=ETQ_EV_ORD.filter(e=>regs.some(r=>evDe(r)===e));
+  if(etqAcEv&&!evsPresentes.includes(etqAcEv))etqAcEv=null;
+  const lista=regs.filter(r=>!etqAcEv||evDe(r)===etqAcEv).sort((a,b)=>(a.validade||0)-(b.validade||0));
+  const agora=Date.now(),fimHoje=new Date();fimHoje.setHours(23,59,59,999);
+  const st=r=>!r.validade?['—','var(--bg2)','var(--tx2)']:r.validade<agora?['vencido','#FCEBEB','#A32D2D']:r.validade<=fimHoje.getTime()?['vence hoje','#FAEEDA','#854F0B']:['ok','#EAF3DE','#27500A'];
+  const nVenc=lista.filter(r=>r.validade&&r.validade<agora).length,nHoje=lista.filter(r=>r.validade&&r.validade>=agora&&r.validade<=fimHoje.getTime()).length,nEtq=lista.reduce((s,r)=>s+(Number(r.qtd)||0),0);
+  let h=etqSegHTML();
+  h+=`<div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Últimos ${diarioHistDias} dias · ${lista.length} manuseio${lista.length!==1?'s':''} · ${nEtq} etiqueta${nEtq!==1?'s':''}${nVenc?` · <b style="color:#A32D2D">${nVenc} vencido${nVenc!==1?'s':''}</b>`:''}${nHoje?` · <b style="color:#854F0B">${nHoje} vence${nHoje!==1?'m':''} hoje</b>`:''}</div>`;
+  if(evsPresentes.length>1)h+=`<div class="chips" style="padding:0 0 6px"><span class="chip ${etqAcEv?'':'on'}" data-ae="">Todos</span>${evsPresentes.map(e=>`<span class="chip ${etqAcEv===e?'on':''}" data-ae="${e}"><i class="ti ${ETQ_EVENTOS[e].icon}" style="font-size:12px"></i>${esc(ETQ_EVENTOS[e].nome)}</span>`).join('')}</div>`;
+  if(!lista.length)h+='<div class="empty" style="padding:20px"><span>Nenhum manuseio registrado no período.</span></div>';
+  else h+=lista.map(r=>{
+    const [rot,bg,cor]=st(r);const e=evDe(r);
+    const q=r.abertura?new Date(r.abertura):(r.ts?new Date(r.ts):null);
+    return `<div class="row" style="align-items:flex-start">
+      <div style="width:34px;height:34px;border-radius:9px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${ETQ_EVENTOS[e].icon}" style="font-size:17px;color:#5B21B6"></i></div>
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.item.nome)}</div>
+      <div style="font-size:11.5px;color:var(--tx2);margin-top:1px">${esc(ETQ_EVENTOS[e].nome)}${r.cons&&ETQ_CONS[r.cons]?' · '+ETQ_CONS[r.cons].nome:''} · ${r.qtd||0} etiq.${q?' · '+etqFmtDH(q):''}${r.userNome?' · '+esc(r.userNome):''}</div>
+      <div style="font-size:11.5px;color:var(--tx2)">Validade: <b style="color:${cor}">${r.validade?etqFmtDH(new Date(r.validade)):'—'}</b></div></div>
+      <span class="bdg" style="background:${bg};color:${cor};white-space:nowrap">${rot}</span></div>`;
+  }).join('');
+  h+=`<button class="bg_" id="etq-ac-mais" style="width:100%;margin-top:6px">Carregar mais dias</button>`;
+  c.innerHTML=h;
+  etqWireSeg(c);
+  c.querySelectorAll('[data-ae]').forEach(el=>el.addEventListener('click',()=>{etqAcEv=el.dataset.ae||null;renderEtqAcomp(c);}));
+  const bm=c.querySelector('#etq-ac-mais');if(bm)bm.addEventListener('click',()=>{diarioHistDias+=14;renderEtqAcomp(c);});
+}
 function etqItensDisponiveis(){return CATALOGO.filter(x=>x.grupo&&etqGrupoAtivo(x.grupo)&&!etqPrazos(x.cod).bloq);}
 function renderEtq(){
   const c=document.getElementById('etq-cnt');
+  if(etqModo==='acompanhar'){renderEtqAcomp(c);return;} // v185
   const disp=etqItensDisponiveis();
   if(!disp.length){
-    c.innerHTML=etqBlankCardHTML()+`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-tag" style="font-size:28px;opacity:.5"></i></div>
+    c.innerHTML=etqSegHTML()+etqBlankCardHTML()+`<div class="empty-v2"><div class="empty-icon-wrap"><i class="ti ti-tag" style="font-size:28px;opacity:.5"></i></div>
       <div class="empty-title">Nenhuma categoria liberada</div>
       <div class="empty-sub">${isAdminRole()?'Libere as categorias em Gestão › Etiquetas.':'Peça ao gestor para liberar as categorias em Gestão › Etiquetas.'}</div></div>`;
     document.getElementById('etq-blank-card').addEventListener('click',abrirEtqBlank);
+    etqWireSeg(c);
     return;
   }
   const grupos=[...new Set(disp.map(x=>x.grupo))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   if(etqGrupo&&!grupos.includes(etqGrupo))etqGrupo=null;
-  let h=etqBlankCardHTML()+`<div style="position:relative">
+  let h=etqSegHTML()+etqBlankCardHTML()+`<div style="position:relative">
     <input id="etq-busca" class="srch" placeholder="Buscar insumo pelo nome…" autocomplete="off" value="${esc(etqBusca)}"/>
     <button id="etq-busca-x" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx2);font-size:16px;cursor:pointer;padding:4px 6px;display:${etqBusca?'block':'none'};font-family:inherit">✕</button>
   </div>`;
@@ -6704,6 +6798,7 @@ function renderEtq(){
   c.innerHTML=h;
   c.querySelectorAll('[data-eg]').forEach(el=>el.addEventListener('click',()=>{etqGrupo=el.dataset.eg||null;renderEtq();}));
   c.querySelector('#etq-blank-card').addEventListener('click',abrirEtqBlank); // v165
+  etqWireSeg(c); // v185
   const bi=c.querySelector('#etq-busca'),bx=c.querySelector('#etq-busca-x');
   bi.addEventListener('input',()=>{etqBusca=bi.value;bx.style.display=bi.value?'block':'none';renderEtqLista();});
   bx.addEventListener('click',()=>{etqBusca='';bi.value='';bx.style.display='none';renderEtqLista();bi.focus();});
@@ -6713,7 +6808,9 @@ function etqLinhaSub(cod){
   const p=etqPrazos(cod);
   if(p.fab)return '<span class="sb-dec"><i class="ti ti-calendar" style="font-size:10px"></i>validade do fabricante · informar ao imprimir</span>';
   if(!p.padrao)return '<span class="sb-mis"><i class="ti ti-alert-triangle" style="font-size:10px"></i>sem prazo — peça ao gestor</span>';
-  return esc(ETQ_CONS[p.padrao].nome)+' · '+fmtNum(p.dias[p.padrao])+' d após aberto'+(Object.keys(p.dias).length>1?' · +'+(Object.keys(p.dias).length-1):'');
+  const evs=etqEventos(cod); // v185
+  if(!evs.length)return esc(ETQ_CONS[p.padrao].nome)+' · '+fmtNum(p.dias[p.padrao])+' d';
+  return evs.map(e=>esc(ETQ_EVENTOS[e.ev].nome.split(' ')[0])+(e.dias?' '+fmtNum(e.dias)+' d':'')).join(' · ');
 }
 function renderEtqLista(){
   const el=document.getElementById('etq-lista');if(!el)return;
@@ -6746,7 +6843,8 @@ function abrirEtqItem(cod){
   const p=etqPrazos(cod);
   if(p.bloq){showToast('Este item não recebe etiqueta');return;}
   if(!p.padrao){showToast('Sem prazo de validade cadastrado — o gestor define em Gestão › Etiquetas');return;}
-  etqI={cod:String(cod),cons:p.padrao,abert:'agora',outra:'',valOrig:'',qty:1};
+  const ev0=etqEventos(cod)[0]; // v185
+  etqI={cod:String(cod),ev:ev0?ev0.ev:'abrir',cons:ev0?ev0.cons:p.padrao,abert:'agora',outra:'',valOrig:'',qty:1};
   renderEtqItem();
   document.getElementById('modal-etq-item').classList.add('on');
 }
@@ -6758,16 +6856,18 @@ function etqBaseDate(){
 function etqValOrigDate(){return etqI.valOrig?new Date(etqI.valOrig+'T23:59:00'):null;}
 function renderEtqItem(){
   const it=getProd(etqI.cod),p=etqPrazos(etqI.cod);
-  if(!p.dias[etqI.cons]&&!p.fab)etqI.cons=p.padrao;
+  const evs=etqEventos(etqI.cod),cur=etqEvAtual(); // v185
+  if(cur){etqI.ev=cur.ev;etqI.cons=cur.cons;}else if(!p.dias[etqI.cons]&&!p.fab)etqI.cons=p.padrao;
   const base=etqBaseDate(),vo=etqValOrigDate(),v=etqValidade(etqI.cod,etqI.cons,base,vo);
   const agora=new Date();
   const b=document.getElementById('etqi-body');
   b.innerHTML=`
     <div style="padding:12px 16px 4px"><div style="font-size:16px;font-weight:600">${esc(it.nome)}</div><div style="font-size:12px;color:var(--tx2)">${esc(it.grupo)} · COD ${esc(it.cod)}</div></div>
-    <div style="padding:0 16px"><div class="sec">Conservação</div>
-    <div class="chips" style="padding:0 0 4px;flex-wrap:wrap">${p.fab?ETQ_CONS_ORD.map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome}</span>`).join(''):ETQ_CONS_ORD.filter(c=>p.dias[c]).map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome} · ${fmtNum(p.dias[c])} d</span>`).join('')}</div>
+    <div style="padding:0 16px"><div class="sec">${evs.length?'O que foi feito':'Conservação'}</div>
+    <div class="chips" style="padding:0 0 4px;flex-wrap:wrap">${evs.length?evs.map(e=>`<span class="chip ${cur===e?'on':''}" data-ev="${e.ev}" data-ec="${e.cons}" style="padding:7px 12px;font-size:13px"><i class="ti ${ETQ_EVENTOS[e.ev].icon}" style="font-size:13px"></i> ${ETQ_EVENTOS[e.ev].nome} · ${ETQ_CONS[e.cons].nome}${e.dias?' · '+fmtNum(e.dias)+' d':''}</span>`).join(''):p.fab?ETQ_CONS_ORD.map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome}</span>`).join(''):ETQ_CONS_ORD.filter(c=>p.dias[c]).map(c=>`<span class="chip ${etqI.cons===c?'on':''}" data-ec="${c}" style="padding:7px 12px;font-size:13px">${ETQ_CONS[c].nome} · ${fmtNum(p.dias[c])} d</span>`).join('')}</div>
+    ${cur&&cur.terminal?`<div style="background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.4;margin:4px 0 2px"><b>Descongelado não volta ao freezer.</b> Manter refrigerado e usar em até ${fmtNum(cur.dias)} d (SES-RS 799 it. 10.11). A etiqueta sai com "NÃO RECONGELAR".</div>`:''}
     ${p.fab?`<div style="background:#EFF6FF;color:#1D4ED8;border:.5px solid #BFDBFE;border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.4;margin:4px 0 2px">Este insumo usa a <b>validade do fabricante</b>: copie do rótulo a data de validade após aberto (obrigatório).</div>`:''}
-    <div class="sec">Abertura / fracionamento</div>
+    <div class="sec">${cur?ETQ_EVENTOS[cur.ev].nome+' · quando':'Abertura / fracionamento'}</div>
     <div class="etq-seg"><div class="${etqI.abert==='agora'?'on':''}" data-ea="agora">Agora · ${agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div><div class="${etqI.abert==='ontem'?'on':''}" data-ea="ontem">Ontem</div><div class="${etqI.abert==='outra'?'on':''}" data-ea="outra">Outra…</div></div>
     ${etqI.abert==='outra'?`<input type="datetime-local" id="etqi-outra" class="fi" style="margin-top:6px;width:100%" value="${esc(etqI.outra)}"/>`:''}
     <div class="card" style="padding:2px 14px;margin-top:8px">
@@ -6776,7 +6876,7 @@ function renderEtqItem(){
       <div class="etq-kv"><span class="k">Quantidade de etiquetas</span><div class="etq-mst"><button id="etqi-m">−</button><span class="n">${etqI.qty}</span><button id="etqi-p">+</button></div></div>
     </div>
     <button class="bp" id="etqi-go" style="margin:12px 0 4px" ${p.fab&&!etqI.valOrig?'disabled':''}><i class="ti ti-printer"></i> ${p.fab&&!etqI.valOrig?'Informe a validade do fabricante':'Imprimir '+etqI.qty+' etiqueta'+(etqI.qty>1?'s':'')}</button></div>`;
-  b.querySelectorAll('[data-ec]').forEach(el=>el.addEventListener('click',()=>{etqI.cons=el.dataset.ec;renderEtqItem();}));
+  b.querySelectorAll('[data-ec]').forEach(el=>el.addEventListener('click',()=>{etqI.cons=el.dataset.ec;if(el.dataset.ev)etqI.ev=el.dataset.ev;renderEtqItem();}));
   b.querySelectorAll('[data-ea]').forEach(el=>el.addEventListener('click',()=>{etqI.abert=el.dataset.ea;renderEtqItem();}));
   const ou=b.querySelector('#etqi-outra');if(ou)ou.addEventListener('change',()=>{etqI.outra=ou.value;renderEtqItem();});
   b.querySelector('#etqi-vo').addEventListener('change',e=>{etqI.valOrig=e.target.value;renderEtqItem();});
@@ -6790,10 +6890,13 @@ function etqImprimirInsumo(){
   if(!v){showToast(etqPrazos(etqI.cod).fab?'Informe a validade do fabricante':'Sem prazo para esta conservação',{type:'err'});return;}
   const n=etqI.qty,cons=etqI.cons,labels=[];
   const tipo=PROC_GRUPOS.includes(it.grupo)?'producao':'insumo';
-  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo,nome:it.nome,grupo:it.grupo,cons,base,val:v.d,limitada:v.limitada,resp:currentUserNome,rodape:(vo&&!v.limitada)?'Val. orig. '+etqFmtD(vo):'',idx:k,tot:n,bases:etqBaseLinhas(it.cod,tipo)}));
+  const cur=etqEvAtual(),ev=cur?cur.ev:null; // v185
+  const evRot=cur?ETQ_EVENTOS[cur.ev].rot:null;
+  const rodape=cur&&cur.terminal?'NÃO RECONGELAR':(vo&&!v.limitada)?'Val. orig. '+etqFmtD(vo):'';
+  for(let k=1;k<=n;k++)labels.push(etqLabelHTML({tipo,nome:it.nome,grupo:it.grupo,cons,base,val:v.d,limitada:v.limitada,resp:currentUserNome,rodape,evRot,idx:k,tot:n,bases:etqBaseLinhas(it.cod,tipo,ev)}));
   closeModal('modal-etq-item');
   etqAbrirPreview(labels,it.nome,async()=>{
-    await etqRegistrar([{origem:tipo==='producao'?'reimpressao':'insumo',item:{cod:it.cod,nome:it.nome,unidade:it.unidade,grupo:it.grupo},cons,abertura:base.getTime(),validade:v.d.getTime(),qtd:n}]);
+    await etqRegistrar([{origem:ev==='produzir'?'reimpressao':'insumo',evento:ev,item:{cod:it.cod,nome:it.nome,unidade:it.unidade,grupo:it.grupo},cons,abertura:base.getTime(),validade:v.d.getTime(),qtd:n}]);
     await carregarDiarioHoje();
     if(document.getElementById('s-etq').classList.contains('on'))renderEtqLista();
   });
