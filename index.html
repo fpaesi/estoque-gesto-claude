@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v185</title>
+<title>Gesto Operação v186</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -434,10 +434,118 @@ body.etq-print #print-area .etq-blank:last-child,body.etq-print #print-area .etq
 .cs-ok.danger{background:#C93A31;color:#fff}
 .cs-cancel{width:100%;padding:12px;border-radius:var(--r1);background:var(--bg2);border:.5px solid var(--bd3);font-size:14px;cursor:pointer;font-family:inherit;color:var(--tx1)}
 @media(prefers-color-scheme:dark){.toast{background:#3a3a3c}.toast.err{background:#5c1a1a}.toast.ok{background:#254415}}
+
+/* ══ v186: iPad na horizontal — layout lista + detalhe (opção B) ══════════════
+   Tudo abaixo só vale com body.tab-l, que o JS liga quando a tela tem
+   ≥ 900 px de largura E está deitada (TAB_MQ). Celular e iPad em pé seguem
+   exatamente como na v185 — nenhuma regra daqui toca o layout de coluna única.
+   - menu lateral (#tab-side) substitui a barra de baixo da Início;
+   - Início + rotina: a execução abre à direita sem sair da lista;
+   - Contagem e Produção: lista compacta à esquerda, item grande à direita;
+   - Manuseio (etiquetas): a folha do insumo vira painel fixo à direita. */
+#tab-side{display:none}
+body.tab-l #app{max-width:none;flex-direction:row;align-items:stretch}
+body.tab-l #tab-side{display:flex;flex-direction:column;gap:4px;width:200px;flex-shrink:0;background:var(--bg1);border-right:.5px solid var(--bd3);padding:calc(16px + env(safe-area-inset-top,0px)) 10px calc(14px + env(safe-area-inset-bottom,0px));position:sticky;top:0;height:100vh;height:100dvh;z-index:15}
+body.tab-l.no-side #tab-side{display:none}
+.tsd-brand{font-size:16px;font-weight:700;color:var(--tx1);padding:4px 12px 14px;line-height:1.2}
+.tsd-brand small{display:block;font-size:11px;font-weight:500;color:var(--tx2);margin-top:2px}
+.tsd-i{display:flex;align-items:center;gap:11px;min-height:50px;padding:0 12px;border-radius:11px;font-size:15px;font-weight:500;color:var(--tx2);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.tsd-i i{font-size:21px;width:22px;text-align:center}
+.tsd-i:active{background:var(--bg2)}
+.tsd-i.on{background:var(--acc-bg);color:var(--acc)}
+body.tab-l .scr.on{flex:1;min-width:0}
+body.tab-l #s-home .bnav{display:none}
+/* telas comuns: conteúdo centralizado em até 880 px, rolagem na largura toda */
+body.tab-l .scr .content{padding-left:max(20px,calc((100% - 880px)/2));padding-right:max(20px,calc((100% - 880px)/2))}
+body.tab-l .scr .bbar{padding-left:max(20px,calc((100% - 880px)/2));padding-right:max(20px,calc((100% - 880px)/2))}
+body.tab-l .topbar{padding-left:20px;padding-right:20px}
+body.tab-l .modal-box{max-width:520px}
+body.tab-l .bs-modal-bg .bs-sheet{max-width:560px}
+body.tab-l .bp,body.tab-l .bs{min-height:48px}
+
+/* Início + rotina lado a lado */
+body.tab-l.split-rot #s-rotina.on{flex:0 0 440px;max-width:440px;border-left:.5px solid var(--bd3);background:var(--bg1);height:100vh;height:100dvh;position:sticky;top:0;overflow:hidden}
+body.tab-l.split-rot #s-rotina .content{overflow-y:auto;padding-left:18px;padding-right:18px}
+body.tab-l.split-rot #s-rotina .bbar{padding-left:18px;padding-right:18px}
+body.tab-l.split-rot #s-rotina .rot-item{min-height:54px;font-size:15px}
+body.tab-l .atv.tab-sel{border-color:var(--acc)!important;box-shadow:0 0 0 1.5px var(--acc) inset}
+
+/* Contagem: grade lista | detalhe */
+.tab-only{display:none}
+body.tab-l #s-count.on{display:grid;grid-template-columns:minmax(340px,38%) 1fr;grid-template-rows:auto auto auto auto 1fr auto;height:100vh;height:100dvh;min-height:0}
+body.tab-l #s-count>.topbar{grid-column:1/-1;grid-row:1}
+body.tab-l #sl-nav{grid-column:1/-1;grid-row:2}
+body.tab-l #ct-srch-box{grid-column:1;grid-row:3;border-right:.5px solid var(--bd3)}
+body.tab-l #ct-chips-box{grid-column:1;grid-row:4;background:var(--bg1);border-right:.5px solid var(--bd3);padding:6px 12px 8px!important}
+body.tab-l #count-side{display:block;grid-column:1;grid-row:5;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg1);border-right:.5px solid var(--bd3);min-height:0}
+body.tab-l #count-list{grid-column:2;grid-row:3/6;overflow-y:auto;min-height:0;padding:18px 28px 24px!important;gap:12px}
+body.tab-l #count-bbar{grid-column:1/-1;grid-row:6;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+body.tab-l #count-bbar>*{width:auto;flex:0 1 auto}
+body.tab-l #count-bbar>.bp{min-width:280px}
+body.tab-l #count-bbar>div{flex:1 1 auto}
+/* lista compacta (Contagem e Produção) */
+.tmd-g{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;padding:12px 16px 5px;background:var(--bg2);border-bottom:.5px solid var(--bd3);position:sticky;top:0;z-index:1}
+.tmd-r{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 16px;border-bottom:.5px solid var(--bd3);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tmd-r:active{background:var(--bg2)}
+.tmd-r.sel{background:var(--acc-bg);box-shadow:inset 3px 0 0 var(--acc)}
+.tmd-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--bd3)}
+.tmd-dot.ok{background:#639922;border-color:#639922}
+.tmd-dot.zero{background:#D69E2E;border-color:#D69E2E}
+.tmd-n{flex:1;min-width:0;font-size:14px;color:var(--tx1);line-height:1.25}
+.tmd-q{font-size:13.5px;font-weight:600;color:var(--tx1);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tmd-q.vazio{color:var(--tx2);font-weight:400}
+.tmd-empty{padding:24px 16px;font-size:13px;color:var(--tx2);text-align:center}
+/* detalhe: só o item escolhido aparece, em tamanho grande */
+body.tab-l .tab-md>.pcard:not(.tab-sel),body.tab-l .tab-md>.gsep{display:none}
+/* avisos e "Adicionar item" descem para depois do teclado: card + teclado cabem sem rolar */
+body.tab-l #count-list.tab-md>*{order:1}
+body.tab-l #count-list.tab-md>.pcard.tab-sel{order:0}
+body.tab-l #count-list.tab-md>#tab-kp-wrap{order:0}
+body.tab-l .pcard.tab-sel{padding:20px 22px;gap:14px;border-radius:16px}
+body.tab-l .pcard.tab-sel>div:first-child>div:first-child>div:first-child{font-size:22px!important;font-weight:600!important;line-height:1.2}
+body.tab-l .pcard.tab-sel>div:first-child>div:first-child>div:nth-child(2){font-size:12.5px!important}
+body.tab-l .pcard.tab-sel .cbt{width:76px;height:76px;font-size:34px}
+body.tab-l .pcard.tab-sel .cv{font-size:46px}
+body.tab-l .pcard.tab-sel .cu{font-size:14px}
+body.tab-l .pcard.tab-sel .ccv{font-size:15px;padding:9px 12px}
+body.tab-l .pcard.tab-sel .deci{font-size:46px;padding:8px 16px 12px}
+body.tab-l .pcard.tab-sel .decu{font-size:18px}
+body.tab-l .pcard.tab-sel .decl{font-size:12px;padding:10px 16px 2px}
+body.tab-l .pcard.tab-sel .dech{font-size:13px}
+body.tab-l .pcard.tab-sel .zb,body.tab-l .pcard.tab-sel .repob,body.tab-l .pcard.tab-sel .descob{padding:11px 16px;font-size:14px}
+.tab-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tab-kp button{height:58px;border-radius:14px;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx1);font-size:27px;font-weight:500;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.tab-kp button:active{background:var(--bg3)}
+.tab-kp button.kp-f{font-size:16px;color:var(--tx2)}
+.tab-nav{display:flex;gap:10px}
+.tab-nav button{flex:1;min-height:52px;border-radius:14px;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer;border:.5px solid var(--bd3);background:var(--bg1);color:var(--tx1)}
+.tab-nav button.pri{flex:2;background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.tab-nav button:disabled{opacity:.35}
+.tab-pos{font-size:12px;color:var(--tx2);text-align:center}
+
+/* iPad de 10" (768 de altura): aperta um pouco para card + teclado + Próximo caberem sem rolar */
+@media (max-height:800px){body.tab-l .tab-kp button{height:50px}body.tab-l .tab-kp{gap:8px}body.tab-l .pcard.tab-sel{padding:14px 18px;gap:10px}body.tab-l #count-list{padding-top:12px!important;gap:10px}body.tab-l .pcard.tab-sel .cbt{width:64px;height:64px}body.tab-l .pcard.tab-sel .cv,body.tab-l .pcard.tab-sel .deci{font-size:40px}body.tab-l .tab-nav button{min-height:48px}}
+/* Produção: mesmo padrão, montado pelo JS em duas colunas */
+body.tab-l #s-dprod.on{height:100vh;height:100dvh}
+body.tab-l #dprod-cnt.tab-2c{display:grid;grid-template-columns:minmax(340px,38%) 1fr;padding:0!important;gap:0;overflow:hidden;min-height:0}
+.tab-col-l{display:flex;flex-direction:column;min-height:0;background:var(--bg1);border-right:.5px solid var(--bd3)}
+.tab-col-l>.tab-col-top{padding:12px 14px 8px;display:flex;flex-direction:column;gap:6px;border-bottom:.5px solid var(--bd3)}
+.tab-col-l>#dprod-side{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+.tab-col-r{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;padding:18px 28px 24px;display:flex;flex-direction:column;gap:12px}
+body.tab-l #dprod-lista.tab-md .pcard.tab-sel .cctr .cv{font-size:46px}
+
+/* Manuseio: folha do insumo vira painel à direita, lista continua tocável */
+body.tab-l #modal-etq-item{background:none!important;pointer-events:none;justify-content:flex-end;align-items:stretch;z-index:40}
+body.tab-l #modal-etq-item .bs-sheet{pointer-events:auto;width:440px;max-width:440px;max-height:none;height:100%;border-radius:0;border-left:.5px solid var(--bd3);box-shadow:-6px 0 18px rgba(0,0,0,.08);padding-top:env(safe-area-inset-top,0px)}
+body.tab-l #modal-etq-item .bs-handle{display:none}
+body.tab-l.etq-pane #s-etq{margin-right:440px}
+body.tab-l #etq-lista .row.tab-sel{border-color:var(--acc);box-shadow:0 0 0 1.5px var(--acc) inset}
 </style>
 </head>
 <body>
 <div id="app">
+<!-- v186: menu lateral do iPad deitado (vazio e escondido no celular) -->
+<nav id="tab-side" aria-label="Menu"></nav>
 
 <!-- v117: Tela de partida ────────────────────────────────────────────────────
      A sessão do Firebase fica salva no aparelho e é restaurada de forma
@@ -533,13 +641,14 @@ body.etq-print #print-area .etq-blank:last-child,body.etq-print #print-area .etq
     </div>
   </div>
   <div class="slnav" id="sl-nav"></div>
-  <div style="padding:8px 12px 4px;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0">
+  <div id="ct-srch-box" style="padding:8px 12px 4px;background:var(--bg1);border-bottom:.5px solid var(--bd3);flex-shrink:0">
     <div class="srch-wrap" id="srch-wrap">
       <input id="srch-inp" class="srch" placeholder="Buscar produto..."/>
       <button class="srch-clear" id="srch-clear" title="Limpar busca">×</button>
     </div>
   </div>
-  <div style="padding:6px 12px 2px;flex-shrink:0"><div class="chips" id="grupo-chips"></div></div>
+  <div id="ct-chips-box" style="padding:6px 12px 2px;flex-shrink:0"><div class="chips" id="grupo-chips"></div></div>
+  <div class="tab-only" id="count-side"></div>
   <div class="content" id="count-list"></div>
   <div class="bbar" id="count-bbar"></div>
 </div>
@@ -1898,7 +2007,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v185';
+const APP_VERSION = 'v186';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -3471,8 +3580,18 @@ function canAccessTab(t){
   return userAllowedTabs().includes(t);
 }
 
-function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');}
-function closeModal(id){document.getElementById(id).classList.remove('on');}
+function show(id){
+  // v186: no iPad deitado a rotina abre AO LADO da Início (as duas telas ficam .on)
+  const split=id==='s-rotina'&&typeof isTabL==='function'&&isTabL();
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if(split)document.getElementById('s-home').classList.add('on');
+  document.body.classList.toggle('split-rot',split);
+  document.body.classList.toggle('no-side',id==='s-login'||id==='s-boot');
+  if(id!=='s-etq'){const me=document.getElementById('modal-etq-item');if(me&&me.classList.contains('on'))closeModal('modal-etq-item');}
+  if(typeof tabSideRender==='function'){tabScrAtual=id;tabSideRender();}
+}
+function closeModal(id){document.getElementById(id).classList.remove('on');if(id==='modal-etq-item'&&typeof tabEtqMarcar==='function'){tabEtqSel=null;tabEtqMarcar();}}
 function goHome(){show('s-home');renderHome();}
 function goSel(){show('s-sel');renderSel();}
 function backCount(){renderCount();show('s-count');}
@@ -3486,6 +3605,7 @@ function homeTab(t){
   homeTabId=t;
   document.querySelectorAll('#s-home .ntab').forEach(el=>el.classList.toggle('on',el.dataset.homeTab===t));
   renderHome();
+  if(typeof tabSideRender==='function')tabSideRender(); // v186
 }
 function goToLocal(lid){aLocal=lid;aScope=null;const subs=getRoteiroTop(lid);if(!subs.length){aSublocal=null;entrarContagem(lid,null);}else{show('s-plano');renderPlano(lid);}}
 
@@ -3670,6 +3790,7 @@ function renderHome(){
   } else if(homeTabId==='estoque'){renderEstoque(c);
   } else if(homeTabId==='diario'){renderDiario(c);
   } else {renderGestao(c);}
+  if(typeof tabMarcarRotina==='function')tabMarcarRotina(); // v186
 }
 
 // v152: bloco de fechamento que vive no card de Progresso geral da aba Locais.
@@ -4011,6 +4132,7 @@ function renderCount(){
     // sumiço dos itens.
     document.getElementById('count-list').innerHTML=h+emptyMsg;
     document.getElementById('btn-ver-todos-faltam')?.addEventListener('click',toggleSoFaltam);
+    tabCountDecorate([]); // v186
     updProg(contaveis,done);renderCountBbar(contaveis,done);return;
   }
   if(isAdminRole())h+=`<div style="padding:8px 12px 4px"><button id="btn-add-item-top" style="width:100%;padding:10px 14px;border-radius:var(--r1);background:none;border:.5px dashed var(--acc-bd);font-size:13px;font-weight:500;color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit"><i class="ti ti-plus"></i> Adicionar item ao local</button></div>`;
@@ -4134,6 +4256,7 @@ function renderCount(){
   cl.querySelectorAll('.btn-padrao').forEach(el=>el.addEventListener('click',()=>toggleQtdPadrao(el.dataset.cod)));
   document.getElementById('btn-add-item-top')?.addEventListener('click',openAdicionarItem);
   document.getElementById('btn-gestao-spec')?.addEventListener('click',()=>{gestaoTabId='estoque';gestaoEstTabId='specs';homeTab('gestao');show('s-home');});
+  tabCountDecorate(filtrado); // v186: lista + detalhe no iPad deitado
   updProg(contaveis,done);renderCountBbar(contaveis,done);
 }
 
@@ -4468,6 +4591,7 @@ function markTouched(cod){
   }
   top.appendChild(marca);
   atualizarValorItem(cod); // v160: o R$ do card acompanha a quantidade ao vivo
+  tabCountRow(cod); // v186: linha da lista lateral acompanha
 }
 function checkRowDone(cod){
   const prods=getProdsSublocal(aLocal,aSublocal);
@@ -5617,6 +5741,7 @@ function abrirRotina(id){
   document.getElementById('rot-title').textContent=r.nome;
   document.getElementById('rot-sub').textContent=[(r.setor&&r.setor!=='Todos')?r.setor:null,r.hora?'até '+r.hora:'hoje'].filter(Boolean).join(' · ');
   show('s-rotina');renderRotina();
+  tabMarcarRotina(); // v186
 }
 function fecharRotina(){rotinaAtual=null;show('s-home');homeTab('inicio');}
 function renderRotina(){
@@ -6727,7 +6852,7 @@ function etqBlankCardHTML(){
 
 // ── Diário › Etiquetas (insumos abertos/fracionados) ───────────────────────
 let etqBusca='',etqGrupo=null,etqI=null,etqModo='registrar',etqAcEv=null; // v185: etqModo registrar|acompanhar
-function abrirEtq(){etqBusca='';etqGrupo=null;etqModo='registrar';etqAcEv=null;show('s-etq');renderEtq();}
+function abrirEtq(){tabEtqSel=null;document.body.classList.remove('etq-pane');etqBusca='';etqGrupo=null;etqModo='registrar';etqAcEv=null;show('s-etq');renderEtq();}
 // v185: alternância Registrar | Acompanhar no topo da tela
 function etqSegHTML(){
   return `<div class="etq-seg" id="etq-modo" style="margin-bottom:8px"><div class="${etqModo==='registrar'?'on':''}" data-em="registrar"><i class="ti ti-printer" style="font-size:13px"></i> Registrar</div><div class="${etqModo==='acompanhar'?'on':''}" data-em="acompanhar"><i class="ti ti-table" style="font-size:13px"></i> Acompanhar</div></div>`;
@@ -6837,6 +6962,7 @@ function renderEtqLista(){
   });
   el.innerHTML=h;
   el.querySelectorAll('.etq-item,.etq-rec').forEach(r=>r.addEventListener('click',()=>abrirEtqItem(r.dataset.cod)));
+  tabEtqMarcar(); // v186
 }
 function abrirEtqItem(cod){
   const it=getProd(cod);if(!it)return;
@@ -6847,6 +6973,7 @@ function abrirEtqItem(cod){
   etqI={cod:String(cod),ev:ev0?ev0.ev:'abrir',cons:ev0?ev0.cons:p.padrao,abert:'agora',outra:'',valOrig:'',qty:1};
   renderEtqItem();
   document.getElementById('modal-etq-item').classList.add('on');
+  tabEtqSel=String(cod);tabEtqMarcar(); // v186: painel à direita no iPad deitado
 }
 function etqBaseDate(){
   if(etqI.abert==='ontem'){const d=new Date();d.setDate(d.getDate()-1);return d;}
@@ -7881,7 +8008,7 @@ function dprodReal(cod){const v=dprodVal(cod);
   const q=parseQtdDiario(v.real);return isFinite(q)?q:dprodEsperado(cod);}
 function ehContavel(un){return ['PÇ','UN','PC'].includes(String(un||'').toUpperCase());}
 
-function abrirDprod(){dprodVals={};dprodFiltro=new Set();dprodBusca='';show('s-dprod');renderDprod();}
+function abrirDprod(){tabDprodSel=null;dprodVals={};dprodFiltro=new Set();dprodBusca='';show('s-dprod');renderDprod();}
 function renderDprod(){
   const c=document.getElementById('dprod-cnt');
   const bb=document.getElementById('dprod-bbar');
@@ -7923,6 +8050,7 @@ function renderDprod(){
   document.getElementById('dprod-salvar').addEventListener('click',()=>salvarDprod(true));
   document.getElementById('dprod-salvar-sem').addEventListener('click',()=>salvarDprod(false)); // v162
   atualizarDprodBar();
+  tabDprodMontar(); // v186
 }
 // Miolo do card. Fica separado porque a conferência de rendimento aparece e
 // some conforme o número de receitas — re-renderizamos só este card, nunca a
@@ -7933,6 +8061,7 @@ function renderDprodLista(){
   const itens=dprodItens();
   if(!itens.length){
     el.innerHTML=`<div class="empty" style="padding:20px"><span>${dprodBusca?'Nenhum item com esse nome.':'Nenhum item neste filtro.'}</span></div>`;
+    tabDprodDecorate(); // v186
     atualizarDprodBar();return;
   }
   let lastG=null,h='';
@@ -7942,6 +8071,7 @@ function renderDprodLista(){
   });
   el.innerHTML=h;
   wireDprodCards(el);
+  tabDprodDecorate(); // v186
   atualizarDprodBar();
 }
 function dprodCardHTML(x){
@@ -8032,6 +8162,7 @@ function dprodPreenchidos(){
   return out;
 }
 function atualizarDprodBar(){
+  tabDprodRows(); // v186
   const n=dprodPreenchidos().length;
   const st=document.getElementById('dprod-status');
   if(st)st.textContent=n?n+' item'+(n>1?'s':'')+' com produção':'Preencha ao menos um item.';
@@ -10170,6 +10301,265 @@ document.addEventListener('keydown',e=>{
   if(mq.addEventListener) mq.addEventListener('change', onThemeChange);
   else if(mq.addListener) mq.addListener(onThemeChange);
 })();
+
+// ══ v186: iPAD NA HORIZONTAL — LISTA + DETALHE (opção B) ═════════════════════
+// Liga só com tela ≥ 900 px E deitada. O que muda (e só com body.tab-l):
+//  • menu lateral persistente no lugar da barra de baixo da Início;
+//  • show('s-rotina') mantém a Início aberta à esquerda (split);
+//  • Contagem e Produção: lista compacta à esquerda, UM item grande à direita,
+//    com teclado numérico próprio na contagem (o teclado do iOS cobriria meia
+//    tela deitada). O card da direita é o MESMO card da v185 — mesmas funções
+//    (chgQty, commitQtyInput, chgDecPos, zeroItem, menu ⋯); aqui só se esconde
+//    os outros e se alimenta o campo pelo teclado da tela;
+//  • Manuseio: a folha do insumo vira painel fixo à direita.
+// Girar o iPad para em pé desliga tudo e a tela volta à coluna única na hora.
+const TAB_MQ=window.matchMedia('(min-width:900px) and (orientation:landscape)');
+var tabScrAtual='s-boot';
+var tabCountSel=null,tabCountCods=[],tabKpNovo=true;
+var tabDprodSel=null,tabDprodCods=[];
+var tabEtqSel=null;
+function isTabL(){return document.body.classList.contains('tab-l');}
+function tabModoAplicar(){
+  const liga=!!TAB_MQ.matches;
+  const mudou=liga!==isTabL();
+  document.body.classList.toggle('tab-l',liga);
+  if(!mudou)return;
+  try{
+    // redesenha a tela aberta no novo formato (split só existe deitado)
+    const id=tabScrAtual;
+    if(id==='s-rotina'&&rotinaAtual){show('s-rotina');renderHome();}
+    else if(id==='s-count'){renderCount();}
+    else if(id==='s-dprod'){renderDprod();}
+    else if(id==='s-etq'){renderEtq();document.body.classList.toggle('etq-pane',liga&&document.getElementById('modal-etq-item').classList.contains('on'));}
+    else if(id==='s-home'){renderHome();}
+    tabSideRender();
+  }catch(e){console.warn('v186 tabModoAplicar:',e);}
+}
+if(TAB_MQ.addEventListener)TAB_MQ.addEventListener('change',tabModoAplicar);else if(TAB_MQ.addListener)TAB_MQ.addListener(tabModoAplicar);
+tabModoAplicar();
+
+// ── menu lateral ─────────────────────────────────────────────────────────────
+const TAB_SCR_MOD={'s-home':null,'s-rotina':'inicio','s-sel':'estoque','s-plano':'estoque','s-count':'estoque','s-finish':'estoque','s-saved':'estoque','s-dreg':'diario','s-dconf':'diario','s-dprod':'diario','s-etq':'diario'};
+function tabSideRender(){
+  const nav=document.getElementById('tab-side');if(!nav)return;
+  const mod=TAB_SCR_MOD[tabScrAtual]===undefined?null:(TAB_SCR_MOD[tabScrAtual]||homeTabId);
+  const itens=[...document.querySelectorAll('#s-home .ntab[data-home-tab]')].filter(el=>el.style.display!=='none');
+  nav.innerHTML=`<div class="tsd-brand">Gesto Operação<small>${esc(APP_VERSION)}</small></div>`+itens.map(el=>{
+    const t=el.dataset.homeTab;const ic=el.querySelector('i');
+    return `<div class="tsd-i ${t===mod?'on':''}" data-tsd="${t}" role="button" tabindex="0"><i class="${ic?ic.className.replace('ntab-icon',''):'ti'}"></i>${esc(el.textContent.trim())}</div>`;
+  }).join('');
+  nav.querySelectorAll('[data-tsd]').forEach(el=>el.addEventListener('click',()=>{
+    rotinaAtual=null;
+    show('s-home');homeTab(el.dataset.tsd);
+  }));
+}
+function tabMarcarRotina(){
+  document.querySelectorAll('#home-cnt .atv[data-rot]').forEach(el=>el.classList.toggle('tab-sel',!!(document.body.classList.contains('split-rot')&&rotinaAtual&&el.dataset.rot===rotinaAtual.id)));
+}
+
+// ── Contagem: lista à esquerda, item + teclado à direita ─────────────────────
+function tabQtdTxt(cod){
+  const d=counts[aLocal]?.[cod];
+  if(!d||!d.touched)return null;
+  const spec=getSpec(aLocal,cod);
+  if(spec&&spec.modo==='contador')return `${d.qty||0} ${spec.unidContagem||spec.embalagem||''}`.trim();
+  return `${d.qtyDec||'0'} ${getProd(cod)?.unidade||''}`.trim();
+}
+function tabEstadoCod(cod){
+  const d=counts[aLocal]?.[cod];
+  if(!d||!d.touched)return 'pend';
+  const spec=getSpec(aLocal,cod);
+  const v=(!spec||spec.modo==='decimal')?pf(d.qtyDec||0):(d.qty||0);
+  return (v||0)===0?'zero':'ok';
+}
+function tabCountRowHTML(p){
+  const st=tabEstadoCod(p.cod),q=tabQtdTxt(p.cod);
+  return `<div class="tmd-r ${p.cod===tabCountSel?'sel':''}" id="tcr-${p.cod}" data-tcr="${p.cod}"><span class="tmd-dot ${st==='ok'?'ok':st==='zero'?'zero':''}"></span><div class="tmd-n">${esc(p.nome)}</div><span class="tmd-q ${q?'':'vazio'}">${q?esc(q):'—'}</span></div>`;
+}
+function tabCountDecorate(lista){
+  const side=document.getElementById('count-side');
+  const cl=document.getElementById('count-list');
+  if(!side||!cl)return;
+  if(!isTabL()){side.innerHTML='';cl.classList.remove('tab-md');return;}
+  tabCountCods=lista.map(p=>p.cod);
+  if(!tabCountSel||!tabCountCods.includes(tabCountSel)){
+    const cnt=counts[aLocal]||{};
+    const pend=lista.find(p=>!cnt[p.cod]?.touched);
+    tabCountSel=(pend||lista[0]||{}).cod||null;tabKpNovo=true;
+  }
+  let h='',lastG=null;
+  lista.forEach(p=>{
+    if(p.grupo!==lastG){h+=`<div class="tmd-g">${esc(p.grupo||'Sem categoria')}</div>`;lastG=p.grupo;}
+    h+=tabCountRowHTML(p);
+  });
+  side.innerHTML=h||'<div class="tmd-empty">Nenhum item neste filtro.</div>';
+  side.querySelectorAll('[data-tcr]').forEach(el=>el.addEventListener('click',()=>tabCountSelect(el.dataset.tcr)));
+  cl.classList.add('tab-md');
+  tabCountAplicarSel(true);
+}
+function tabCountAplicarSel(scrollLista){
+  const cl=document.getElementById('count-list');if(!cl)return;
+  cl.querySelectorAll('.pcard.tab-sel').forEach(el=>el.classList.remove('tab-sel'));
+  document.getElementById('tab-kp-wrap')?.remove();
+  document.querySelectorAll('#count-side .tmd-r.sel').forEach(el=>el.classList.remove('sel'));
+  if(!tabCountSel)return;
+  const card=document.getElementById('pc-'+tabCountSel);
+  const row=document.getElementById('tcr-'+tabCountSel);
+  if(row){row.classList.add('sel');if(scrollLista)try{row.scrollIntoView({block:'nearest'});}catch(e){}}
+  if(!card)return;
+  card.classList.add('tab-sel');
+  const di=card.querySelector('.inp-dec');
+  if(di)di.setAttribute('inputmode','none'); // o teclado da tela substitui o do iOS
+  const i=tabCountCods.indexOf(tabCountSel),n=tabCountCods.length;
+  const temKp=!!(di||card.querySelector('.cntb'));
+  const w=document.createElement('div');
+  w.id='tab-kp-wrap';w.style.cssText='display:flex;flex-direction:column;gap:12px';
+  w.innerHTML=(temKp?`<div class="tab-kp">${['1','2','3','4','5','6','7','8','9'].map(k=>`<button data-kp="${k}">${k}</button>`).join('')}<button class="kp-f" data-kp="C" title="Limpar o número">Limpar</button><button data-kp="0">0</button><button data-kp="B" aria-label="Apagar último dígito">⌫</button></div>`:'')+
+    `<div class="tab-nav"><button data-kn="-1" ${i<=0?'disabled':''}>← Anterior</button><button class="pri" data-kn="1" ${i>=n-1?'disabled':''}>Próximo item →</button></div>
+     <div class="tab-pos">Item ${i+1} de ${n}${i>=n-1?' · último desta lista':''}</div>`;
+  card.insertAdjacentElement('afterend',w);
+  w.querySelectorAll('[data-kp]').forEach(b=>b.addEventListener('click',()=>tabKp(b.dataset.kp)));
+  w.querySelectorAll('[data-kn]').forEach(b=>b.addEventListener('click',()=>tabCountMover(Number(b.dataset.kn))));
+}
+function tabCountSelect(cod){
+  const ae=document.activeElement;if(ae&&ae.blur&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))ae.blur();
+  tabCountSel=cod;tabKpNovo=true;
+  tabCountAplicarSel(true);
+  const cl=document.getElementById('count-list');if(cl)cl.scrollTop=0;
+}
+function tabCountMover(delta){
+  const i=tabCountCods.indexOf(tabCountSel);
+  const j=i+delta;
+  if(j<0||j>=tabCountCods.length)return;
+  tabCountSelect(tabCountCods[j]);
+}
+function tabKp(k){
+  const cod=tabCountSel;if(!cod)return;
+  const ae=document.activeElement;
+  if(ae&&ae.classList&&ae.classList.contains('qty-input-inline'))ae.blur(); // fecha a digitação manual antes
+  const spec=getSpec(aLocal,cod);
+  if(spec&&spec.modo==='contador'){
+    const atual=String((counts[aLocal]?.[cod]?.qty)||0);
+    let s;
+    if(k==='C')s='0';
+    else if(k==='B')s=tabKpNovo?atual.slice(0,-1):atual.slice(0,-1);
+    else s=(tabKpNovo?'':atual)+k;
+    s=(s||'0').replace(/^0+(?=\d)/,'').slice(0,6);
+    tabKpNovo=false;
+    commitQtyInput(cod,s);
+    return;
+  }
+  const el=document.querySelector(`#pc-${cod} .inp-dec`);if(!el)return;
+  const dig=String(el.value).replace(/\D/g,'').replace(/^0+/,'');
+  let nd;
+  if(k==='C')nd='';
+  else if(k==='B')nd=dig.slice(0,-1);
+  else nd=(tabKpNovo?'':dig)+k;
+  tabKpNovo=false;
+  el.value=nd||'0';
+  chgDecPos(cod,el); // mesma maquininha da v160: zero digitado não conta como contado
+}
+function tabCountRow(cod){
+  if(!isTabL())return;
+  const row=document.getElementById('tcr-'+cod);if(!row)return;
+  const p=getProd(cod);if(!p)return;
+  const tmp=document.createElement('div');tmp.innerHTML=tabCountRowHTML(p);
+  const nr=tmp.firstElementChild;
+  nr.addEventListener('click',()=>tabCountSelect(cod));
+  row.replaceWith(nr);
+}
+
+// ── Produção: mesmo padrão, sem teclado próprio (receita é −/+) ──────────────
+function tabDprodTxt(cod){
+  const v=dprodVals[cod];if(!v)return null;
+  const y=rendimentoDe(cod);
+  if(y){const r=Number(v.rec)||0;return r>0?`${fmtNum(r)} ${r===1?'receita':'receitas'}`:null;}
+  const s=v.val!=null?String(v.val).trim():'';
+  return s&&parseQtdDiario(s)>0?`${s} ${getProd(cod)?.unidade||''}`.trim():null;
+}
+function tabDprodRowHTML(x){
+  const q=tabDprodTxt(x.cod);
+  return `<div class="tmd-r ${x.cod===tabDprodSel?'sel':''}" id="tdr-${esc(x.cod)}" data-tdr="${esc(x.cod)}"><span class="tmd-dot ${q?'ok':''}"></span><div class="tmd-n">${esc(x.nome)}</div><span class="tmd-q ${q?'':'vazio'}">${q?esc(q):'—'}</span></div>`;
+}
+function tabDprodMontar(){
+  // chamada no fim de renderDprod: rearruma o que já foi desenhado em duas colunas
+  const c=document.getElementById('dprod-cnt');if(!c)return;
+  c.classList.toggle('tab-2c',isTabL());
+  if(!isTabL())return;
+  const lista=document.getElementById('dprod-lista');
+  const busca=document.getElementById('dprod-busca');
+  if(!lista||!busca)return;
+  const chips=document.getElementById('dprod-chips');
+  const sec=lista.previousElementSibling;
+  const L=document.createElement('div');L.className='tab-col-l';
+  const top=document.createElement('div');top.className='tab-col-top';
+  if(chips)top.appendChild(chips);
+  top.appendChild(busca.parentElement);
+  L.appendChild(top);
+  const side=document.createElement('div');side.id='dprod-side';L.appendChild(side);
+  const R=document.createElement('div');R.className='tab-col-r';
+  if(sec&&sec.classList.contains('sec'))R.appendChild(sec);
+  R.appendChild(lista);
+  c.innerHTML='';c.appendChild(L);c.appendChild(R);
+  tabDprodDecorate();
+}
+function tabDprodDecorate(){
+  const side=document.getElementById('dprod-side'),lista=document.getElementById('dprod-lista');
+  if(!side||!lista)return;
+  if(!isTabL()){lista.classList.remove('tab-md');return;}
+  const itens=dprodItens();
+  tabDprodCods=itens.map(x=>String(x.cod));
+  if(!tabDprodSel||!tabDprodCods.includes(tabDprodSel))tabDprodSel=tabDprodCods[0]||null;
+  let h='',lastG=null;
+  itens.forEach(x=>{
+    if(x.grupo!==lastG){h+=`<div class="tmd-g">${esc(x.grupo)}</div>`;lastG=x.grupo;}
+    h+=tabDprodRowHTML(x);
+  });
+  side.innerHTML=h||'<div class="tmd-empty">Nenhum item neste filtro.</div>';
+  side.querySelectorAll('[data-tdr]').forEach(el=>el.addEventListener('click',()=>tabDprodSelect(el.dataset.tdr)));
+  lista.classList.add('tab-md');
+  tabDprodAplicarSel(true);
+}
+function tabDprodAplicarSel(scrollLista){
+  const lista=document.getElementById('dprod-lista');if(!lista)return;
+  lista.querySelectorAll('.pcard.tab-sel').forEach(el=>el.classList.remove('tab-sel'));
+  document.getElementById('tab-dp-nav')?.remove();
+  document.querySelectorAll('#dprod-side .tmd-r.sel').forEach(el=>el.classList.remove('sel'));
+  if(!tabDprodSel)return;
+  const row=document.getElementById('tdr-'+tabDprodSel);
+  if(row){row.classList.add('sel');if(scrollLista)try{row.scrollIntoView({block:'nearest'});}catch(e){}}
+  const card=document.getElementById('dprod-pc-'+tabDprodSel);if(!card)return;
+  card.classList.add('tab-sel');
+  const i=tabDprodCods.indexOf(tabDprodSel),n=tabDprodCods.length;
+  const w=document.createElement('div');w.id='tab-dp-nav';w.style.cssText='display:flex;flex-direction:column;gap:10px';
+  w.innerHTML=`<div class="tab-nav"><button data-dn="-1" ${i<=0?'disabled':''}>← Anterior</button><button class="pri" data-dn="1" ${i>=n-1?'disabled':''}>Próximo item →</button></div><div class="tab-pos">Item ${i+1} de ${n}</div>`;
+  card.insertAdjacentElement('afterend',w);
+  w.querySelectorAll('[data-dn]').forEach(b=>b.addEventListener('click',()=>{
+    const j=tabDprodCods.indexOf(tabDprodSel)+Number(b.dataset.dn);
+    if(j>=0&&j<tabDprodCods.length)tabDprodSelect(tabDprodCods[j]);
+  }));
+}
+function tabDprodSelect(cod){
+  const ae=document.activeElement;if(ae&&ae.blur&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')&&ae.id!=='dprod-busca')ae.blur();
+  tabDprodSel=String(cod);
+  tabDprodAplicarSel(true);
+  const r=document.querySelector('#dprod-cnt .tab-col-r');if(r)r.scrollTop=0;
+}
+function tabDprodRows(){
+  if(!isTabL())return;
+  document.querySelectorAll('#dprod-side [data-tdr]').forEach(row=>{
+    const q=tabDprodTxt(row.dataset.tdr);
+    const qe=row.querySelector('.tmd-q'),de=row.querySelector('.tmd-dot');
+    if(qe){qe.textContent=q||'—';qe.classList.toggle('vazio',!q);}
+    if(de)de.classList.toggle('ok',!!q);
+  });
+}
+
+// ── Manuseio: destaca o insumo aberto no painel ──────────────────────────────
+function tabEtqMarcar(){
+  document.querySelectorAll('#etq-lista .etq-item').forEach(el=>el.classList.toggle('tab-sel',!!(isTabL()&&tabEtqSel&&el.dataset.cod===tabEtqSel)));
+  document.body.classList.toggle('etq-pane',!!(isTabL()&&tabEtqSel));
+}
 </script>
 <div id="print-area"></div>
 </body>
