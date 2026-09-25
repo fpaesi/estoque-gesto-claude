@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v188</title>
+<title>Gesto Operação v189</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -611,6 +611,15 @@ body.tab-l .tsd-brand{display:flex;flex-direction:column;align-items:flex-start;
 :root{--tx1:#1C1B18}
 .atv-nome,.row [style*="font-size:16.5px"]{font-weight:400}
 .atv-cta{font-weight:500}
+/* v189: abas Locais/Resumo/Histórico como as demais abas (sublinhado oliva) e selos do histórico em ponto */
+.seg{background:transparent;border:0;border-bottom:1px solid var(--bd3);padding:0;margin-bottom:6px}
+.seg button{padding:12px 4px;color:var(--tx2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.seg button.on{background:transparent;box-shadow:none;color:var(--tx1);font-weight:400;border-bottom-color:var(--acc)}
+.hist-badge,.hist-badge-partial{background:transparent!important;padding:0 0 0 14px!important;position:relative;border-radius:0;font-weight:400}
+.hist-badge::before,.hist-badge-partial::before{content:"";position:absolute;left:0;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:currentColor}
+.hist-badge{color:#2F5A14!important}.hist-badge-partial{color:#8A5A00!important}
+.hist-final{border-left:4px solid #3B6D11}
+.hist-entry{padding:14px}
 @media print{.gesto-logo{display:none}}
 </style>
 </head>
@@ -2079,7 +2088,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v188';
+const APP_VERSION = 'v189';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2490,7 +2499,7 @@ function mostrarErroBanner(msg){
     b.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#C0341D;color:#fff;font-size:13px;font-weight:400;padding:8px 16px;border-radius:0;z-index:200;max-width:340px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.2)';
     document.getElementById('app').appendChild(b);
   }
-  b.textContent='⚠️ '+msg;
+  b.textContent=msg;
   b.style.display='block';
 }
 function ocultarErroBanner(){
@@ -3316,7 +3325,7 @@ function doImport(){
     if(d.locais&&d.locais.length)locais=d.locais;
     salvar();
     const n=Object.values(specs).reduce((a,b)=>a+Object.keys(b).length,0);
-    st.textContent=`✅ ${n} especificações restauradas!`;st.style.color='#27500A';
+    st.textContent=`${n} especificações restauradas`;st.style.color='#27500A';
     setTimeout(()=>{closeModal('modal-import');renderHome();},1200);
   }catch(e){st.textContent='JSON inválido.';st.style.color='#92400E';}
 }
@@ -4021,7 +4030,7 @@ function renderPlano(lid){
   const totalProds=getProdsLocal(lid).length;
   const totalDone=Object.values(cnt).filter(x=>x.touched).length;
   const semSpec=countSemSpec(lid);
-  document.getElementById('plano-sub').textContent=semSpec>0?`⚠️ ${semSpec} sem especificação`:totalDone>0?`${totalDone}/${totalProds} contados`:`${totalProds} itens`;
+  document.getElementById('plano-sub').textContent=semSpec>0?`${semSpec} sem especificação`:totalDone>0?`${totalDone}/${totalProds} contados`:`${totalProds} itens`;
   let proximoIdx=subs.findIndex(sl=>topStatus(lid,sl.id)!=='done');if(proximoIdx===-1)proximoIdx=0;
   let h='';
   h+=`<button id="btn-export-pdf-local" style="width:100%;padding:11px 14px;border-radius:var(--r1);background:var(--bg1);border:.5px solid var(--bd3);font-size:15.5px;font-weight:400;color:var(--tx1);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit"><i class="ti ti-printer" style="font-size:18.5px;color:var(--acc)"></i> Exportar lista para impressão</button>`;
@@ -4949,7 +4958,7 @@ function renderGestao(c){
         <div style="font-size:12px;color:var(--acc);opacity:.8;margin-top:2px">Importa a lista de ingredientes e sincroniza o catálogo</div></div></button>
       <div class="sec">Sem vínculo${semV.length?` · ${semV.length}`:''}</div>`;
     if(!semV.length){
-      h+=`<div class="empty" style="padding:24px 0"><span>Todos os itens estão vinculados ou marcados como não controlados 🎉</span></div>`;
+      h+=`<div class="empty" style="padding:24px 0"><span>Todos os itens estão vinculados ou marcados como não controlados</span></div>`;
     } else {
       h+=`<div style="font-size:12px;color:var(--tx2);margin:-2px 0 6px">Marque <i class="ti ti-square" style="font-size:13px"></i> nos itens que não precisam ser contados para tirá-los desta fila.</div>`;
       const byGrupo={};
@@ -5160,10 +5169,10 @@ function editSpec(lid,cod){
   modoDiv.innerHTML=`<div class="fl">Modo de contagem</div>
     <div class="mto">
       <button class="mo ${editSpecModo==='contador'?'on':''}" id="modo-cnt">
-        <div style="font-size:14.5px">📦 Embalagem fechada</div>
+        <div style="font-size:14.5px"><i class="ti ti-package loc-ico"></i> Embalagem fechada</div>
         <div style="font-size:12px;opacity:.7;margin-top:2px">Conta unidades, converte automaticamente</div></button>
       <button class="mo ${editSpecModo==='decimal'?'on':''}" id="modo-dec">
-        <div style="font-size:14.5px">⚖️ Em uso / Pesado</div>
+        <div style="font-size:14.5px"><i class="ti ti-scale loc-ico"></i> Em uso / Pesado</div>
         <div style="font-size:12px;opacity:.7;margin-top:2px">Digita direto em ${unidade||'un'}</div></button></div>`;
 
   const camposCnt=document.createElement('div');camposCnt.id='spec-campos-contador';camposCnt.style.display=editSpecModo==='contador'?'':'none';
@@ -5176,7 +5185,7 @@ function editSpec(lid,cod){
 
   const camposDec=document.createElement('div');camposDec.id='spec-campos-decimal';camposDec.style.display=editSpecModo==='decimal'?'':'none';
   camposDec.innerHTML=`<div><div class="fl">Descrição (opcional)</div><input id="spec-desc" class="fi" placeholder="Ex: Pesado na balança" value="${(cur.descricao||'').replace(/"/g,'&quot;')}"/></div>
-    <div class="tipb" style="margin-top:10px">💡 O colaborador digitará o valor diretamente em <strong>${unidade||'un'}</strong>.</div>`;
+    <div class="tipb" style="margin-top:10px">O colaborador digitará o valor diretamente em <strong>${unidade||'un'}</strong>.</div>`;
 
   // v132: ações grudadas no fim da caixa (modal alto que rola)
   const btns=document.createElement('div');btns.className='modal-acoes';btns.style.cssText='flex-direction:row;gap:8px';
@@ -8784,7 +8793,7 @@ function abrirVincular(cod){
   _vincCod=cod;
   document.getElementById('vinc-item').textContent=`${prod.nome} · ${prod.grupo||'sem grupo'} · ${prod.unidade||''}`;
   const selL=document.getElementById('vinc-local');
-  selL.innerHTML=locais.map(l=>`<option value="${l.id}">${locIco(l.icon)} ${esc(l.nome)}</option>`).join('');
+  selL.innerHTML=locais.map(l=>`<option value="${l.id}">${esc(l.nome)}</option>`).join('');
   preencherVincSubs(locais[0]?.id);
   selL.onchange=()=>preencherVincSubs(selL.value);
   document.getElementById('modal-vincular').classList.add('on');
@@ -9026,10 +9035,10 @@ function renderConsolidado(c){
 
   let statusDetalhes='';
   if(locaisEmAndamento.length){
-    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span style="font-size:12px;font-weight:400;color:#633806">Em andamento:</span><span style="font-size:12px;color:#633806">${esc(locaisEmAndamento.map(l=>l.icon+' '+l.nome).join(', '))}</span></div>`;
+    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span style="font-size:12px;font-weight:400;color:#633806">Em andamento:</span><span style="font-size:12px;color:#633806">${esc(locaisEmAndamento.map(l=>l.nome).join(', '))}</span></div>`;
   }
   if(locaisPendentes.length&&!tudo){
-    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:12px;font-weight:400;color:var(--tx2)">Pendentes:</span><span style="font-size:12px;color:var(--tx2)">${esc(locaisPendentes.map(l=>l.icon+' '+l.nome).join(', '))}</span></div>`;
+    statusDetalhes+=`<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:12px;font-weight:400;color:var(--tx2)">Pendentes:</span><span style="font-size:12px;color:var(--tx2)">${esc(locaisPendentes.map(l=>l.nome).join(', '))}</span></div>`;
   }
 
   // Card de fechamento (confirmação do Gestor)
@@ -9385,11 +9394,11 @@ function renderHistorico(c){
         const linhaSub=st.temTocados
           ? `${hora} · ${st.comEstoque} com estoque · ${st.tocados} contados de ${st.total}`
           : `${hora} · Contagem final · ${st.comEstoque} de ${st.total} itens`;
-        h+=`<div class="hist-entry" data-hist-id="${e.id}" style="background:#F0F7E8;border:.5px solid #C0DD97">
-          <div style="font-size:26.5px;width:36px;text-align:center">🏁</div>
+        h+=`<div class="hist-entry hist-final" data-hist-id="${e.id}">
+          <div class="loc-ico-box"><i class="ti ti-flag loc-ico"></i></div>
           <div style="flex:1">
-            <div style="font-size:16.5px;font-weight:500;color:#27500A">${esc(e.nome||'Contagem final')}</div>
-            <div style="font-size:13px;color:#3B6D11;margin-top:2px">${linhaSub}</div>
+            <div style="font-size:16.5px;font-weight:400;color:var(--tx1)">${esc(e.nome||'Contagem final')}</div>
+            <div style="font-size:13px;color:var(--tx2);margin-top:2px">${linhaSub}</div>
           </div>
           <span class="hist-badge">Final</span><i class="ti ti-chevron-right" style="color:var(--tx2);font-size:17.5px"></i></div>`;
         return;
@@ -9397,7 +9406,7 @@ function renderHistorico(c){
       const completo=e.totalContados>=e.totalItens;
       const badge=completo?`<span class="hist-badge">✓ Completo</span>`:`<span class="hist-badge-partial">${e.totalContados}/${e.totalItens}</span>`;
       h+=`<div class="hist-entry" data-hist-id="${e.id}">
-        <div style="font-size:28.5px;width:36px;text-align:center">${esc(e.localIcon||'📦')}</div>
+        <div class="loc-ico-box">${locIco(e.localIcon||'📦')}</div>
         <div style="flex:1">
           <div style="font-size:16.5px;font-weight:400">${esc(e.localNome||e.local)}</div>
           <div style="font-size:13px;color:var(--tx2);margin-top:2px">${hora} · ${e.totalContados} de ${e.totalItens} itens</div>
@@ -9473,7 +9482,7 @@ function abrirDetalheContagemFinal(entry){
   const dt=new Date(entry.ts);
   const dtStr=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   const hora=dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('hist-det-title').textContent=`🏁 ${entry.nome||'Contagem final'}`;
+  document.getElementById('hist-det-title').textContent=`${entry.nome||'Contagem final'}`;
   document.getElementById('hist-det-sub').textContent=`${dtStr.charAt(0).toUpperCase()+dtStr.slice(1)} às ${hora}`;
   const st=statsContagemFinal(entry);
   const contados=st.itensComEstoque;
