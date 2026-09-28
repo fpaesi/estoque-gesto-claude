@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v190</title>
+<title>Gesto Operação v191</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1867,6 +1867,15 @@ async function carregarEstoqueSaipos(){
     if(d.exists){const x=d.data()||{};ESTOQUE_SAIPOS=x.itens||{};estoqueSaiposEm=x.atualizadoEm||0;}
   }catch(e){/* contador não lê: silêncio proposital */}
 }
+// v191: demanda por dia da semana (demanda/resumo), gravada toda madrugada pela
+// função atualizarDemandaDiaria a partir das Movimentações de estoque do Saipos
+// (saída de venda − devolução, todos os canais). Qualquer usuário ativo lê.
+let DEMANDA=null;
+async function carregarDemanda(){
+  if(!firebaseReady||!currentUser)return;
+  try{const d=await db.collection('demanda').doc('resumo').get();DEMANDA=d.exists?(d.data()||null):null;}
+  catch(e){DEMANDA=null;/* regra ainda não publicada: segue sem */}
+}
 function rendimentoDe(cod){const r=RENDIMENTOS[String(cod)];const y=r&&Number(r.yield);return (isFinite(y)&&y>0)?y:null;}
 function aplicarCatalogo(arr,meta,updatedAt,rend){
   if(Array.isArray(arr)&&arr.length){
@@ -2088,7 +2097,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v190';
+const APP_VERSION = 'v191';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -3267,6 +3276,7 @@ if(firebaseReady){
       // Ajusta abas conforme o nível de acesso
       ajustarTabsPorRole();
       carregarEstoqueSaipos(); // v140: silencioso e sem bloquear a carga
+      carregarDemanda().then(()=>{if(DEMANDA&&homeTabId==='inicio'&&document.getElementById('s-home').classList.contains('on'))renderHome();}); // v191
       // Carrega dados e mostra home
       await carregarNuvem();
       // v117: sai da tela de partida OU do login (antes só olhava o login, então a
@@ -7819,9 +7829,48 @@ function confNormItem(x){
     const ev=CONF_EV_MANUSEIO.includes(x.ev)?x.ev:'fracionar';
     const o={cod:String(x.cod),min:Number(x.min)||0,rec:Number(x.rec)||1,acao,dia:Number(x.dia)||0};
     if(acao==='manusear')o.ev=ev;
+    // v191: mínimo automático pela demanda do Saipos
+    o.modo=x.modo==='auto'?'auto':'manual';
+    o.cobre=Math.max(1,Math.round(Number(x.cobre)||1));          // dias de serviço que o saldo precisa cobrir
+    o.alvo=Math.max(o.cobre,Math.round(Number(x.alvo)||2));       // produzir/manusear para N dias de serviço
+    o.diaModo=['nao','fixo','auto'].includes(x.diaModo)?x.diaModo:(o.dia>0?'fixo':'nao');
+    o.antec=x.antec==null?1:Math.max(0,Math.round(Number(x.antec)||0)); // descongelar com N dias de antecedência
     return o;
   }
-  return {cod:String(x),min:0,rec:1,acao:'produzir',dia:0};
+  return {cod:String(x),min:0,rec:1,acao:'produzir',dia:0,modo:'manual',cobre:1,alvo:2,diaModo:'nao',antec:1};
+}
+// ── v191: previsão de demanda ──────────────────────────────────────────────
+// Dia de serviço = dia da semana em cfg_diario.diasUteis (padrão ter–sáb).
+// Até as 15h o dia de hoje ainda conta (o serviço não aconteceu); depois, a
+// conta começa amanhã.
+const DOW_CURTO=['dom','seg','ter','qua','qui','sex','sáb'];
+function demDiasServico(){const d=(diarioCfg&&diarioCfg.diasUteis);return Array.isArray(d)&&d.length?d.map(Number):[2,3,4,5,6];}
+function demProximosDias(n,agora){
+  agora=agora||new Date();const uteis=demDiasServico();const out=[];
+  const d=new Date(agora);d.setHours(12,0,0,0);
+  if(agora.getHours()>=15)d.setDate(d.getDate()+1);
+  for(let k=0;k<60&&out.length<n;k++){if(uteis.includes(d.getDay()))out.push(new Date(d));d.setDate(d.getDate()+1);}
+  return out;
+}
+function demItem(cod){return DEMANDA&&DEMANDA.itens&&DEMANDA.itens[String(cod)]||null;}
+function demDoDia(cod,data){
+  const it=demItem(cod);if(!it)return {m:0,sd:0};
+  const w=it.dow&&it.dow[data.getDay()];
+  return w&&w.t?{m:Number(w.t[0])||0,sd:Number(w.t[1])||0}:{m:0,sd:0};
+}
+// mínimo = demanda dos próximos `cobre` dias de serviço + 1 desvio-padrão (≈ 84% de chance de não faltar)
+// alvo   = demanda dos próximos `alvo` dias de serviço + a mesma segurança
+function demCalc(it){
+  if(it.modo!=='auto'||!demItem(it.cod))return null;
+  const dias=demProximosDias(Math.max(it.cobre,it.alvo));
+  const soma=(k)=>{let m=0,v=0,pico=null;dias.slice(0,k).forEach(d=>{const x=demDoDia(it.cod,d);m+=x.m;v+=x.sd*x.sd;if(!pico||x.m>pico.m)pico={m:x.m,d};});return {m,sd:Math.sqrt(v),pico};};
+  const a=soma(it.cobre),b=soma(it.alvo);
+  return {min:a.m+a.sd,alvo:b.m+a.sd,pico:a.pico,dias:dias.slice(0,it.alvo)};
+}
+function demArred(x,unidade){return ehContavel(unidade)?Math.ceil(x-1e-9):Math.ceil(x*10-1e-9)/10;}
+function demLinhaSemana(cod){
+  const it=demItem(cod);if(!it)return '';
+  return demDiasServico().map(w=>{const x=it.dow&&it.dow[w];return `${DOW_CURTO[w]} ${fmtNum(x&&x.t?Math.round(x.t[0]*10)/10:0)}`;}).join(' · ');
 }
 function confListaSetor(setor){return ((diarioCfg&&diarioCfg.conferencia)||{})[setor]||[];}
 function confItensDoSetor(setor){return confListaSetor(setor).map(confNormItem);}
@@ -7853,18 +7902,32 @@ function sugestoesHoje(){
     confItensDoSetor(setor).forEach(it=>{
       const p=getProd(it.cod);if(!p)return;
       const saldo=saldoDe(it.cod);
-      const base={setor,cod:it.cod,nome:p.nome,unidade:p.unidade,saldo,min:it.min};
-      if(it.min>0&&saldo<it.min&&!vistos.has(it.cod+'|min')){
+      const dc=demCalc(it); // v191: mínimo automático
+      const minEf=dc?dc.min:it.min;
+      const base={setor,cod:it.cod,nome:p.nome,unidade:p.unidade,saldo,min:minEf,auto:!!dc,pico:dc&&dc.pico};
+      if(minEf>0&&saldo<minEf&&!vistos.has(it.cod+'|min')){
         vistos.add(it.cod+'|min');
+        const y=rendimentoDe(it.cod);
         if(it.acao==='manusear'){
-          if(!manuseioFeitoHoje(it.cod,it.ev))out.push({...base,tipo:'manusear',ev:it.ev,qtd:it.rec||1,ord:saldo/it.min});
+          const q=dc?demArred(dc.alvo-saldo,p.unidade):(it.rec||1);
+          if(q>0&&!manuseioFeitoHoje(it.cod,it.ev))out.push({...base,tipo:'manusear',ev:it.ev,qtd:q,ord:saldo/minEf});
         } else {
-          out.push({...base,tipo:'produzir',rec:it.rec||1,yield:rendimentoDe(it.cod),ord:saldo/it.min});
+          const rec=dc?(y?Math.max(1,Math.ceil((dc.alvo-saldo)/y-1e-9)):demArred(dc.alvo-saldo,p.unidade)):(it.rec||1);
+          out.push({...base,tipo:'produzir',rec,yield:dc&&!y?null:y,ord:saldo/minEf});
         }
       }
-      if(it.dia>0&&saldo>0&&!vistos.has(it.cod+'|dia')&&!manuseioFeitoHoje(it.cod,'descongelar')){
-        vistos.add(it.cod+'|dia');
-        out.push({...base,tipo:'descongelar',ev:'descongelar',qtd:Math.min(it.dia,saldo),dia:it.dia,ord:-1});
+      if(it.diaModo!=='nao'&&saldo>0&&!vistos.has(it.cod+'|dia')&&!manuseioFeitoHoje(it.cod,'descongelar')){
+        let q=0,para=null;
+        if(it.diaModo==='fixo')q=it.dia;
+        else if(demItem(it.cod)){
+          // descongelar hoje o que o dia (hoje + antecedência) vai usar, se for dia de serviço
+          const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+it.antec);
+          if(demDiasServico().includes(d.getDay())){const x=demDoDia(it.cod,d);q=demArred(x.m+x.sd,p.unidade);para=d;}
+        }
+        if(q>0){
+          vistos.add(it.cod+'|dia');
+          out.push({...base,tipo:'descongelar',ev:'descongelar',qtd:Math.min(q,saldo),dia:q,para,ord:-1});
+        }
       }
     });
   });
@@ -7875,6 +7938,7 @@ function sugVerbo(x){
   return (ETQ_EVENTOS[x.ev]||{nome:'Manusear'}).nome.split(' /')[0];
 }
 function sugAlvoHTML(x){
+  if(x.tipo==='produzir'&&x.auto&&!x.yield)return `Produzir ${fmtNum(x.rec)} ${esc(unidExtenso(x.unidade,x.rec))}`; // v191: sem rendimento na ficha
   if(x.tipo==='produzir'){
     const r=`${fmtNum(x.rec)} receita${x.rec>1?'s':''}`;
     return x.yield?`${r} · ${fmtNum(x.rec*x.yield)} ${esc(unidExtenso(x.unidade,x.rec*x.yield))}`:r;
@@ -7883,8 +7947,10 @@ function sugAlvoHTML(x){
 }
 function sugSubHTML(x){
   const st=confSetoresVisiveis().length>1?' · '+esc(x.setor):'';
-  if(x.tipo==='descongelar')return `para o dia · ${fmtNum(x.saldo)} no congelador${st}`;
-  return `${fmtNum(x.saldo)} de mínimo ${fmtNum(x.min)}${st}`;
+  if(x.tipo==='descongelar')return `${x.para?'para '+DOW_CURTO[x.para.getDay()]:'para o dia'} · ${fmtNum(x.saldo)} no congelador${st}`;
+  const mn=x.auto?fmtNum(Math.ceil(x.min*10)/10):fmtNum(x.min);
+  const pico=x.auto&&x.pico&&x.pico.m>0?` · ${DOW_CURTO[x.pico.d.getDay()]} prevê ${fmtNum(Math.round(x.pico.m*10)/10)}`:'';
+  return `${fmtNum(x.saldo)} de mínimo ${mn}${pico}${st}`;
 }
 function abrirSugestao(x){
   if(!x)return;
@@ -7933,7 +7999,10 @@ function renderDconf(){
 function confMinimoDe(cod){
   for(const st of confSetoresVisiveis()){
     const it=confItensDoSetor(st).find(i=>i.cod===String(cod));
-    if(it&&it.min>0)return it;
+    if(!it)continue;
+    const dc=demCalc(it); // v191
+    if(dc)return {...it,min:Math.ceil(dc.min*10)/10,rec:(()=>{const y=rendimentoDe(it.cod),p=getProd(it.cod);const f=dc.alvo-saldoDe(it.cod);return y&&it.acao!=='manusear'?Math.max(1,Math.ceil(f/y)):demArred(Math.max(0,f),p&&p.unidade);})()};
+    if(it.min>0)return it;
   }
   return null;
 }
@@ -8037,10 +8106,13 @@ function renderDconfEdit(c,bb){
   const itensCfg=confItensDoSetor(setor);
   const cods=itensCfg.map(i=>i.cod);
   const sel=cods.map(x=>getProd(x)).filter(Boolean).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  let h=`<div class="tipb">Itens que este setor conta no congelador. Pode incluir o que não é produzido aqui — sorvete comprado, por exemplo.<br><br><b>Avisar abaixo de</b>: quando o saldo cair desse número, o item aparece na <b>Sugestão de hoje</b> do Início — para o setor, o gestor e o administrador. Escolha se a ação é <b>produzir</b> receitas ou <b>manusear</b> (fracionar, congelar, descongelar, abrir). Deixe vazio para não avisar.<br><br><b>Descongelar por dia</b>: quanto tirar do congelador todo dia (ex.: massas no forno). Some da sugestão quando o descongelamento é registrado no Manuseio.</div>`;
+  let h=`<div class="tipb">Itens que este setor conta no congelador. Pode incluir o que não é produzido aqui — sorvete comprado, por exemplo.<br><br><b>Avisar abaixo de</b>: quando o saldo cair desse número, o item aparece na <b>Sugestão de hoje</b> do Início — para o setor, o gestor e o administrador. Escolha se a ação é <b>produzir</b> receitas ou <b>manusear</b> (fracionar, congelar, descongelar, abrir). Deixe vazio para não avisar.<br><br><b>Descongelar por dia</b>: quanto tirar do congelador todo dia (ex.: massas no forno). Some da sugestão quando o descongelamento é registrado no Manuseio.<br><br><b>Automático</b>: o mínimo e a quantidade saem da demanda real do Saipos (últimas 8 semanas, por dia da semana, todos os canais). <b>Cobrir</b> = quantos dias de serviço o saldo precisa aguentar até a próxima produção ficar pronta; <b>Produzir para</b> = para quantos dias de serviço produzir. Até as 15h o dia de hoje conta.</div>`;
+  h+=demPainelHTML();
   h+=`<div class="sec">${esc(setor)} · ${sel.length} itens</div>`;
   h+=sel.map(x=>{
-    const it=itensCfg.find(i=>i.cod===String(x.cod))||{min:0,rec:1,acao:'produzir',dia:0};
+    const it=confNormItem(itensCfg.find(i=>i.cod===String(x.cod))||{cod:x.cod});
+    const dem=demItem(x.cod),dc=demCalc(it);
+    const auto=it.modo==='auto';
     const man=it.acao==='manusear';
     const acOpts=[['produzir','Produzir (receitas)'],...CONF_EV_MANUSEIO.map(e=>['m:'+e,(ETQ_EVENTOS[e]||{nome:e}).nome.split(' /')[0]])]
       .map(([v,l])=>`<option value="${v}"${(man?'m:'+it.ev:'produzir')===v?' selected':''}>${esc(l)}</option>`).join('');
@@ -8051,18 +8123,31 @@ function renderDconfEdit(c,bb){
         <div style="font-size:12px;color:var(--tx2)">${esc(x.grupo)} · ${esc(unidExtenso(x.unidade,2))}${y?' · 1 receita = '+fmtNum(y)+' '+esc(unidExtenso(x.unidade,y)):''}</div></div>
         <button class="zb dconf-rem" data-cod="${esc(x.cod)}" style="color:#B91C1C;border-color:#FCA5A5">Remover</button>
       </div>
+      <div style="font-size:12px;color:var(--tx2)">${dem?`Demanda/dia (Saipos): ${esc(demLinhaSemana(x.cod))} ${esc(unidExtenso(x.unidade,2))}`:'Sem saída de venda no Saipos nas últimas 8 semanas'+(DEMANDA?' — confira se o item está na ficha técnica do prato':'')}</div>
       <div style="display:flex;gap:8px;align-items:flex-end">
-        <div style="flex:1"><div class="fl">Avisar abaixo de</div>
+        <div style="flex:1"><div class="fl">Mínimo</div>
+          <select class="fi dconf-modo" data-cod="${esc(x.cod)}"><option value="manual"${auto?'':' selected'}>Manual</option><option value="auto"${auto?' selected':''}${dem?'':' disabled'}>Automático</option></select></div>
+        ${auto?`<div style="flex:1"><div class="fl">Cobrir (dias)</div>
+          <input class="fi dconf-cobre" data-cod="${esc(x.cod)}" type="text" inputmode="numeric" value="${it.cobre}"/></div>
+        <div style="flex:1"><div class="fl">${man?'Manusear':'Produzir'} para</div>
+          <input class="fi dconf-alvo" data-cod="${esc(x.cod)}" type="text" inputmode="numeric" value="${it.alvo}"/></div>`
+        :`<div style="flex:1"><div class="fl">Avisar abaixo de</div>
           <input class="fi dconf-min" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${it.min?esc(fmtNum(it.min)):''}" placeholder="sem aviso"/></div>
         <div style="flex:1"><div class="fl">${man?'Quantidade':'Receitas'}</div>
-          <input class="fi dconf-rec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${esc(fmtNum(it.rec||1))}" placeholder="1"/></div>
+          <input class="fi dconf-rec" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${esc(fmtNum(it.rec||1))}" placeholder="1"/></div>`}
       </div>
+      ${auto&&dc?`<div style="font-size:12px;color:var(--tx2)">Agora: mínimo ${fmtNum(Math.ceil(dc.min*10)/10)} · alvo ${fmtNum(Math.ceil(dc.alvo*10)/10)} (${dc.dias.map(d=>DOW_CURTO[d.getDay()]).join(', ')}) · saldo ${fmtNum(saldoDe(x.cod))}</div>`:''}
       <div style="display:flex;gap:8px;align-items:flex-end">
         <div style="flex:1.4"><div class="fl">Ação abaixo do mínimo</div>
           <select class="fi dconf-acao" data-cod="${esc(x.cod)}">${acOpts}</select></div>
         <div style="flex:1"><div class="fl">Descongelar por dia</div>
-          <input class="fi dconf-dia" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${it.dia?esc(fmtNum(it.dia)):''}" placeholder="não"/></div>
-      </div></div>`;}).join('')
+          <select class="fi dconf-diamodo" data-cod="${esc(x.cod)}"><option value="nao"${it.diaModo==='nao'?' selected':''}>Não</option><option value="fixo"${it.diaModo==='fixo'?' selected':''}>Qtd. fixa</option><option value="auto"${it.diaModo==='auto'?' selected':''}${dem?'':' disabled'}>Pela demanda</option></select></div>
+      </div>
+      ${it.diaModo==='fixo'?`<div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><div class="fl">Quantidade por dia</div>
+          <input class="fi dconf-dia" data-cod="${esc(x.cod)}" type="text" inputmode="decimal" value="${it.dia?esc(fmtNum(it.dia)):''}" placeholder="0"/></div><div style="flex:1"></div></div>`:''}
+      ${it.diaModo==='auto'?`<div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><div class="fl">Antecedência (dias)</div>
+          <input class="fi dconf-antec" data-cod="${esc(x.cod)}" type="text" inputmode="numeric" value="${it.antec}"/></div><div style="flex:1;font-size:12px;color:var(--tx2);padding-bottom:10px">0 = usa hoje · 1 = descongela hoje o que amanhã vai usar</div></div>`:''}
+      </div>`;}).join('')
     ||'<div class="empty" style="padding:16px"><span>Nenhum item ainda.</span></div>';
   h+=`<div class="sec">Adicionar</div>
     <input id="dconf-add-busca" class="srch" placeholder="Buscar item na base…" autocomplete="off" value="${esc(dconfBuscaAdd)}"/>
@@ -8094,6 +8179,15 @@ function renderDconfEdit(c,bb){
   c.querySelectorAll('.dconf-min').forEach(el=>el.addEventListener('blur',()=>commitCampo(el,'min')));
   c.querySelectorAll('.dconf-rec').forEach(el=>el.addEventListener('blur',()=>commitCampo(el,'rec')));
   c.querySelectorAll('.dconf-dia').forEach(el=>el.addEventListener('blur',()=>commitCampo(el,'dia')));
+  // v191
+  const setCampo=(cod,obj,rerender)=>salvarConfLista(setor,itensCfg.map(i=>i.cod===String(cod)?{...confNormItem(i),...obj}:i),!rerender);
+  c.querySelectorAll('.dconf-modo').forEach(el=>el.addEventListener('change',()=>setCampo(el.dataset.cod,{modo:el.value},true)));
+  c.querySelectorAll('.dconf-diamodo').forEach(el=>el.addEventListener('change',()=>setCampo(el.dataset.cod,{diaModo:el.value},true)));
+  const commitInt=(el,campo,min)=>{const v=Math.round(parseQtdDiario(el.value));setCampo(el.dataset.cod,{[campo]:isFinite(v)&&v>=min?v:min},true);};
+  c.querySelectorAll('.dconf-cobre').forEach(el=>el.addEventListener('change',()=>commitInt(el,'cobre',1)));
+  c.querySelectorAll('.dconf-alvo').forEach(el=>el.addEventListener('change',()=>commitInt(el,'alvo',1)));
+  c.querySelectorAll('.dconf-antec').forEach(el=>el.addEventListener('change',()=>commitInt(el,'antec',0)));
+  const bd=c.querySelector('#dem-atualizar');if(bd)bd.addEventListener('click',atualizarDemandaAgora);
   c.querySelectorAll('.dconf-acao').forEach(el=>el.addEventListener('change',()=>{
     const cod=String(el.dataset.cod),v=el.value;
     const novos=itensCfg.map(i=>i.cod===cod?(v==='produzir'?{...i,acao:'produzir',ev:undefined}:{...i,acao:'manusear',ev:v.slice(2)}):i);
@@ -8101,6 +8195,41 @@ function renderDconfEdit(c,bb){
   }));
   bb.innerHTML=`<button class="bp" id="dconf-fim"><i class="ti ti-check"></i> Concluir</button>`;
   document.getElementById('dconf-fim').addEventListener('click',()=>{dconfEdit=false;dconfBuscaAdd='';renderDconf();});
+}
+// v191: painel da demanda no topo da edição da lista
+function demPainelHTML(){
+  const d=DEMANDA;
+  const btn=isAdminRole()?`<button class="bg_" id="dem-atualizar" style="width:auto;padding:4px 8px;font-size:13px">Atualizar demanda agora</button>`:'';
+  if(!d||!d.pizzas)return `<div class="pcard" style="gap:6px"><div style="font-size:14px">Demanda do Saipos ainda não carregada.</div><div style="font-size:12px;color:var(--tx2)">A primeira carga (abr/2026 → ontem) leva de 5 a 7 minutos. Depois atualiza sozinha toda madrugada.</div><div id="dem-status" style="font-size:12px;color:var(--tx2)"></div>${btn}</div>`;
+  const ws=demDiasServico();
+  const cel=(w,k)=>{const p=d.pizzas[w];return p&&p[k]?fmtNum(Math.round(p[k][0])):'–';};
+  const quando=d.atualizadoEm?new Date(d.atualizadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  return `<div class="pcard" style="gap:6px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-size:14px">Pizzas por dia · média de ${d.janela||8} semanas</div>${btn}</div>
+    <table style="width:100%;font-size:12.5px;border-collapse:collapse;text-align:right">
+      <tr style="color:var(--tx2)"><td style="text-align:left"></td>${ws.map(w=>`<td>${DOW_CURTO[w]}</td>`).join('')}</tr>
+      <tr><td style="text-align:left">Salão</td>${ws.map(w=>`<td>${cel(w,'salao')}</td>`).join('')}</tr>
+      <tr><td style="text-align:left">Delivery</td>${ws.map(w=>`<td>${cel(w,'delivery')}</td>`).join('')}</tr>
+      <tr style="font-weight:500"><td style="text-align:left">Total</td>${ws.map(w=>`<td>${cel(w,'total')}</td>`).join('')}</tr>
+    </table>
+    <div style="font-size:11.5px;color:var(--tx2)">Saipos até ${esc(d.ultimoDia||'')} · atualizado ${esc(quando)} · ${fmtNum((d.periodo&&d.periodo.diasAbertos)||0)} dias de serviço no histórico</div>
+    <div id="dem-status" style="font-size:12px;color:var(--tx2)"></div></div>`;
+}
+async function atualizarDemandaAgora(){
+  const st=document.getElementById('dem-status'),b=document.getElementById('dem-atualizar');
+  if(!functionsSvc){if(st)st.textContent='Função indisponível.';return;}
+  if(b){b.disabled=true;b.textContent='Atualizando…';}
+  if(st){st.style.color='var(--tx2)';st.textContent='Buscando as movimentações no Saipos. Na primeira vez leva de 5 a 7 minutos — pode deixar esta tela aberta.';}
+  try{
+    const r=await functionsSvc.httpsCallable('atualizarDemandaManual',{timeout:540000})({});
+    const x=(r&&r.data)||{};
+    await carregarDemanda();
+    showToast(`Demanda atualizada: ${x.coletados||0} dia(s) novos${x.pendente?' — ainda falta histórico, toque de novo':''}.`,{type:'ok',duration:5000});
+    renderDconf();
+  }catch(e){
+    if(st){st.style.color='#A32D2D';st.textContent='Falha: '+((e&&e.message)||e);}
+    if(b){b.disabled=false;b.textContent='Atualizar demanda agora';}
+  }
 }
 // silencioso = não re-renderiza (usado no blur dos campos, para não roubar o foco
 // do próximo toque nem piscar a lista inteira)

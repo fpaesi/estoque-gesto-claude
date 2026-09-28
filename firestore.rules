@@ -143,6 +143,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── demanda (v191): médias de consumo por dia da semana ──────────────
+    // Escrito só pela Cloud Function atualizarDemanda* (Admin SDK). Leitura para
+    // qualquer usuário ativo: a Sugestão de hoje do Início usa esses números
+    // também para o contador do setor. Não contém custo nem valor — só
+    // quantidades. O histórico dia a dia (demanda_hist) fica no default-deny.
+    match /demanda/{doc} {
+      allow read: if ativo();
+      allow write: if false;
+    }
+
     // ── Reservas (módulo Reservas GESTO, 09/08/2026) ───────────────────────
     // Escrita SEMPRE negada aqui: só as Cloud Functions do codebase `reservas`
     // escrevem, via Admin SDK, que ignora estas regras. O site público não usa
