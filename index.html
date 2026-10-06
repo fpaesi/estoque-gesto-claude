@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v191</title>
+<title>Gesto Operação v192</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -2097,7 +2097,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v191';
+const APP_VERSION = 'v192';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -2243,8 +2243,15 @@ async function reiniciarContagemZero(){
       const snap=await db.collection(RASCUNHO_COL).get();
       const batch=db.batch();
       // v106: preserva TODA configuração (cfg_*): specs, locais, rotinas, diário/setores,
-      // catálogo, cardápio, fechamento. Reiniciar contagem apaga SÓ os rascunhos de contagem.
-      snap.forEach(doc=>{if(doc.id.startsWith('cfg_')||doc.id===SPECS_DOC||doc.id===CONFIG_DOC)return;batch.delete(doc.ref);});
+      // catálogo, cardápio. Reiniciar contagem apaga os rascunhos de contagem.
+      // v192: E o cfg_fechamento — ele também começa com 'cfg_' e a regra da v106
+      // o preservava por tabela; no boot seguinte a data do fechamento ANTERIOR
+      // voltava e, ao finalizar os locais da nova contagem, o app a dava por
+      // "encerrada" com a data velha (caso real: 31/08 reapareceu em 06/10).
+      snap.forEach(doc=>{
+        if(doc.id!==FECHAMENTO_DOC&&(doc.id.startsWith('cfg_')||doc.id===SPECS_DOC||doc.id===CONFIG_DOC))return;
+        batch.delete(doc.ref);
+      });
       await batch.commit();
     }
     resetarEstadoContagemLocal();
@@ -2632,6 +2639,11 @@ function iniciarListenerContagemAtiva(){
         if(change.type!=='removed'&&d.dataFim){
           dataFimContagem=d.dataFim?.toDate?d.dataFim.toDate():new Date(d.dataFim);
           confirmedByName=d.confirmedByName||'Gestor';
+        }else{
+          // v192: fechamento apagado (reinício feito em outro aparelho) — esquece a
+          // data aqui também, senão esta tela segue mostrando "Contagem encerrada".
+          dataFimContagem=null;
+          confirmedByName=null;
         }
         return;
       }
@@ -2693,6 +2705,32 @@ async function marcarRascunhoConcluido(lid){
 // ── Fechamento & Exportação ───────────────────────────────────────────────────
 
 // Verifica se todos os locais com itens estão finalizados
+// v192: um fechamento só vale para os locais finalizados ATÉ ele. Se algum local
+// foi finalizado depois da data gravada (resto de uma contagem anterior que o
+// reinício não limpou, ou local reaberto e refinalizado), a data é velha: o app
+// a descarta da memória e volta a oferecer "Confirmar Fim da Contagem". O doc no
+// Firestore é sobrescrito no próximo fechamento.
+function _msData(x){
+  if(!x)return NaN;
+  const d=x.toDate?x.toDate():new Date(x);
+  return d.getTime();
+}
+function descartarFechamentoVencido(){
+  if(!dataFimContagem)return false;
+  const fim=_msData(dataFimContagem);
+  if(isNaN(fim))return false;
+  const vencido=Object.values(rascunhos||{}).some(r=>{
+    if(!r||r.status!=='concluido')return false;
+    const t=_msData(r.finishedAt);
+    return !isNaN(t)&&t>fim+60000;
+  });
+  if(vencido){
+    console.warn('Fechamento de',dataFimContagem,'é anterior a locais finalizados depois dele — descartado.');
+    dataFimContagem=null;
+    confirmedByName=null;
+  }
+  return vencido;
+}
 function todosLocaisFinalizados(){
   return locais.every(l=>{
     const prods=getProdsLocal(l.id);
@@ -2969,6 +3007,7 @@ function situacaoItem(cod,total,tocado,vinc){
   return 'Não contado';
 }
 function exportarCSV(){
+  descartarFechamentoVencido(); // v192
   if(!dataFimContagem)return;
   const dataFimStr=dataFimContagem.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
 
@@ -3809,6 +3848,7 @@ function rascunhoInfo(lid){
 }
 
 function renderHome(){
+  descartarFechamentoVencido(); // v192
   // Bbar contextual por aba (v91: consolidado/locais vivem dentro do módulo Estoque)
   //
   // v112: a barra é EXCLUSIVA do módulo Estoque (+ o botão Novo usuário em Gestão ›
