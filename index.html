@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v193</title>
+<title>Gesto Operação v194</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -2117,7 +2117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v193';
+const APP_VERSION = 'v194';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -8563,7 +8563,8 @@ async function salvarDprod(imprimir){
 // é o "desvio de ficha", que se quer medir — não corrigir.
 //
 // Firestore (regras em firestore.rules, bloco v193):
-//   receitas/{cod}         { cod, nome, versao, rascunho:{passos,...}, publicada:{passos,versao,...} }
+//   receitas/{cod}         { cod, nome, versao, rascunho:{passos,utensilios,...}, publicada:{passos,utensilios,versao,...} }
+//   v194: utensilios = lista de textos da receita inteira (bowl, fuet, forma…)
 //   receitas/{cod}/versoes/{n}   cópia imutável de cada publicação
 //   pesos_unidade/{cod}    { unidades:{ "<un>":{porUn, origem, amostra} } }  (porUn na unidade do estoque)
 //   fichas_saipos/{cod}    padrão da ficha (gravado pela função das 05:00)
@@ -8698,7 +8699,8 @@ function rcStatus(cod){
   const d=RC_RECEITAS[String(cod)];
   if(!d||(!d.rascunho&&!d.publicada))return {txt:'sem receita',cls:'bpend'};
   if(!d.publicada)return {txt:'rascunho',cls:'bprog'};
-  const igual=d.rascunho&&JSON.stringify(d.rascunho.passos||[])===JSON.stringify(d.publicada.passos||[]);
+  const chave=r=>JSON.stringify([r.passos||[],r.utensilios||[]]); // v194: utensílios contam como mudança
+  const igual=d.rascunho&&chave(d.rascunho)===chave(d.publicada);
   return igual||!d.rascunho?{txt:'publicada v'+d.versao,cls:'bdone'}:{txt:'rascunho sobre v'+d.versao,cls:'bprog'};
 }
 function renderGestaoReceitas(){return '<div id="g-rec"><div class="empty" style="padding:16px"><span>Carregando receitas…</span></div></div>';}
@@ -8803,7 +8805,7 @@ async function abrirReceita(cod){
   try{await rcCarregar();}catch(e){}
   const d=RC_RECEITAS[String(cod)]||{};
   const base=d.rascunho||d.publicada||{passos:[]};
-  rcAtual={cod:String(cod),versao:d.versao||0,passos:rcLimpo(base.passos||[]).map(p=>({...p,texto:rcTextoParaEdicao(p.texto),ingredientes:p.ingredientes||[]}))};
+  rcAtual={cod:String(cod),versao:d.versao||0,utensilios:rcLimpo(base.utensilios||[]),passos:rcLimpo(base.passos||[]).map(p=>({...p,texto:rcTextoParaEdicao(p.texto),ingredientes:p.ingredientes||[]}))};
   rcSujo=false;
   show('s-rec');renderReceita();
 }
@@ -8844,6 +8846,11 @@ function renderReceita(){
     const ok=!linhas.length&&rcAtual.passos.length;
     h+=`<div class="pcard" style="gap:3px;${ok?'':'background:#FEF3C7;border-color:#FDE68A'}"><div style="font-size:14px;color:${ok?'#27500A':'#92400E'}">${cf.usados} de ${cf.nFicha} ingredientes da ficha do Saipos usados${ok?' · igual à ficha ✓':''}</div>${linhas.map(l=>`<div style="font-size:13.5px;color:#92400E">${esc(l)}</div>`).join('')}</div>`;
   }
+  // v194: utensílios da receita inteira
+  h+=`<div class="sec">Utensílios (${rcAtual.utensilios.length})</div>
+    <div class="pcard" style="gap:8px">
+      ${rcAtual.utensilios.length?`<div style="display:flex;flex-wrap:wrap;gap:6px">${rcAtual.utensilios.map((u,i)=>`<span class="chip on" style="cursor:default">${esc(u)} <button data-utx="${i}" aria-label="Tirar ${esc(u)}" style="background:none;border:none;color:inherit;font-size:13px;padding:0 0 0 6px;cursor:pointer">✕</button></span>`).join('')}</div>`:'<div style="font-size:13.5px;color:var(--tx2)">Nenhum utensílio ainda.</div>'}
+      <div style="display:flex;gap:6px"><input class="fi" id="rec-ut" placeholder="ex.: bowl, fuet, forma" autocomplete="off" style="flex:1"/><button class="bs" id="rec-ut-add" style="width:auto;padding:8px 12px">Adicionar</button></div></div>`;
   h+=`<div class="sec">Passos (${rcAtual.passos.length})</div>`;
   h+=rcAtual.passos.map((p,i)=>{
     const extra=[p.timerMin?`⏱ ${fmtNum(p.timerMin)} min`:'',p.atencao?`! ${esc(p.atencao)}`:''].filter(Boolean).join(' · ');
@@ -8857,6 +8864,15 @@ function renderReceita(){
   c.querySelectorAll('[data-pi]').forEach(el=>el.addEventListener('click',e=>{if(e.target.closest('button'))return;abrirPasso(+el.dataset.pi);}));
   c.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>rcMover(+b.dataset.up,-1)));
   c.querySelectorAll('[data-dn]').forEach(b=>b.addEventListener('click',()=>rcMover(+b.dataset.dn,1)));
+  // v194: utensílios — aceita vários de uma vez, separados por vírgula
+  const utIn=c.querySelector('#rec-ut');
+  const utAdd=()=>{const novos=String(utIn.value||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+    if(!novos.length)return;
+    novos.forEach(n=>{if(!rcAtual.utensilios.some(u=>dnorm(u)===dnorm(n)))rcAtual.utensilios.push(n.charAt(0).toUpperCase()+n.slice(1));});
+    rcSujo=true;renderReceita();const ni=document.getElementById('rec-ut');if(ni)ni.focus();};
+  c.querySelector('#rec-ut-add').addEventListener('click',utAdd);
+  utIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();utAdd();}});
+  c.querySelectorAll('[data-utx]').forEach(b=>b.addEventListener('click',()=>{rcAtual.utensilios.splice(+b.dataset.utx,1);rcSujo=true;renderReceita();}));
   c.querySelector('#rec-add').addEventListener('click',()=>{rcAtual.passos.push({id:rcUid(),texto:'',ingredientes:[],timerMin:null,atencao:'',midia:null});rcSujo=true;abrirPasso(rcAtual.passos.length-1);});
   const v=rcValidar();
   bb.innerHTML=`<button class="bp" id="rec-pub" ${v.erros.length?'disabled':''}>Publicar v${rcAtual.versao+1}</button>
@@ -8884,7 +8900,7 @@ function rcPassosParaSalvar(){
 }
 async function rcSalvarRascunho(silencioso){
   if(!rcAtual)return false;
-  const ras={passos:rcPassosParaSalvar(),editadoEm:Date.now(),editadoPor:currentUser.uid,editadoPorNome:currentUserNome||''};
+  const ras={passos:rcPassosParaSalvar(),utensilios:rcLimpo(rcAtual.utensilios||[]),editadoEm:Date.now(),editadoPor:currentUser.uid,editadoPorNome:currentUserNome||''};
   try{
     await db.collection(REC_COL).doc(rcAtual.cod).set({cod:rcAtual.cod,nome:rcNome(rcAtual.cod),rascunho:ras},{merge:true});
     RC_RECEITAS[rcAtual.cod]={...(RC_RECEITAS[rcAtual.cod]||{}),cod:rcAtual.cod,rascunho:ras};
@@ -8900,7 +8916,7 @@ async function rcPublicar(){
   appConfirm(`A versão ${n} passa a ser a receita oficial que a equipe vê. As versões anteriores ficam guardadas.`,{title:`Publicar a versão ${n}?`,okText:`Publicar v${n}`},async()=>{
     if(!(await rcSalvarRascunho(true)))return;
     const fic=RC_FICHAS[rcAtual.cod]||null;
-    const pub={passos:rcPassosParaSalvar(),versao:n,publicadaEm:Date.now(),publicadaPor:currentUser.uid,publicadaPorNome:currentUserNome||'',
+    const pub={passos:rcPassosParaSalvar(),utensilios:rcLimpo(rcAtual.utensilios||[]),versao:n,publicadaEm:Date.now(),publicadaPor:currentUser.uid,publicadaPorNome:currentUserNome||'',
       fichaSaipos:fic?{yield:fic.yield||null,ingredientes:fic.ingredientes||[]}:null};
     try{
       const ref=db.collection(REC_COL).doc(rcAtual.cod);
