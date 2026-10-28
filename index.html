@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v195</title>
+<title>Gesto Operação v196</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -2117,7 +2117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v195';
+const APP_VERSION = 'v196';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -8574,7 +8574,7 @@ async function salvarDprod(imprimir){
 // Na edição o texto mostra "@[NOME]" (legível); ao salvar vira "@{cod}".
 const REC_COL='receitas',PESO_COL='pesos_unidade',FICHA_COL='fichas_saipos';
 let RC_FICHAS={},RC_PESOS={},RC_RECEITAS={},RC_UCUSTO=null,rcCarregadoEm=0;
-let rcGTab='lista',rcPesoFiltro='sem',rcBusca='';
+let rcGTab='lista',rcPesoFiltro='sem',rcBusca='',rcComprasCarregadoEm=0;
 let rcAtual=null,rcPassoIdx=0,rcSujo=false;
 const rcBlobURL={};
 function rcLimpo(o){return JSON.parse(JSON.stringify(o));}
@@ -8715,13 +8715,22 @@ async function wireGestaoReceitas(c){
   rcRenderGestao(el);
 }
 function rcRenderGestao(el){
+  // v196: aba "Conferir compras" (peso padrão por item da nota + custos a conferir)
+  if(rcGTab==='compras'&&(!rcComprasCarregadoEm||Date.now()-rcComprasCarregadoEm>60000)){
+    el.innerHTML='<div class="empty" style="padding:16px"><span>Carregando compras…</span></div>';
+    rcComprasCarregadoEm=Date.now();
+    rcCarregarCompras().catch(e=>showToast('Erro: '+e.message,{type:'err'})).then(()=>rcRenderGestao(el));
+    return;
+  }
+  const nCc=rcComprasCarregadoEm?rcCustosAConferir().length:0;
   let h=`<div class="chips" style="padding:2px 0 4px">
     <span class="chip ${rcGTab==='lista'?'on':''}" data-rgt="lista">Receitas</span>
-    <span class="chip ${rcGTab==='pesos'?'on':''}" data-rgt="pesos">Peso por unidade</span></div>`;
-  h+=rcGTab==='pesos'?rcPesosHTML():rcListaHTML();
+    <span class="chip ${rcGTab==='pesos'?'on':''}" data-rgt="pesos">Peso por unidade</span>
+    <span class="chip ${rcGTab==='compras'?'on':''}" data-rgt="compras">Conferir compras${nCc?` (${nCc})`:''}</span></div>`;
+  h+=rcGTab==='pesos'?rcPesosHTML():rcGTab==='compras'?rcComprasHTML():rcListaHTML();
   el.innerHTML=h;
   el.querySelectorAll('[data-rgt]').forEach(x=>x.addEventListener('click',()=>{rcGTab=x.dataset.rgt;rcRenderGestao(el);}));
-  if(rcGTab==='pesos')rcWirePesos(el);else rcWireLista(el);
+  if(rcGTab==='pesos')rcWirePesos(el);else if(rcGTab==='compras')rcWireCompras(el);else rcWireLista(el);
 }
 function rcListaHTML(){
   const procs=rcProcessados();
@@ -9182,6 +9191,204 @@ async function rcMarcarEnviada(cod,passoId,path,url){
 window.addEventListener('online',()=>{try{rcEnviarPendentes();}catch(e){}});
 // ══ fim v193 ══
 
+
+// ══ v196: CONFERIR COMPRAS — peso padrão por item da nota + custos a conferir ══
+// Firestore (regras em firestore.rules, bloco v196):
+//   padroes_nf/{id}          padrão por RAIZ DO CNPJ + INSUMO + DESCRIÇÃO NA NOTA
+//                            { raiz, fornecedor, cod, nome, un, desc, unCompra, gramatura,
+//                              divergente, historico:{compras,fatores,moda,modaN,ultima},
+//                              sugestao:{porUn,origem}, status:'a_conferir'|'pesar'|'confirmado',
+//                              porUn, origem, manual }   (a função de hora em hora grava;
+//                              o gestor só mexe em status/porUn/origem/manual/unCompra/amostra)
+//   gestao/padroes_alertas   { alertas:[compra recente com fator fora do padrão], status }
+//   conferencias_custo/{cod}_{nf}  { cod, nf, decisao:'correta'|'erro', tipo, por, em }
+// O app NÃO corrige a nota no Saipos: "Erro na nota" tira a compra do último custo e
+// lembra de acertar o fator lá; "Compra correta" faz a compra valer como referência.
+const PNF_COL='padroes_nf',CONF_COL='conferencias_custo';
+let RC_PADROES={},RC_PALERTAS=null,RC_CONF={};
+let rcPnfFiltro='a_conferir',rcPnfBusca='';
+async function rcCarregarCompras(){
+  const [p,a,c]=await Promise.all([
+    db.collection(PNF_COL).get().catch(()=>null),
+    db.collection('gestao').doc('padroes_alertas').get().catch(()=>null),
+    db.collection(CONF_COL).get().catch(()=>null)]);
+  RC_PADROES={};if(p)p.forEach(d=>{RC_PADROES[d.id]=d.data();});
+  RC_PALERTAS=a&&a.exists?a.data():null;
+  RC_CONF={};if(c)c.forEach(d=>{RC_CONF[d.id]=d.data();});
+}
+function rcFornCurto(n){
+  const s=String(n||'').toUpperCase();
+  if(/JNRG|COMERCIO DE PRODUTOS ALIMENTICIOS/.test(s))return 'JNRG';
+  if(/CRIPPA/.test(s))return 'Crippa';
+  if(/ZAFFARI/.test(s))return 'Zaffari';
+  const w=String(n||'').trim().split(/\s+/).slice(0,2).join(' ');
+  return w.length>18?w.slice(0,18)+'…':(w||'?');
+}
+function rcConfId(cod,nf){return String(cod)+'_'+String(nf).replace(/[^\w-]/g,'');}
+function rcDecidido(cod,nf){return !!RC_CONF[rcConfId(cod,nf)];}
+// Custos a conferir = última compra fora (trava do último custo) + fator fora do padrão
+function rcCustosAConferir(){
+  const out=[];
+  const it=(RC_UCUSTO&&RC_UCUSTO.itens)||{};
+  Object.keys(it).forEach(cod=>{
+    const u=it[cod];if(!u||!u.suspeito||!u.ultimaCompra||!u.ultimaCompra.nf)return;
+    if(rcDecidido(cod,u.ultimaCompra.nf))return;
+    out.push({tipo:'custo',cod,nf:String(u.ultimaCompra.nf),data:u.ultimaCompra.data,nome:rcNome(cod),un:u.un||rcUnBase(cod),
+      fornecedor:u.ultimaCompra.fornecedor,custoNota:u.ultimaCompra.custo,custoRef:u.custo,referencia:u.referencia,motivo:u.motivo});
+  });
+  ((RC_PALERTAS&&RC_PALERTAS.alertas)||[]).forEach(a=>{
+    if(rcDecidido(a.cod,a.nf))return;
+    // a mesma compra pode cair nas duas travas: fica só o alerta de fator (mais explicativo)
+    const i=out.findIndex(x=>x.tipo==='custo'&&String(x.cod)===String(a.cod)&&x.nf===String(a.nf));
+    if(i>=0)out.splice(i,1);
+    out.push(Object.assign({tipo:'fator'},a,{nf:String(a.nf)}));
+  });
+  return out.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+}
+function rcComprasHTML(){
+  const cs=rcCustosAConferir();
+  const ps=Object.values(RC_PADROES);
+  const n={a_conferir:0,pesar:0,confirmado:0};ps.forEach(p=>{n[p.status]=(n[p.status]||0)+1;});
+  const ger=RC_PALERTAS&&RC_PALERTAS.geradoEm?new Date(RC_PALERTAS.geradoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):null;
+  let h=`<div class="tipb">Hortifrúti chega por maço, pé ou unidade e o estoque é em kg. O fator é digitado à mão em cada nota — e erra. Aqui fica o <b>peso padrão de cada item da nota</b> (fornecedor + descrição na nota + insumo) e as compras que fugiram dele.${ger?`<br><br><span style="color:var(--tx2)">Notas lidas em ${ger}.</span>`:''}</div>
+    <button class="bs" id="pnf-atu">Atualizar agora</button>
+    <div class="sec">Custos a conferir (${cs.length})</div>`;
+  h+=cs.length?cs.map((c,i)=>rcCustoCardHTML(c,i)).join(''):'<div class="ok" style="padding:12px;font-size:14.5px">✓ Nenhuma compra pendente de conferência.</div>';
+  h+=`<div class="sec" style="margin-top:8px">Peso padrão das notas</div>
+    <input class="srch" id="pnf-busca" placeholder="Buscar insumo, fornecedor ou descrição…" value="${esc(rcPnfBusca)}" autocomplete="off"/>
+    <div class="chips" style="padding:2px 0">
+      <span class="chip ${rcPnfFiltro==='a_conferir'?'on':''}" data-pnf="a_conferir">A conferir (${n.a_conferir||0})</span>
+      <span class="chip ${rcPnfFiltro==='pesar'?'on':''}" data-pnf="pesar">Pesar (${n.pesar||0})</span>
+      <span class="chip ${rcPnfFiltro==='confirmado'?'on':''}" data-pnf="confirmado">Confirmados (${n.confirmado||0})</span></div>`;
+  const b=dnorm(rcPnfBusca);
+  const lista=ps.filter(p=>p.status===rcPnfFiltro&&(!b||dnorm([p.nome,p.fornecedor,p.desc,rcFornCurto(p.fornecedor)].join(' ')).includes(b)))
+    .sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR')||rcFornCurto(a.fornecedor).localeCompare(rcFornCurto(b.fornecedor))||String(a.desc).localeCompare(String(b.desc)));
+  if(!ps.length)h+='<div class="empty" style="padding:14px"><span>Ainda sem padrões. Toque em "Atualizar agora" (a função lê as notas dos últimos 120 dias).</span></div>';
+  else{
+    let g=null;
+    h+=lista.map(p=>{
+      let s='';if(p.nome!==g){g=p.nome;s=`<div class="gsep">${esc(rcNomeCurto(p.cod)||p.nome)}</div>`;}
+      return s+rcPadraoRowHTML(p);
+    }).join('')||'<div class="ok" style="padding:12px;font-size:14.5px">✓ Nada neste filtro.</div>';
+  }
+  return h;
+}
+function rcPnfFatTxt(p){
+  const f=(p.historico&&p.historico.fatores)||{};
+  return Object.keys(f).sort((a,b)=>f[b]-f[a]).map(k=>`${fmtNum(Number(k))}×${f[k]}`).join(' · ');
+}
+function rcPadraoRowHTML(p){
+  const ub=rcUnTxt(p.un);
+  const uc=p.unCompra==='emb'?'emb.':(p.unCompra||'un');
+  const val=p.porUn>0?`1 ${esc(uc)} = <b style="font-weight:600">${rcFmtQ(p.porUn)} ${esc(ub)}</b>`:`<span style="color:var(--tx2)">1 ${esc(uc)} = ?</span>`;
+  let bd='';
+  if(p.status==='confirmado')bd=`<span class="bdg bdone">${p.manual?(p.origem==='pesagem'?'pesado':'confirmado'):'rótulo = notas'}</span>`;
+  else if(p.status==='pesar')bd='<span class="bdg bwarn">pesar</span>';
+  else if(p.divergente)bd=`<span class="bdg bwarn">rótulo × notas</span>`;
+  else bd=`<span class="bdg bprog">${p.origem==='rotulo'?'pelo rótulo':'pelas notas'}</span>`;
+  return `<div class="row" data-pnf-id="${esc(p.id)}"><div style="flex:1;min-width:0">
+      <div style="font-size:13px;color:var(--tx2)">${esc(rcFornCurto(p.fornecedor))} · ${esc(p.desc)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:3px"><span style="font-size:15px">${val}</span>${bd}</div>
+      <div style="font-size:12.5px;color:var(--tx2);margin-top:2px">notas: ${esc(rcPnfFatTxt(p))}${p.gramatura?` · rótulo ${rcFmtQ(p.gramatura)} ${esc(ub)}`:''}</div>
+    </div><span style="color:var(--tx2)">›</span></div>`;
+}
+function rcCustoCardHTML(c,i){
+  const ub=rcUnTxt(c.un);
+  let corpo;
+  if(c.tipo==='fator'){
+    const uc=c.unCompra==='emb'?'emb.':(c.unCompra||'un');
+    corpo=`<div style="font-size:13px;color:var(--tx2)">${esc(rcFornCurto(c.fornecedor))} · ${esc(c.desc)}</div>
+      <div style="font-size:14px;margin-top:4px">Nota: ${fmtNum(c.qi)} ${esc(uc)} × <b style="font-weight:600;color:#B91C1C">${fmtNum(c.fatorNota)}</b> = ${rcFmtQ(c.qtdNota)} ${esc(ub)}</div>
+      <div style="font-size:14px">Padrão: ${fmtNum(c.qi)} ${esc(uc)} × <b style="font-weight:600">${fmtNum(c.padrao)}</b> = ${rcFmtQ(c.qtdCerta)} ${esc(ub)}</div>
+      ${c.custoNota&&c.custoCerto?`<div style="font-size:13.5px;color:var(--tx2);margin-top:2px">Custo: ${brlNum(c.custoNota)}/${esc(ub)} na nota · ${brlNum(c.custoCerto)}/${esc(ub)} pelo padrão${c.impacto?` · estoque ${c.qtdNota>c.qtdCerta?'inflado':'faltando'} em ${brlNum(c.impacto)}`:''}</div>`:''}`;
+  }else{
+    corpo=`<div style="font-size:13px;color:var(--tx2)">${esc(c.fornecedor?rcFornCurto(c.fornecedor):'')}</div>
+      <div style="font-size:14px;margin-top:4px">Última compra: <b style="font-weight:600;color:#B91C1C">${brlNum(c.custoNota)}/${esc(ub)}</b> · referência ${c.custoRef?brlNum(c.custoRef)+'/'+esc(ub):'—'}${c.referencia?` (${esc(c.referencia)})`:''}</div>
+      ${c.motivo?`<div style="font-size:13px;color:var(--tx2);margin-top:2px">${esc(c.motivo)}</div>`:''}`;
+  }
+  return `<div class="pcard" data-cc="${i}" style="gap:6px">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span style="font-size:15.5px">${esc(c.nome)}</span>
+      <span style="font-size:12.5px;color:var(--tx2);white-space:nowrap">NF ${esc(c.nf)}${c.data?' · '+esc(String(c.data).slice(8,10)+'/'+String(c.data).slice(5,7)):''}</span></div>
+    ${corpo}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px">
+      <button class="bs" data-cc-dec="correta" data-cc-i="${i}">Compra correta</button>
+      <button class="bs" data-cc-dec="erro" data-cc-i="${i}" style="color:#B91C1C">Erro na nota</button></div></div>`;
+}
+function rcWireCompras(el){
+  const cs=rcCustosAConferir();
+  const at=el.querySelector('#pnf-atu');
+  if(at)at.addEventListener('click',async()=>{
+    at.disabled=true;at.textContent='Lendo as notas do Saipos… (até 2 min)';
+    try{const r=await functionsSvc.httpsCallable('alertaFatorManual',{timeout:300000})({});
+      await rcCarregar(true);await rcCarregarCompras();rcRenderGestao(el.closest('#g-rec')||el);
+      showToast(`Notas lidas. ${(RC_PALERTAS&&RC_PALERTAS.alertas||[]).length} alerta(s) de fator.`,{type:'ok'});
+    }catch(e){at.disabled=false;at.textContent='Atualizar agora';showToast('Falhou: '+(e.message||e),{type:'err'});}
+  });
+  el.querySelectorAll('[data-cc-dec]').forEach(b=>b.addEventListener('click',async()=>{
+    const c=cs[Number(b.dataset.ccI)];if(!c)return;
+    const dec=b.dataset.ccDec;
+    const reg={cod:String(c.cod),nf:String(c.nf),decisao:dec,tipo:c.tipo,nome:c.nome||'',data:c.data||null,
+      custoNota:c.custoNota||null,chave:c.chave||null,fatorNota:c.fatorNota||null,padrao:c.padrao||null,
+      por:currentUser.uid,porNome:currentUserNome||'',em:Date.now()};
+    b.disabled=true;
+    try{
+      await db.collection(CONF_COL).doc(rcConfId(c.cod,c.nf)).set(reg);
+      RC_CONF[rcConfId(c.cod,c.nf)]=reg;
+      showToast(dec==='erro'?'Marcada como erro. Acerte o fator da nota no Saipos; ela já saiu do último custo na próxima leitura.':'Compra marcada como correta — passa a valer como referência.',{type:'ok'});
+      rcRenderGestao(el.closest('#g-rec')||el);
+    }catch(e){b.disabled=false;showToast('Erro: '+e.message,{type:'err'});}
+  }));
+  const bb=el.querySelector('#pnf-busca');
+  if(bb)bb.addEventListener('input',()=>{rcPnfBusca=bb.value;const pos=bb.selectionStart;rcRenderGestao(el.closest('#g-rec')||el);const nb=document.querySelector('#pnf-busca');if(nb){nb.focus();try{nb.setSelectionRange(pos,pos);}catch(e){}}});
+  el.querySelectorAll('[data-pnf]').forEach(x=>x.addEventListener('click',()=>{rcPnfFiltro=x.dataset.pnf;rcRenderGestao(el.closest('#g-rec')||el);}));
+  el.querySelectorAll('[data-pnf-id]').forEach(x=>x.addEventListener('click',()=>rcAbrirPadrao(x.dataset.pnfId,()=>rcRenderGestao(el.closest('#g-rec')||el))));
+}
+function rcAbrirPadrao(id,depois){
+  const p=RC_PADROES[id];if(!p)return;
+  const ub=rcUnTxt(p.un);
+  const ucs=['maço','pé','un','emb'];
+  const sug=p.porUn>0?p.porUn:(p.sugestao&&p.sugestao.porUn)||'';
+  const h=p.historico||{};
+  const bg=abrirSheetDin(p.nome+' · peso padrão',
+    `<div style="font-size:14px;line-height:1.55">
+       <div><span style="color:var(--tx2)">Fornecedor</span> ${esc(p.fornecedor||'?')}</div>
+       <div><span style="color:var(--tx2)">Na nota</span> ${esc(p.desc)}</div>
+       <div><span style="color:var(--tx2)">Notas (${h.compras||0})</span> ${esc(rcPnfFatTxt(p))} · última ${esc(String(h.ultima||'').split('-').reverse().join('/'))}</div>
+       ${p.gramatura?`<div><span style="color:var(--tx2)">Rótulo</span> ${rcFmtQ(p.gramatura)} ${esc(ub)}${p.divergente?' <span class="bdg bwarn">diferente das notas</span>':''}</div>`:''}
+     </div>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+       <div><div class="fl">Unidade de compra</div><select class="fi" id="pp-uc">${ucs.map(u=>`<option value="${u}" ${u===(p.unCompra||'un')?'selected':''}>${u==='emb'?'embalagem':u}</option>`).join('')}</select></div>
+       <div><div class="fl">1 unidade = (${esc(ub)})</div><input class="fi" id="pp-v" inputmode="decimal" value="${sug?fmtNum(sug):''}"/></div></div>
+     <div class="fl" style="margin-top:12px">Ou pese na balança</div>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+       <div><input class="fi" id="pp-n" inputmode="decimal" placeholder="quantas (ex. 5)"/></div>
+       <div><input class="fi" id="pp-t" inputmode="decimal" placeholder="peso total (${esc(ub)})"/></div></div>
+     <div id="pp-res" style="font-size:13.5px;color:var(--tx2);margin-top:6px">Pesar 5 a 10 unidades dá uma média confiável.</div>
+     <div id="pp-sp" style="font-size:13.5px;margin-top:6px"></div>`,
+    `<button class="bp" id="pp-ok">Confirmar padrão</button>${p.status!=='pesar'?'<button class="bg_" id="pp-pesar">Marcar para pesar na próxima entrega</button>':''}`);
+  const calc=()=>{const n=parseNumBR(bg.querySelector('#pp-n').value),t=parseNumBR(bg.querySelector('#pp-t').value);
+    if(n>0&&t>0){bg.querySelector('#pp-v').value=fmtNum(Math.round(t/n*10000)/10000);bg.querySelector('#pp-res').textContent=`média: ${rcFmtQ(t/n)} ${ub} por unidade`;return {n,t};}return null;};
+  // o fator do Saipos tem 2 casas: mostra o que digitar lá (18 g → 0,02)
+  const sp=()=>{const v=parseNumBR(bg.querySelector('#pp-v').value);const el=bg.querySelector('#pp-sp');
+    el.textContent=v>0&&Math.abs(v*100-Math.round(v*100))>1e-6?`No Saipos o fator fica ${fmtNum(Math.round(v*100)/100)} (o campo aceita 2 casas).`:'';};
+  ['#pp-n','#pp-t'].forEach(s=>bg.querySelector(s).addEventListener('input',()=>{calc();sp();}));
+  bg.querySelector('#pp-v').addEventListener('input',sp);sp();
+  const gravar=async(upd,msg)=>{
+    try{await db.collection(PNF_COL).doc(id).update(upd);Object.assign(RC_PADROES[id],upd);fecharSheetDin();showToast(msg,{type:'ok'});depois&&depois();}
+    catch(e){showToast('Erro: '+e.message,{type:'err'});}
+  };
+  bg.querySelector('#pp-ok').addEventListener('click',()=>{
+    const v=parseNumBR(bg.querySelector('#pp-v').value);
+    if(!(v>0&&v<1000)){showToast('Informe quanto pesa 1 unidade.',{type:'err'});return;}
+    const am=calc();
+    gravar({status:'confirmado',porUn:Math.round(v*10000)/10000,origem:am?'pesagem':'confirmado',manual:true,
+      unCompra:bg.querySelector('#pp-uc').value,conferidoPor:currentUserNome||currentUser.uid,conferidoEm:Date.now(),
+      amostra:am?{n:am.n,total:am.t}:null},'Padrão confirmado. Notas novas com outro fator vão aparecer em Custos a conferir.');
+  });
+  const bp=bg.querySelector('#pp-pesar');
+  if(bp)bp.addEventListener('click',()=>gravar({status:'pesar',porUn:null,origem:'pesar',manual:true,
+    unCompra:bg.querySelector('#pp-uc').value,conferidoPor:currentUserNome||currentUser.uid,conferidoEm:Date.now(),amostra:null},'Marcado para pesar na próxima entrega.'));
+}
 
 // ── Gestão › Diário: fila Saipos + configurações ──────────────────────────────
 function renderGestaoDiario(){
