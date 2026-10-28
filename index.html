@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v192</title>
+<title>Gesto Operação v193</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -794,6 +794,26 @@ body.tab-l .tsd-brand{display:flex;flex-direction:column;align-items:flex-start;
   </div>
   <div class="content" id="dprod-cnt"></div>
   <div class="bbar" id="dprod-bbar"></div>
+</div>
+
+<!-- v193: criador de receitas -->
+<div id="s-rec" class="scr">
+  <div class="topbar">
+    <button class="tbtn" onclick="rcVoltarLista()" aria-label="Voltar"><span style="font-size:24px;line-height:1">←</span></button>
+    <div style="text-align:center;min-width:0;flex:1"><div class="tt" id="rec-tt" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Receita</div><div class="ts" id="rec-ts"></div></div>
+    <span style="width:32px"></span>
+  </div>
+  <div class="content" id="rec-cnt"></div>
+  <div class="bbar" id="rec-bbar"></div>
+</div>
+<div id="s-rpasso" class="scr">
+  <div class="topbar">
+    <button class="tbtn" onclick="rcVoltarReceita()" aria-label="Voltar à receita"><span style="font-size:24px;line-height:1">←</span></button>
+    <div style="text-align:center;min-width:0;flex:1"><div class="tt" id="rp-tt">Passo</div><div class="ts" id="rp-ts" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div></div>
+    <button onclick="rcExcluirPasso()" style="background:none;border:none;color:#C0341D;font-size:14px;font-family:inherit;cursor:pointer;padding:4px">Excluir</button>
+  </div>
+  <div class="content" id="rp-cnt"></div>
+  <div class="bbar" id="rp-bbar"></div>
 </div>
 
 <!-- v162: Diário › Etiquetas (insumos abertos/fracionados) -->
@@ -2097,7 +2117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v192';
+const APP_VERSION = 'v193';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -3315,6 +3335,7 @@ if(firebaseReady){
       // Ajusta abas conforme o nível de acesso
       ajustarTabsPorRole();
       carregarEstoqueSaipos(); // v140: silencioso e sem bloquear a carga
+      if(isAdminRole())setTimeout(()=>{try{rcEnviarPendentes();}catch(e){}},5000); // v193: mídias de receita na fila
       carregarDemanda().then(()=>{if(DEMANDA&&homeTabId==='inicio'&&document.getElementById('s-home').classList.contains('on'))renderHome();}); // v191
       // Carrega dados e mostra home
       await carregarNuvem();
@@ -4843,10 +4864,10 @@ function renderGestao(c){
   // v102→v105: Locais/Specs/Base/Backup agrupadas como sub-abas de Gestão › Estoque
   if(gestaoTabId==='locais'||gestaoTabId==='specs'||gestaoTabId==='base'||gestaoTabId==='backup'){gestaoEstTabId=gestaoTabId;gestaoTabId='estoque';}
   // v119: Usuários, Acessos e Sistema só para o administrador pleno
-  const tabs=isAdminPleno()?['rotinas','estoque','diario','etiquetas','usuarios','acessos','sistema']:['rotinas','estoque','diario','etiquetas']; // v162: Etiquetas
+  const tabs=isAdminPleno()?['rotinas','estoque','diario','etiquetas','receitas','usuarios','acessos','sistema']:['rotinas','estoque','diario','etiquetas','receitas']; // v162: Etiquetas · v193: Receitas
   if(!tabs.includes(gestaoTabId)&&gestaoTabId!=='estoque')gestaoTabId='rotinas';
   if(!isAdminPleno()&&gestaoEstTabId==='backup')gestaoEstTabId='locais';
-  const tabLabel={rotinas:'Rotinas',estoque:'Estoque',diario:'Diário',etiquetas:'Etiquetas',usuarios:'Usuários',acessos:'Acessos',sistema:'Sistema'};
+  const tabLabel={rotinas:'Rotinas',estoque:'Estoque',diario:'Diário',etiquetas:'Etiquetas',receitas:'Receitas',usuarios:'Usuários',acessos:'Acessos',sistema:'Sistema'};
   let h=`<div style="display:flex;background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd3);font-size:14.5px;overflow-x:auto;scrollbar-width:none">
     ${tabs.map(t=>`<div class="ntab ${gestaoTabId===t?'on':''}" data-tab="${t}" data-action="gestao-tab" style="flex:none;padding-left:13px;padding-right:13px;white-space:nowrap">${tabLabel[t]}</div>`).join('')}</div>`;
   const gTab=gestaoTabId==='estoque'?gestaoEstTabId:gestaoTabId;
@@ -5059,6 +5080,8 @@ function renderGestao(c){
     h+=renderGestaoDiario();
   } else if(gestaoTabId==='etiquetas'){
     h+=renderGestaoEtq(); // v162
+  } else if(gestaoTabId==='receitas'){
+    h+=renderGestaoReceitas(); // v193
   } else {
     h+=`<button class="bg_" id="btn-est-voltar" style="text-align:left;padding:6px 0;font-size:14.5px;color:var(--acc)">← Voltar aos Locais</button>
       <div class="sec">Ferramentas avançadas</div>
@@ -5094,6 +5117,7 @@ function renderGestao(c){
   }
   if(gestaoTabId==='diario'){wireGestaoDiario(c);} // v85
   if(gestaoTabId==='etiquetas'){wireGestaoEtq(c);} // v162
+  if(gestaoTabId==='receitas'){wireGestaoReceitas(c);} // v193
   if(gestaoTabId==='rotinas'){wireGestaoRotinas(c);} // v91
 
   // Event listeners
@@ -8532,6 +8556,611 @@ async function salvarDprod(imprimir){
     btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Registrar produção';
   }
 }
+
+// ══ v193: RECEITAS — criador de receitas (Gestão › Receitas) ══════════════════
+// Receita oficial de EXECUÇÃO de cada processado. A ficha do Saipos é o PADRÃO
+// (custo e baixa de estoque) e nunca é alterada daqui: a diferença entre as duas
+// é o "desvio de ficha", que se quer medir — não corrigir.
+//
+// Firestore (regras em firestore.rules, bloco v193):
+//   receitas/{cod}         { cod, nome, versao, rascunho:{passos,...}, publicada:{passos,versao,...} }
+//   receitas/{cod}/versoes/{n}   cópia imutável de cada publicação
+//   pesos_unidade/{cod}    { unidades:{ "<un>":{porUn, origem, amostra} } }  (porUn na unidade do estoque)
+//   fichas_saipos/{cod}    padrão da ficha (gravado pela função das 05:00)
+//   gestao/ultimo_custo    último custo de compra (gravado pelo alerta de fator)
+// Passo: { id, texto ("@{cod}" marca o ingrediente), ingredientes:[{cod,qtdBase,un}],
+//          timerMin, atencao, midia:{tipo,path,url,pendente,bytes,duracao}|null }
+// Na edição o texto mostra "@[NOME]" (legível); ao salvar vira "@{cod}".
+const REC_COL='receitas',PESO_COL='pesos_unidade',FICHA_COL='fichas_saipos';
+let RC_FICHAS={},RC_PESOS={},RC_RECEITAS={},RC_UCUSTO=null,rcCarregadoEm=0;
+let rcGTab='lista',rcPesoFiltro='sem',rcBusca='';
+let rcAtual=null,rcPassoIdx=0,rcSujo=false;
+const rcBlobURL={};
+function rcLimpo(o){return JSON.parse(JSON.stringify(o));}
+function rcUid(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+async function rcCarregar(force){
+  if(!firebaseReady||!currentUser)return;
+  if(!force&&rcCarregadoEm&&Date.now()-rcCarregadoEm<60000)return;
+  const [f,p,r]=await Promise.all([db.collection(FICHA_COL).get(),db.collection(PESO_COL).get(),db.collection(REC_COL).get()]);
+  RC_FICHAS={};f.forEach(d=>{RC_FICHAS[d.id]=d.data();});
+  RC_PESOS={};p.forEach(d=>{RC_PESOS[d.id]=d.data();});
+  RC_RECEITAS={};r.forEach(d=>{RC_RECEITAS[d.id]=d.data();});
+  try{const u=await db.collection('gestao').doc('ultimo_custo').get();RC_UCUSTO=u.exists?u.data():null;}catch(e){RC_UCUSTO=null;}
+  if(!Object.keys(ESTOQUE_SAIPOS).length){try{await carregarEstoqueSaipos();}catch(e){}}
+  rcCarregadoEm=Date.now();
+}
+function rcProcessados(){
+  return CATALOGO.filter(x=>/^processados/i.test(x.grupo||''))
+    .slice().sort((a,b)=>a.grupo.localeCompare(b.grupo,'pt-BR')||a.nome.localeCompare(b.nome,'pt-BR'));
+}
+function rcNome(cod){const p=getProd(cod);return p?p.nome:('#'+cod);}
+function rcUnBase(cod){const p=getProd(cod);return (p&&p.unidade)||'';}
+
+// ── Peso por unidade de cozinha ────────────────────────────────────────────
+// "OVO BANDEJA 20un = 1,2kg" → 1 un = 0,06 kg. Só lê o padrão "N un … X kg|g|l|ml";
+// "500g" sozinho é o peso da embalagem, não de uma unidade — não serve.
+function pesoPeloNome(nome){
+  const s=String(nome||'').toUpperCase().replace(/,/g,'.');
+  const m=s.match(/(\d+(?:\.\d+)?)\s*(?:UN|UND|UNID|UNIDADES|U)\b[^0-9]*?(\d+(?:\.\d+)?)\s*(KG|G|L|ML)\b/);
+  if(!m)return null;
+  const n=Number(m[1]),q=Number(m[2])*(/^(G|ML)$/.test(m[3])?0.001:1);
+  if(!(n>0&&q>0))return null;
+  return {porUn:q/n,origem:'nome'};
+}
+function rcUnidadesCozinha(cod){
+  const out={};
+  const auto=pesoPeloNome(rcNome(cod));
+  if(auto&&/^(KG|L)$/i.test(rcUnBase(cod)))out.un=auto;
+  const d=RC_PESOS[String(cod)];
+  if(d&&d.unidades)Object.keys(d.unidades).forEach(k=>{const u=d.unidades[k];if(u&&Number(u.porUn)>0)out[k]=u;});
+  return out;
+}
+function rcPorUn(cod,un){
+  if(!un||un===rcUnBase(cod))return 1;
+  const u=rcUnidadesCozinha(cod)[un];
+  return u?Number(u.porUn):null;
+}
+function rcFmtQ(x){const v=Math.round(Number(x)*1000)/1000;return fmtNum(v);}
+function rcQtdTxt(cod,qtdBase,un){
+  const f=rcPorUn(cod,un);
+  if(un&&un!==rcUnBase(cod)&&f)return `${rcFmtQ(qtdBase/f)} ${un}`;
+  return `${rcFmtQ(qtdBase)} ${rcUnBase(cod).toLowerCase()}`;
+}
+
+// ── Custo e CMV ────────────────────────────────────────────────────────────
+// Mesmo custo nas três camadas: a diferença mede quantidade, nunca preço.
+// Último custo de compra; sem ele (ou só compra suspeita) → custo médio do Saipos.
+function rcCusto(cod){
+  const u=RC_UCUSTO&&RC_UCUSTO.itens&&RC_UCUSTO.itens[String(cod)];
+  if(u&&Number(u.custo)>0)return {v:Number(u.custo),fonte:'ultimo',suspeito:!!u.suspeito,u};
+  const m=custoMedioDe(cod);
+  return m?{v:m,fonte:'medio'}:null;
+}
+function rcSomaReceita(rec){
+  const q={};
+  ((rec&&rec.passos)||[]).forEach(p=>(p.ingredientes||[]).forEach(i=>{q[i.cod]=(q[i.cod]||0)+(Number(i.qtdBase)||0);}));
+  return q;
+}
+function rcCmv(cod,rec){
+  const fic=RC_FICHAS[String(cod)];
+  let padrao=0,recC=0,semPad=0,semRec=0;
+  ((fic&&fic.ingredientes)||[]).forEach(i=>{const c=rcCusto(i.cod);if(c)padrao+=c.v*i.qtt;else semPad++;});
+  const q=rcSomaReceita(rec);
+  Object.keys(q).forEach(k=>{const c=rcCusto(k);if(c)recC+=c.v*q[k];else semRec++;});
+  const desvio=padrao>0&&Object.keys(q).length?(recC-padrao)/padrao:null;
+  return {padrao,receita:recC,desvio,semPad,semRec,yield:fic&&fic.yield};
+}
+// Receita × ficha, por insumo (em unidade de estoque)
+function rcConferencia(cod,rec){
+  const fic=RC_FICHAS[String(cod)];
+  const f={};((fic&&fic.ingredientes)||[]).forEach(i=>{f[i.cod]=i.qtt;});
+  const q=rcSomaReceita(rec);
+  const faltando=[],fora=[],diferente=[];
+  Object.keys(f).forEach(k=>{
+    if(!(k in q)){faltando.push(k);return;}
+    const d=q[k]-f[k];
+    if(Math.abs(d)>Math.max(1e-6,0.005*f[k]))diferente.push({cod:k,ficha:f[k],receita:q[k],d});
+  });
+  Object.keys(q).forEach(k=>{if(!(k in f))fora.push(k);});
+  return {faltando,fora,diferente,nFicha:Object.keys(f).length,usados:Object.keys(f).filter(k=>k in q).length};
+}
+
+// ── Texto com @ingrediente ─────────────────────────────────────────────────
+function rcTextoParaEdicao(t){return String(t||'').replace(/@\{(\d+)\}/g,(m,c)=>'@['+rcNome(c)+']');}
+function rcCodPorNome(nome,ings){
+  const n=dnorm(nome).trim();
+  const i=(ings||[]).find(x=>dnorm(rcNome(x.cod)).trim()===n);
+  if(i)return String(i.cod);
+  const p=CATALOGO.find(x=>dnorm(x.nome).trim()===n);
+  return p?String(p.cod):null;
+}
+function rcTextoParaSalvar(t,ings){
+  return String(t||'').replace(/@\[([^\]]+)\]/g,(m,nome)=>{const c=rcCodPorNome(nome,ings);return c?'@{'+c+'}':m;});
+}
+function rcTextoPrevia(texto,p){
+  // texto em forma de EDIÇÃO (@[NOME]) → HTML com o destaque "nome · qtd".
+  // Separa os marcadores ANTES de escapar, para o nome ser comparado cru.
+  const partes=String(texto||'').split(/(@\[[^\]]+\])/g);
+  return partes.map(t=>{
+    const mm=t.match(/^@\[([^\]]+)\]$/);
+    if(!mm)return esc(t);
+    const nome=mm[1];
+    const c=rcCodPorNome(nome,p.ingredientes);
+    const i=c&&(p.ingredientes||[]).find(x=>String(x.cod)===c);
+    const ok=!!c;
+    return `<span style="background:${ok?'var(--acc-bg)':'#FEE2E2'};color:${ok?'var(--acc-tx)':'#B91C1C'};padding:0 3px">${esc(nome.toLowerCase())}${i?' · '+esc(rcQtdTxt(i.cod,i.qtdBase,i.un)):(ok?'':' · ?')}</span>`;
+  }).join('');
+}
+
+// ── Status e lista (Gestão › Receitas) ─────────────────────────────────────
+function rcStatus(cod){
+  const d=RC_RECEITAS[String(cod)];
+  if(!d||(!d.rascunho&&!d.publicada))return {txt:'sem receita',cls:'bpend'};
+  if(!d.publicada)return {txt:'rascunho',cls:'bprog'};
+  const igual=d.rascunho&&JSON.stringify(d.rascunho.passos||[])===JSON.stringify(d.publicada.passos||[]);
+  return igual||!d.rascunho?{txt:'publicada v'+d.versao,cls:'bdone'}:{txt:'rascunho sobre v'+d.versao,cls:'bprog'};
+}
+function renderGestaoReceitas(){return '<div id="g-rec"><div class="empty" style="padding:16px"><span>Carregando receitas…</span></div></div>';}
+async function wireGestaoReceitas(c){
+  const el=c.querySelector('#g-rec');if(!el)return;
+  try{await rcCarregar();}catch(e){el.innerHTML=`<div class="wb"><div style="font-size:14px;color:#92400E">Não consegui carregar as receitas: ${esc(e.message)}</div></div>`;return;}
+  rcRenderGestao(el);
+}
+function rcRenderGestao(el){
+  let h=`<div class="chips" style="padding:2px 0 4px">
+    <span class="chip ${rcGTab==='lista'?'on':''}" data-rgt="lista">Receitas</span>
+    <span class="chip ${rcGTab==='pesos'?'on':''}" data-rgt="pesos">Peso por unidade</span></div>`;
+  h+=rcGTab==='pesos'?rcPesosHTML():rcListaHTML();
+  el.innerHTML=h;
+  el.querySelectorAll('[data-rgt]').forEach(x=>x.addEventListener('click',()=>{rcGTab=x.dataset.rgt;rcRenderGestao(el);}));
+  if(rcGTab==='pesos')rcWirePesos(el);else rcWireLista(el);
+}
+function rcListaHTML(){
+  const procs=rcProcessados();
+  if(!procs.length)return '<div class="empty" style="padding:16px"><span>Nenhum processado na base (grupos Processados…).</span></div>';
+  const comFicha=procs.filter(x=>RC_FICHAS[x.cod]).length;
+  let h=`<div class="tipb">Receita oficial de execução de cada processado. A ficha do Saipos continua sendo o padrão e não é alterada daqui; o desvio mostra quanto a receita foge dela.${comFicha<procs.length?`<br><br>${procs.length-comFicha} processado(s) ainda sem ficha lida do Saipos — rode "Atualizar agora" da base.`:''}</div>`;
+  let g=null;
+  procs.forEach(x=>{
+    if(x.grupo!==g){g=x.grupo;h+=`<div class="gsep">${esc(g)}</div>`;}
+    const st=rcStatus(x.cod),d=RC_RECEITAS[x.cod],rec=d&&(d.rascunho||d.publicada);
+    const cm=rec?rcCmv(x.cod,rec):null;
+    const dv=cm&&cm.desvio!=null?`<span style="font-size:12px;color:${Math.abs(cm.desvio)<0.02?'var(--tx2)':(cm.desvio>0?'#92400E':'#27500A')}">desvio ${cm.desvio>0?'+':''}${(cm.desvio*100).toFixed(1).replace('.',',')}%</span>`:'';
+    h+=`<div class="row" data-rcod="${esc(x.cod)}"><div style="flex:1;min-width:0">
+        <div style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.nome)}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:3px"><span class="bdg ${st.cls}">${st.txt}</span>${dv}</div></div>
+      <span style="color:var(--tx2)">›</span></div>`;
+  });
+  return h;
+}
+function rcWireLista(el){el.querySelectorAll('[data-rcod]').forEach(x=>x.addEventListener('click',()=>abrirReceita(x.dataset.rcod)));}
+
+// ── Peso por unidade (aba) ─────────────────────────────────────────────────
+function rcInsumosDasFichas(){
+  const s=new Set();
+  Object.values(RC_FICHAS).forEach(f=>(f.ingredientes||[]).forEach(i=>s.add(String(i.cod))));
+  Object.values(RC_RECEITAS).forEach(d=>[d.rascunho,d.publicada].forEach(r=>((r&&r.passos)||[]).forEach(p=>(p.ingredientes||[]).forEach(i=>s.add(String(i.cod))))));
+  return [...s].filter(c=>getProd(c)).sort((a,b)=>rcNome(a).localeCompare(rcNome(b),'pt-BR'));
+}
+function rcPesosHTML(){
+  const cods=rcInsumosDasFichas();
+  const sem=cods.filter(c=>!Object.keys(rcUnidadesCozinha(c)).length);
+  const lista=(rcPesoFiltro==='sem'?sem:cods).filter(c=>!rcBusca||dnorm(rcNome(c)).includes(dnorm(rcBusca)));
+  let h=`<div class="tipb">Quanto pesa 1 unidade de cozinha (1 ovo, 1 dente, 1 maço) na unidade do estoque. Cadastrado uma vez, vale para todas as receitas. Nem todo insumo precisa: sal e farinha podem ficar em kg.</div>
+    <input class="srch" id="rc-pbusca" placeholder="Buscar insumo…" value="${esc(rcBusca)}" autocomplete="off"/>
+    <div class="chips" style="padding:2px 0"><span class="chip ${rcPesoFiltro==='sem'?'on':''}" data-pf="sem">Sem peso (${sem.length})</span><span class="chip ${rcPesoFiltro==='todos'?'on':''}" data-pf="todos">Insumos das fichas (${cods.length})</span></div>`;
+  h+=lista.map(c=>{
+    const us=rcUnidadesCozinha(c),ks=Object.keys(us);
+    const txt=ks.length?ks.map(k=>`1 ${esc(k)} = ${rcFmtQ(us[k].porUn)} ${esc(rcUnBase(c).toLowerCase())}${us[k].origem==='nome'?' <span class="bdg bdone">pelo nome</span>':''}`).join(' · '):'<span style="color:var(--tx2)">sem peso por unidade</span>';
+    return `<div class="row" data-pcod="${esc(c)}"><div style="flex:1;min-width:0"><div style="font-size:15px">${esc(rcNome(c))}</div><div style="font-size:13.5px;margin-top:3px">${txt}</div></div><span style="color:var(--acc)">+</span></div>`;
+  }).join('')||'<div class="ok" style="padding:14px;font-size:14.5px">✓ Nada pendente neste filtro.</div>';
+  return h;
+}
+function rcWirePesos(el){
+  const b=el.querySelector('#rc-pbusca');
+  if(b)b.addEventListener('input',()=>{rcBusca=b.value;const pos=b.selectionStart;rcRenderGestao(el);const nb=el.querySelector('#rc-pbusca');if(nb){nb.focus();try{nb.setSelectionRange(pos,pos);}catch(e){}}});
+  el.querySelectorAll('[data-pf]').forEach(x=>x.addEventListener('click',()=>{rcPesoFiltro=x.dataset.pf;rcRenderGestao(el);}));
+  el.querySelectorAll('[data-pcod]').forEach(x=>x.addEventListener('click',()=>rcAbrirPeso(x.dataset.pcod,()=>rcRenderGestao(el))));
+}
+function rcAbrirPeso(cod,depois){
+  const ub=rcUnBase(cod).toLowerCase();
+  const us=rcUnidadesCozinha(cod);
+  const exist=Object.keys(us).map(k=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:.5px solid var(--bd3)"><span>1 ${esc(k)} = ${rcFmtQ(us[k].porUn)} ${esc(ub)}${us[k].origem==='nome'?' (pelo nome)':''}</span>${us[k].origem==='nome'?'':`<button class="bg_" data-del-un="${esc(k)}" style="width:auto;color:#C0341D">Excluir</button>`}</div>`).join('');
+  const bg=abrirSheetDin(rcNome(cod)+' · peso por unidade',
+    `${exist?`<div style="margin-bottom:10px">${exist}</div>`:''}
+     <div class="fl">Unidade da cozinha</div><input class="fi" id="rp-un" value="${Object.keys(us).length?'':'un'}" placeholder="un, dente, maço, colher de sopa"/>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+       <div><div class="fl">Quantas pesou</div><input class="fi" id="rp-n" inputmode="decimal" value="10"/></div>
+       <div><div class="fl">Peso total (${esc(ub)})</div><input class="fi" id="rp-t" inputmode="decimal" placeholder="0,000"/></div></div>
+     <div id="rp-res" style="font-size:14px;color:var(--tx2);margin-top:8px">1 unidade = peso total ÷ quantidade</div>`,
+    `<button class="bp" id="rp-ok">Salvar peso</button>`);
+  const calc=()=>{const n=parseNumBR(bg.querySelector('#rp-n').value),t=parseNumBR(bg.querySelector('#rp-t').value);
+    const r=bg.querySelector('#rp-res');if(n>0&&t>0)r.textContent=`1 ${bg.querySelector('#rp-un').value||'un'} = ${rcFmtQ(t/n)} ${ub}`;return {n,t};};
+  ['#rp-n','#rp-t','#rp-un'].forEach(s=>bg.querySelector(s).addEventListener('input',calc));
+  bg.querySelectorAll('[data-del-un]').forEach(b=>b.addEventListener('click',async()=>{
+    try{await db.collection(PESO_COL).doc(String(cod)).update(new firebase.firestore.FieldPath('unidades',b.dataset.delUn),firebase.firestore.FieldValue.delete());
+      if(RC_PESOS[cod]&&RC_PESOS[cod].unidades)delete RC_PESOS[cod].unidades[b.dataset.delUn];
+      fecharSheetDin();showToast('Unidade excluída.',{type:'ok'});depois&&depois();}catch(e){showToast('Erro: '+e.message,{type:'err'});}
+  }));
+  bg.querySelector('#rp-ok').addEventListener('click',async()=>{
+    const un=(bg.querySelector('#rp-un').value||'').trim().toLowerCase();
+    const {n,t}=calc();
+    if(!un){showToast('Informe a unidade da cozinha.',{type:'err'});return;}
+    if(un===ub){showToast('A unidade da cozinha precisa ser diferente de '+ub+'.',{type:'err'});return;}
+    if(!(n>0&&t>0)){showToast('Informe quantidade e peso total.',{type:'err'});return;}
+    const reg={porUn:t/n,origem:'pesagem',amostra:{n,total:t},em:Date.now(),porUid:currentUser.uid};
+    try{
+      await db.collection(PESO_COL).doc(String(cod)).set({cod:String(cod),nome:rcNome(cod),unBase:rcUnBase(cod),unidades:{[un]:reg}},{merge:true});
+      RC_PESOS[cod]=RC_PESOS[cod]||{unidades:{}};RC_PESOS[cod].unidades=RC_PESOS[cod].unidades||{};RC_PESOS[cod].unidades[un]=reg;
+      fecharSheetDin();showToast('Peso salvo.',{type:'ok'});depois&&depois();
+    }catch(e){showToast('Erro ao salvar: '+e.message,{type:'err'});}
+  });
+}
+
+// ── Receita (lista de passos) ──────────────────────────────────────────────
+async function abrirReceita(cod){
+  try{await rcCarregar();}catch(e){}
+  const d=RC_RECEITAS[String(cod)]||{};
+  const base=d.rascunho||d.publicada||{passos:[]};
+  rcAtual={cod:String(cod),versao:d.versao||0,passos:rcLimpo(base.passos||[]).map(p=>({...p,texto:rcTextoParaEdicao(p.texto),ingredientes:p.ingredientes||[]}))};
+  rcSujo=false;
+  show('s-rec');renderReceita();
+}
+function rcVoltarLista(){
+  const sair=()=>{rcAtual=null;rcStreamParar();gestaoTabId='receitas';homeTab('gestao');show('s-home');};
+  if(rcSujo)appConfirm('Há alterações não salvas nesta receita.',{title:'Sair sem salvar?',okText:'Sair sem salvar',danger:true},sair);
+  else sair();
+}
+function rcMidiaSrc(m){return m?(m.url||rcBlobURL[m.path]||''):'';}
+function rcThumbHTML(m,size){
+  size=size||56;
+  if(!m)return `<div style="width:${size}px;height:${size}px;flex-shrink:0;border:1px dashed var(--acc-bd);display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:22px">+</div>`;
+  const src=rcMidiaSrc(m);
+  const inner=!src?'<span style="font-size:11px;color:var(--tx2)">sem prévia</span>':m.tipo==='video'
+    ?`<video src="${esc(src)}" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>`
+    :`<img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover"/>`;
+  return `<div style="width:${size}px;height:${size}px;flex-shrink:0;background:var(--bg2);position:relative;overflow:hidden">${inner}${m.tipo==='video'?'<span style="position:absolute;left:3px;bottom:2px;color:#fff;font-size:12px;text-shadow:0 0 3px #000">▶</span>':''}${m.pendente?'<span style="position:absolute;right:2px;top:2px;background:#FEF3C7;color:#92400E;font-size:10px;padding:0 3px">envio</span>':''}</div>`;
+}
+function renderReceita(){
+  const c=document.getElementById('rec-cnt'),bb=document.getElementById('rec-bbar');
+  if(!c||!rcAtual)return;
+  const cod=rcAtual.cod,fic=RC_FICHAS[cod];
+  document.getElementById('rec-tt').textContent=rcNome(cod);
+  document.getElementById('rec-ts').textContent=fic&&fic.yield?`1 receita = ${rcFmtQ(fic.yield)} ${rcUnBase(cod).toLowerCase()} · ${rcStatus(cod).txt}`:'sem ficha lida do Saipos';
+  const cm=rcCmv(cod,rcAtual),cf=rcConferencia(cod,rcAtual);
+  const brl=v=>v>0?brlNum(v):'R$ —';
+  let h=`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+    <div class="pcard" style="padding:8px 10px;gap:2px"><div style="font-size:12px;color:var(--tx2)">CMV padrão</div><div style="font-size:15px">${brl(cm.padrao)}</div></div>
+    <div class="pcard" style="padding:8px 10px;gap:2px"><div style="font-size:12px;color:var(--tx2)">CMV receita</div><div style="font-size:15px">${brl(cm.receita)}</div></div>
+    <div class="pcard" style="padding:8px 10px;gap:2px"><div style="font-size:12px;color:var(--tx2)">Desvio ficha</div><div style="font-size:15px">${cm.desvio==null?'—':(cm.desvio>0?'+':'')+(cm.desvio*100).toFixed(1).replace('.',',')+'%'}</div></div></div>`;
+  if(cm.semPad||cm.semRec)h+=`<div style="font-size:12px;color:var(--tx2)">${cm.semPad+cm.semRec} insumo(s) sem custo — ficam fora da conta.</div>`;
+  if(fic&&fic.mudouEm)h+=`<div class="wb"><div style="font-size:14px;color:#92400E">A ficha do Saipos mudou em ${new Date(fic.mudouEm).toLocaleDateString('pt-BR')}. Confira se a receita ainda faz sentido.</div></div>`;
+  if(fic){
+    const linhas=[];
+    if(cf.faltando.length)linhas.push('Faltam: '+cf.faltando.map(rcNome).map(s=>s.toLowerCase()).join(', '));
+    if(cf.fora.length)linhas.push('Fora da ficha: '+cf.fora.map(rcNome).map(s=>s.toLowerCase()).join(', '));
+    cf.diferente.forEach(x=>linhas.push(`${rcNome(x.cod).toLowerCase()}: receita ${rcFmtQ(x.receita)} × ficha ${rcFmtQ(x.ficha)} ${rcUnBase(x.cod).toLowerCase()}`));
+    const ok=!linhas.length&&rcAtual.passos.length;
+    h+=`<div class="pcard" style="gap:3px;${ok?'':'background:#FEF3C7;border-color:#FDE68A'}"><div style="font-size:14px;color:${ok?'#27500A':'#92400E'}">${cf.usados} de ${cf.nFicha} ingredientes da ficha do Saipos usados${ok?' · igual à ficha ✓':''}</div>${linhas.map(l=>`<div style="font-size:13.5px;color:#92400E">${esc(l)}</div>`).join('')}</div>`;
+  }
+  h+=`<div class="sec">Passos (${rcAtual.passos.length})</div>`;
+  h+=rcAtual.passos.map((p,i)=>{
+    const extra=[p.timerMin?`⏱ ${fmtNum(p.timerMin)} min`:'',p.atencao?`! ${esc(p.atencao)}`:''].filter(Boolean).join(' · ');
+    return `<div class="pcard" style="flex-direction:row;gap:10px;align-items:flex-start;padding:8px" data-pi="${i}">
+      ${rcThumbHTML(p.midia)}
+      <div style="flex:1;min-width:0;font-size:15px;line-height:1.55"><span style="color:var(--tx2)">${i+1} · </span>${p.texto?rcTextoPrevia(p.texto,p):'<span style="color:var(--tx2)">(sem texto)</span>'}${extra?`<div style="font-size:12.5px;color:#92400E;margin-top:2px">${extra}</div>`:''}</div>
+      <div style="display:flex;flex-direction:column;gap:2px"><button class="bg_" data-up="${i}" aria-label="Subir passo" style="width:auto;padding:2px 8px" ${i?'':'disabled'}>↑</button><button class="bg_" data-dn="${i}" aria-label="Descer passo" style="width:auto;padding:2px 8px" ${i<rcAtual.passos.length-1?'':'disabled'}>↓</button></div></div>`;
+  }).join('');
+  h+=`<button class="bs" id="rec-add">+ Adicionar passo</button>`;
+  c.innerHTML=h;
+  c.querySelectorAll('[data-pi]').forEach(el=>el.addEventListener('click',e=>{if(e.target.closest('button'))return;abrirPasso(+el.dataset.pi);}));
+  c.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>rcMover(+b.dataset.up,-1)));
+  c.querySelectorAll('[data-dn]').forEach(b=>b.addEventListener('click',()=>rcMover(+b.dataset.dn,1)));
+  c.querySelector('#rec-add').addEventListener('click',()=>{rcAtual.passos.push({id:rcUid(),texto:'',ingredientes:[],timerMin:null,atencao:'',midia:null});rcSujo=true;abrirPasso(rcAtual.passos.length-1);});
+  const v=rcValidar();
+  bb.innerHTML=`<button class="bp" id="rec-pub" ${v.erros.length?'disabled':''}>Publicar v${rcAtual.versao+1}</button>
+    <button class="bs" id="rec-salvar">Salvar rascunho</button>
+    <div style="font-size:12.5px;color:${v.erros.length?'#C0341D':'var(--tx2)'};text-align:center">${esc(v.erros[0]||v.avisos[0]||(rcSujo?'Alterações não salvas.':''))}</div>`;
+  bb.querySelector('#rec-salvar').addEventListener('click',()=>rcSalvarRascunho(false));
+  bb.querySelector('#rec-pub').addEventListener('click',rcPublicar);
+}
+function rcMover(i,d){const a=rcAtual.passos,j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];rcSujo=true;renderReceita();}
+function rcValidar(){
+  const erros=[],avisos=[];
+  if(!rcAtual||!rcAtual.passos.length)erros.push('Adicione ao menos um passo.');
+  (rcAtual?rcAtual.passos:[]).forEach((p,i)=>{
+    if(!String(p.texto||'').trim())erros.push(`Passo ${i+1} sem texto.`);
+    (String(p.texto||'').match(/@\[([^\]]+)\]/g)||[]).forEach(m=>{if(!rcCodPorNome(m.slice(2,-1),p.ingredientes))erros.push(`Passo ${i+1}: "${m.slice(2,-1)}" não existe no estoque.`);});
+    if(p.midia&&p.midia.pendente)erros.push(`Passo ${i+1}: mídia aguardando envio.`);
+    (p.ingredientes||[]).forEach(x=>{if(x.un&&x.un!==rcUnBase(x.cod)&&!rcPorUn(x.cod,x.un))avisos.push(`${rcNome(x.cod)}: sem peso para "${x.un}".`);});
+  });
+  return {erros,avisos};
+}
+function rcPassosParaSalvar(){
+  return rcLimpo(rcAtual.passos.map(p=>({id:p.id,texto:rcTextoParaSalvar(p.texto,p.ingredientes),
+    ingredientes:(p.ingredientes||[]).map(i=>({cod:String(i.cod),qtdBase:Number(i.qtdBase)||0,un:i.un||rcUnBase(i.cod)})),
+    timerMin:p.timerMin?Number(p.timerMin):null,atencao:p.atencao||'',midia:p.midia||null})));
+}
+async function rcSalvarRascunho(silencioso){
+  if(!rcAtual)return false;
+  const ras={passos:rcPassosParaSalvar(),editadoEm:Date.now(),editadoPor:currentUser.uid,editadoPorNome:currentUserNome||''};
+  try{
+    await db.collection(REC_COL).doc(rcAtual.cod).set({cod:rcAtual.cod,nome:rcNome(rcAtual.cod),rascunho:ras},{merge:true});
+    RC_RECEITAS[rcAtual.cod]={...(RC_RECEITAS[rcAtual.cod]||{}),cod:rcAtual.cod,rascunho:ras};
+    rcSujo=false;
+    if(!silencioso)showToast('Rascunho salvo.',{type:'ok'});
+    rcRerender();return true;
+  }catch(e){showToast('Erro ao salvar: '+e.message,{type:'err'});return false;}
+}
+async function rcPublicar(){
+  const v=rcValidar();
+  if(v.erros.length){showToast(v.erros[0],{type:'err'});return;}
+  const n=rcAtual.versao+1;
+  appConfirm(`A versão ${n} passa a ser a receita oficial que a equipe vê. As versões anteriores ficam guardadas.`,{title:`Publicar a versão ${n}?`,okText:`Publicar v${n}`},async()=>{
+    if(!(await rcSalvarRascunho(true)))return;
+    const fic=RC_FICHAS[rcAtual.cod]||null;
+    const pub={passos:rcPassosParaSalvar(),versao:n,publicadaEm:Date.now(),publicadaPor:currentUser.uid,publicadaPorNome:currentUserNome||'',
+      fichaSaipos:fic?{yield:fic.yield||null,ingredientes:fic.ingredientes||[]}:null};
+    try{
+      const ref=db.collection(REC_COL).doc(rcAtual.cod);
+      const b=db.batch();
+      b.set(ref,{versao:n,publicada:pub},{merge:true});
+      b.set(ref.collection('versoes').doc(String(n)),pub);
+      await b.commit();
+      RC_RECEITAS[rcAtual.cod]={...(RC_RECEITAS[rcAtual.cod]||{}),versao:n,publicada:pub};
+      rcAtual.versao=n;
+      showToast(`Versão ${n} publicada.`,{type:'ok'});renderReceita();
+    }catch(e){showToast('Erro ao publicar: '+e.message,{type:'err'});}
+  });
+}
+function rcRerender(){
+  const on=id=>{const e=document.getElementById(id);return e&&e.classList.contains('on');};
+  if(on('s-rpasso'))renderPasso();else if(on('s-rec'))renderReceita();
+}
+
+// ── Editar um passo ────────────────────────────────────────────────────────
+function abrirPasso(i){rcPassoIdx=i;show('s-rpasso');renderPasso();}
+function rcPassoAtual(){return rcAtual&&rcAtual.passos[rcPassoIdx];}
+function rcVoltarReceita(){rcStreamParar();show('s-rec');renderReceita();}
+function renderPasso(){
+  const c=document.getElementById('rp-cnt'),bb=document.getElementById('rp-bbar'),p=rcPassoAtual();
+  if(!c||!p)return;
+  const n=rcAtual.passos.length;
+  document.getElementById('rp-tt').textContent=`Passo ${rcPassoIdx+1} de ${n}`;
+  document.getElementById('rp-ts').textContent=rcNome(rcAtual.cod);
+  c.innerHTML=`<div class="pcard" style="flex-direction:row;align-items:center;gap:10px;padding:8px">${rcThumbHTML(p.midia,72)}
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="bs" id="rp-vid" style="width:auto;padding:8px 10px">● Gravar vídeo</button>
+        <button class="bs" id="rp-foto" style="width:auto;padding:8px 10px">Foto</button>
+        <button class="bs" id="rp-gal" style="width:auto;padding:8px 10px">Galeria</button></div>
+        ${p.midia?`<button class="bg_" id="rp-midia-x" style="width:auto;text-align:left;padding:0;color:#C0341D;font-size:13.5px">Remover mídia</button>`:''}</div></div>
+    <input type="file" id="rp-in-foto" accept="image/*" capture="environment" style="display:none"/>
+    <input type="file" id="rp-in-gal" accept="video/*,image/*" style="display:none"/>
+    <div class="sec">O que fazer · digite @ para citar um ingrediente</div>
+    <textarea class="fi" id="rp-texto" rows="4" style="font-size:16px;line-height:1.5;resize:vertical">${esc(p.texto||'')}</textarea>
+    <div id="rp-ac"></div>
+    <div id="rp-prev" style="font-size:15px;line-height:1.6;color:var(--tx1)"></div>
+    <div class="sec">Quanto vai neste passo</div><div id="rp-ings"></div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">
+      <div><div class="fl">⏱ Cronômetro (min)</div><input class="fi" id="rp-timer" inputmode="decimal" value="${p.timerMin?fmtNum(p.timerMin):''}" placeholder="—"/></div>
+      <div><div class="fl">! Ponto de atenção</div><input class="fi" id="rp-aten" value="${esc(p.atencao||'')}" placeholder="ex.: mãos e luvas limpas"/></div></div>`;
+  const ta=c.querySelector('#rp-texto');
+  ta.addEventListener('input',()=>{p.texto=ta.value;rcSujo=true;rcAcRender();rcPrevRender();});
+  ta.addEventListener('click',rcAcRender);ta.addEventListener('keyup',e=>{if(e.key.startsWith('Arrow'))rcAcRender();});
+  c.querySelector('#rp-timer').addEventListener('input',e=>{const v=parseNumBR(e.target.value);p.timerMin=v>0?v:null;rcSujo=true;});
+  c.querySelector('#rp-aten').addEventListener('input',e=>{p.atencao=e.target.value;rcSujo=true;});
+  c.querySelector('#rp-vid').addEventListener('click',()=>rcGravarVideo(p.id));
+  c.querySelector('#rp-foto').addEventListener('click',()=>c.querySelector('#rp-in-foto').click());
+  c.querySelector('#rp-gal').addEventListener('click',()=>c.querySelector('#rp-in-gal').click());
+  c.querySelector('#rp-in-foto').addEventListener('change',e=>rcArquivoEscolhido(p.id,e.target.files[0]));
+  c.querySelector('#rp-in-gal').addEventListener('change',e=>rcArquivoEscolhido(p.id,e.target.files[0]));
+  const mx=c.querySelector('#rp-midia-x');
+  if(mx)mx.addEventListener('click',()=>appConfirm('O arquivo continua guardado na versão em que foi enviado.',{title:'Remover a mídia deste passo?',okText:'Remover'},()=>{p.midia=null;rcSujo=true;renderPasso();}));
+  rcAcRender();rcPrevRender();rcIngsRender();
+  bb.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="bs" id="rp-ant" ${rcPassoIdx?'':'disabled'}>← Passo ${rcPassoIdx}</button>
+      <button class="bp" id="rp-prox">${rcPassoIdx<n-1?`Passo ${rcPassoIdx+2} →`:'Concluir'}</button></div>`;
+  bb.querySelector('#rp-ant').addEventListener('click',()=>{if(rcPassoIdx>0){rcPassoIdx--;renderPasso();}});
+  bb.querySelector('#rp-prox').addEventListener('click',async()=>{if(rcPassoIdx<n-1){rcPassoIdx++;renderPasso();}else{await rcSalvarRascunho(true);rcVoltarReceita();}});
+}
+function rcExcluirPasso(){
+  appConfirm('O passo sai da receita (o rascunho; versões publicadas não mudam).',{title:'Excluir este passo?',okText:'Excluir',danger:true},()=>{
+    rcAtual.passos.splice(rcPassoIdx,1);rcSujo=true;rcVoltarReceita();});
+}
+function rcPrevRender(){
+  const el=document.getElementById('rp-prev'),p=rcPassoAtual();if(!el||!p)return;
+  el.innerHTML=/@\[/.test(p.texto||'')?`<div style="font-size:12px;color:var(--tx2);margin-bottom:2px">Como a cozinha vai ler</div>${rcTextoPrevia(p.texto,p)}`:'';
+}
+function rcAcEstado(){
+  const ta=document.getElementById('rp-texto');if(!ta)return null;
+  const pos=ta.selectionStart,antes=ta.value.slice(0,pos);
+  const m=antes.match(/@([^\[\]@\n]{0,30})$/);
+  return m?{ta,q:m[1],ini:pos-m[0].length,fim:pos}:null;
+}
+function rcAcRender(){
+  const el=document.getElementById('rp-ac');if(!el)return;
+  const st=rcAcEstado();
+  if(!st){el.innerHTML='';return;}
+  const fic=RC_FICHAS[rcAtual.cod],naFicha=new Set(((fic&&fic.ingredientes)||[]).map(i=>String(i.cod)));
+  const q=dnorm(st.q.trim());
+  // ingredientes da ficha primeiro; depois o resto do estoque (menos o próprio processado)
+  const pool=[...[...naFicha].map(c=>getProd(c)).filter(Boolean),
+    ...CATALOGO.filter(x=>!naFicha.has(String(x.cod))&&String(x.cod)!==rcAtual.cod)];
+  const vistos=new Set();
+  const res=pool.filter(x=>{if(vistos.has(x.cod))return false;vistos.add(x.cod);return !q||dnorm(x.nome).includes(q);}).slice(0,8);
+  const usados=rcSomaReceita(rcAtual);
+  el.innerHTML=res.length?`<div class="pcard" style="padding:0;gap:0">${res.map(x=>{const nf=naFicha.has(String(x.cod));
+    return `<button data-ac="${esc(x.cod)}" style="display:flex;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border:none;border-bottom:.5px solid var(--bd3);background:${nf?'var(--acc-bg)':'var(--bg1)'};font-family:inherit;font-size:15px;text-align:left;cursor:pointer;color:var(--tx1)"><span>${esc(x.nome)}</span><span style="font-size:12.5px;color:${nf?'var(--acc-tx)':'var(--tx2)'};white-space:nowrap">${nf?(usados[x.cod]!=null?'na ficha · já usado':'na ficha'):'fora da ficha'}</span></button>`;}).join('')}</div>`:'<div style="font-size:13px;color:var(--tx2)">Nenhum insumo com esse nome.</div>';
+  el.querySelectorAll('[data-ac]').forEach(b=>b.addEventListener('mousedown',e=>{e.preventDefault();rcAcEscolher(b.dataset.ac);}));
+}
+function rcAcEscolher(cod){
+  const st=rcAcEstado(),p=rcPassoAtual();if(!st||!p)return;
+  const nome=rcNome(cod),v=st.ta.value;
+  st.ta.value=v.slice(0,st.ini)+'@['+nome+'] '+v.slice(st.fim);
+  const pos=st.ini+nome.length+4;
+  try{st.ta.focus();st.ta.setSelectionRange(pos,pos);}catch(e){}
+  p.texto=st.ta.value;
+  if(!(p.ingredientes||[]).some(i=>String(i.cod)===String(cod))){
+    const fic=RC_FICHAS[rcAtual.cod],fi=((fic&&fic.ingredientes)||[]).find(i=>String(i.cod)===String(cod));
+    const usadoOutros=rcAtual.passos.reduce((s,x)=>x===p?s:s+(x.ingredientes||[]).filter(i=>String(i.cod)===String(cod)).reduce((a,i)=>a+(Number(i.qtdBase)||0),0),0);
+    const sugest=fi?Math.max(0,fi.qtt-usadoOutros):0;
+    const kc=Object.keys(rcUnidadesCozinha(cod));
+    p.ingredientes=[...(p.ingredientes||[]),{cod:String(cod),qtdBase:sugest,un:kc.length?kc[0]:rcUnBase(cod)}];
+  }
+  rcSujo=true;rcAcRender();rcPrevRender();rcIngsRender();
+}
+function rcIngsRender(){
+  const el=document.getElementById('rp-ings'),p=rcPassoAtual();if(!el||!p)return;
+  const fic=RC_FICHAS[rcAtual.cod];
+  if(!(p.ingredientes||[]).length){el.innerHTML='<div style="font-size:13.5px;color:var(--tx2)">Nenhum ingrediente neste passo. Cite com @ no texto.</div>';return;}
+  el.innerHTML=`<div class="pcard" style="padding:0;gap:0">${p.ingredientes.map((i,k)=>{
+    const ub=rcUnBase(i.cod),us=rcUnidadesCozinha(i.cod),un=i.un||ub,f=rcPorUn(i.cod,un)||1;
+    const fi=((fic&&fic.ingredientes)||[]).find(x=>String(x.cod)===String(i.cod));
+    const opts=[ub,...Object.keys(us)].map(u=>`<option value="${esc(u)}" ${u===un?'selected':''}>${esc(u.toLowerCase())}</option>`).join('');
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--bd3)">
+      <div style="flex:1;min-width:0"><div style="font-size:14.5px">${esc(rcNome(i.cod))}</div>
+        <div style="font-size:12px;color:var(--tx2)">${fi?`ficha: ${rcFmtQ(fi.qtt)} ${esc(ub.toLowerCase())}`:'fora da ficha'}${un!==ub?` · = ${rcFmtQ(i.qtdBase)} ${esc(ub.toLowerCase())}`:''}</div></div>
+      <input class="fi" data-iq="${k}" inputmode="decimal" value="${rcFmtQ(i.qtdBase/f)}" style="width:76px;text-align:right"/>
+      <select class="fi" data-iu="${k}" style="width:auto;padding:8px 6px">${opts}</select>
+      <button class="bg_" data-ix="${k}" aria-label="Tirar do passo" style="width:auto;padding:4px 6px">✕</button></div>`;}).join('')}</div>`;
+  el.querySelectorAll('[data-iq]').forEach(inp=>{
+    inp.addEventListener('input',()=>{const i=p.ingredientes[+inp.dataset.iq];const v=parseNumBR(inp.value);if(isFinite(v)){i.qtdBase=v*(rcPorUn(i.cod,i.un)||1);rcSujo=true;rcPrevRender();}});
+    inp.addEventListener('blur',rcIngsRender);
+  });
+  el.querySelectorAll('[data-iu]').forEach(s=>s.addEventListener('change',()=>{p.ingredientes[+s.dataset.iu].un=s.value;rcSujo=true;rcIngsRender();rcPrevRender();}));
+  el.querySelectorAll('[data-ix]').forEach(b=>b.addEventListener('click',()=>{p.ingredientes.splice(+b.dataset.ix,1);rcSujo=true;rcIngsRender();rcPrevRender();}));
+}
+
+// ── Foto e vídeo: gravação, fila no aparelho e envio ao Storage ───────────────
+// Vídeo gravado pelo próprio app (720p, sem som, até 30 s ≈ 3,75 MB). Arquivo da
+// galeria: até 8 MB (mesmo limite das regras do Storage). Sem sinal, o arquivo fica
+// no IndexedDB e sobe quando a conexão volta; a receita só publica com tudo enviado.
+const RC_MAX_BYTES=8*1024*1024,RC_MAX_SEG=30;
+let rcStream=null,rcRecorder=null,rcTimer=null;
+function rcStreamParar(){
+  try{if(rcRecorder&&rcRecorder.state!=='inactive')rcRecorder.stop();}catch(e){}
+  if(rcStream){rcStream.getTracks().forEach(t=>t.stop());rcStream=null;}
+  clearInterval(rcTimer);rcTimer=null;
+}
+function rcMimeVideo(){
+  if(!window.MediaRecorder)return null;
+  return ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'';
+}
+function rcContentType(mime,tipo){
+  if(tipo==='foto')return 'image/jpeg';
+  const m=String(mime||'');
+  return m.includes('mp4')?'video/mp4':m.includes('webm')?'video/webm':'video/quicktime';
+}
+async function rcGravarVideo(passoId){
+  const mime=rcMimeVideo();
+  if(mime===null||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){showToast('Este aparelho não grava vídeo pelo app. Use "Galeria".',{type:'err'});return;}
+  const bg=abrirSheetDin('Gravar vídeo do passo',
+    `<video id="rv-v" autoplay muted playsinline style="width:100%;aspect-ratio:16/9;background:#1C1B18;object-fit:cover"></video>
+     <div id="rv-st" style="font-size:14px;color:var(--tx2);text-align:center;margin-top:8px">Até ${RC_MAX_SEG} s · sem som · toca em loop</div>`,
+    `<button class="bp" id="rv-rec">● Gravar</button><button class="bs" id="rv-usar" style="display:none">Usar este vídeo</button>`);
+  bg.querySelectorAll('.sheet-x').forEach(b=>b.addEventListener('click',rcStreamParar));
+  bg.addEventListener('click',e=>{if(e.target===bg)rcStreamParar();});
+  const v=bg.querySelector('#rv-v'),st=bg.querySelector('#rv-st'),br=bg.querySelector('#rv-rec'),bu=bg.querySelector('#rv-usar');
+  try{rcStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});}
+  catch(e){st.textContent='Sem acesso à câmera: '+e.message;st.style.color='#C0341D';br.disabled=true;return;}
+  v.srcObject=rcStream;
+  let chunks=[],blob=null,t0=0,dur=0;
+  br.addEventListener('click',()=>{
+    if(blob&&!rcStream)return; // "Gravar de novo": tratado no listener abaixo
+    if(rcRecorder&&rcRecorder.state==='recording'){rcRecorder.stop();return;}
+    chunks=[];blob=null;
+    try{rcRecorder=new MediaRecorder(rcStream,mime?{mimeType:mime,videoBitsPerSecond:1000000}:{videoBitsPerSecond:1000000});}
+    catch(e){rcRecorder=new MediaRecorder(rcStream);}
+    rcRecorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+    rcRecorder.onstop=()=>{
+      clearInterval(rcTimer);dur=Math.round((Date.now()-t0)/1000);
+      blob=new Blob(chunks,{type:(rcRecorder.mimeType||mime||'video/mp4').split(';')[0]});
+      if(rcStream){rcStream.getTracks().forEach(t=>t.stop());rcStream=null;}
+      v.srcObject=null;v.src=URL.createObjectURL(blob);v.loop=true;v.play().catch(()=>{});
+      st.textContent=`${dur} s · ${(blob.size/1048576).toFixed(1).replace('.',',')} MB`;
+      br.textContent='Gravar de novo';bu.style.display='block';
+      br.onclick=null;
+    };
+    t0=Date.now();rcRecorder.start(1000);
+    br.textContent='■ Parar';bu.style.display='none';
+    rcTimer=setInterval(()=>{const s=Math.round((Date.now()-t0)/1000);st.textContent=`● ${s} s / ${RC_MAX_SEG} s`;st.style.color='#C0341D';if(s>=RC_MAX_SEG&&rcRecorder.state==='recording')rcRecorder.stop();},250);
+  });
+  // "Gravar de novo" depois de parar: reabre a câmera
+  br.addEventListener('click',async()=>{
+    if(blob&&!rcStream){fecharSheetDin();rcGravarVideo(passoId);}
+  });
+  bu.addEventListener('click',async()=>{
+    if(!blob)return;
+    if(blob.size>RC_MAX_BYTES){showToast('Vídeo acima de 8 MB. Grave um trecho menor.',{type:'err'});return;}
+    fecharSheetDin();rcStreamParar();
+    await rcAnexarMidia(passoId,blob,'video',blob.type,dur);
+  });
+}
+async function rcArquivoEscolhido(passoId,file){
+  if(!file)return;
+  if(/^image\//.test(file.type)){
+    const c=await compactarImagem(file);
+    if(!c){showToast('Não consegui ler a imagem.',{type:'err'});return;}
+    await rcAnexarMidia(passoId,c.blob,'foto','image/jpeg',null);return;
+  }
+  if(!/^video\//.test(file.type)){showToast('Escolha uma foto ou um vídeo.',{type:'err'});return;}
+  if(file.size>RC_MAX_BYTES){showToast(`Vídeo de ${(file.size/1048576).toFixed(0)} MB — o limite é 8 MB. Grave pelo botão "Gravar vídeo".`,{type:'err',duration:6000});return;}
+  await rcAnexarMidia(passoId,file,'video',file.type,null);
+}
+async function rcAnexarMidia(passoId,blob,tipo,mime,dur){
+  const p=rcAtual&&rcAtual.passos.find(x=>x.id===passoId);if(!p)return;
+  const ct=rcContentType(mime,tipo);
+  const ext={'image/jpeg':'jpg','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'}[ct];
+  const path=`receitas/${rcAtual.cod}/v${rcAtual.versao+1}/${passoId}-${Date.now()}.${ext}`;
+  rcBlobURL[path]=URL.createObjectURL(blob);
+  p.midia={tipo,path,url:null,pendente:true,bytes:blob.size,duracao:dur||null,contentType:ct};
+  rcSujo=true;
+  await rcSalvarRascunho(true);
+  try{await rcFilaPut({id:path,cod:rcAtual.cod,passoId,path,blob,contentType:ct,em:Date.now()});}
+  catch(e){showToast('Não consegui guardar o arquivo no aparelho: '+e.message,{type:'err'});return;}
+  rcRerender();
+  rcEnviarPendentes();
+}
+function rcIdb(){return new Promise((res,rej)=>{const r=indexedDB.open('gesto-receitas',1);r.onupgradeneeded=()=>{r.result.createObjectStore('fila',{keyPath:'id'});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function rcFilaPut(item){const d=await rcIdb();return new Promise((res,rej)=>{const t=d.transaction('fila','readwrite');t.objectStore('fila').put(item);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
+async function rcFilaTodos(){const d=await rcIdb();return new Promise((res,rej)=>{const t=d.transaction('fila','readonly');const r=t.objectStore('fila').getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+async function rcFilaDel(id){const d=await rcIdb();return new Promise((res,rej)=>{const t=d.transaction('fila','readwrite');t.objectStore('fila').delete(id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
+let rcEnviando=false;
+async function rcEnviarPendentes(){
+  if(rcEnviando||!navigator.onLine||typeof storage==='undefined'||!storage||!currentUser||!isAdminRole())return;
+  rcEnviando=true;
+  try{
+    const itens=await rcFilaTodos();
+    for(const it of itens){
+      try{
+        const ref=storage.ref(it.path);
+        await ref.put(it.blob,{contentType:it.contentType});
+        const url=await ref.getDownloadURL();
+        await rcMarcarEnviada(it.cod,it.passoId,it.path,url);
+        await rcFilaDel(it.id);
+      }catch(e){console.warn('receitas: envio de mídia',it.path,e);}
+    }
+  }catch(e){console.warn('receitas: fila',e);}
+  finally{rcEnviando=false;}
+}
+async function rcMarcarEnviada(cod,passoId,path,url){
+  const ref=db.collection(REC_COL).doc(String(cod));
+  await db.runTransaction(async tx=>{
+    const s=await tx.get(ref);if(!s.exists)return;
+    const d=s.data(),ps=(d.rascunho&&d.rascunho.passos)||[];
+    const p=ps.find(x=>x.id===passoId);
+    if(p&&p.midia&&p.midia.path===path){p.midia.url=url;p.midia.pendente=false;tx.update(ref,{'rascunho.passos':ps});}
+  });
+  const r=RC_RECEITAS[String(cod)];
+  const pr=r&&r.rascunho&&(r.rascunho.passos||[]).find(x=>x.id===passoId);
+  if(pr&&pr.midia&&pr.midia.path===path){pr.midia.url=url;pr.midia.pendente=false;}
+  if(rcAtual&&rcAtual.cod===String(cod)){const p=rcAtual.passos.find(x=>x.id===passoId);if(p&&p.midia&&p.midia.path===path){p.midia.url=url;p.midia.pendente=false;}}
+  rcRerender();
+}
+window.addEventListener('online',()=>{try{rcEnviarPendentes();}catch(e){}});
+// ══ fim v193 ══
+
 
 // ── Gestão › Diário: fila Saipos + configurações ──────────────────────────────
 function renderGestaoDiario(){

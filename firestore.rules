@@ -190,6 +190,33 @@ service cloud.firestore {
     }
 
     // ── negar o resto por padrão ───────────────────────────────────────────
+    // ── v193: criador de receitas ─────────────────────────────────────────
+    // receitas/{cod}: receita oficial de execução de um processado (cod = id do
+    // insumo no Saipos). Toda a equipe lê (modo guiado, ficha no card); só gerente
+    // e administrador (isAdmin) escrevem. versoes/{n} é o histórico das publicações:
+    // nasce uma vez e nunca é alterado nem apagado.
+    match /receitas/{cod} {
+      allow read: if ativo();
+      allow write: if isAdmin();
+      match /versoes/{v} {
+        allow read: if ativo();
+        allow create: if isAdmin();
+        allow update, delete: if false;
+      }
+    }
+    // pesos_unidade/{cod}: peso por unidade de cozinha (1 ovo = 0,06 kg).
+    match /pesos_unidade/{cod} {
+      allow read: if ativo();
+      allow write: if isAdmin();
+    }
+    // fichas_saipos/{cod}: padrão da ficha do Saipos, gravado pela função das 05:00
+    // (Admin SDK). Ninguém escreve pelo app.
+    match /fichas_saipos/{cod} {
+      allow read: if ativo();
+      allow write: if false;
+    }
+    // gestao/ultimo_custo já está coberto por match /gestao/{doc}: só isAdmin lê.
+
     match /{document=**} {
       allow read, write: if false;
     }
