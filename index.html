@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v196</title>
+<title>Gesto Operação v197</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -2117,7 +2117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v196';
+const APP_VERSION = 'v197';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -8574,7 +8574,7 @@ async function salvarDprod(imprimir){
 // Na edição o texto mostra "@[NOME]" (legível); ao salvar vira "@{cod}".
 const REC_COL='receitas',PESO_COL='pesos_unidade',FICHA_COL='fichas_saipos';
 let RC_FICHAS={},RC_PESOS={},RC_RECEITAS={},RC_UCUSTO=null,rcCarregadoEm=0;
-let rcGTab='lista',rcPesoFiltro='sem',rcBusca='',rcComprasCarregadoEm=0;
+let rcGTab='lista',rcPesoFiltro='un',rcBusca='',rcComprasCarregadoEm=0;
 let rcAtual=null,rcPassoIdx=0,rcSujo=false;
 const rcBlobURL={};
 function rcLimpo(o){return JSON.parse(JSON.stringify(o));}
@@ -8588,6 +8588,8 @@ async function rcCarregar(force){
   RC_PESOS={};p.forEach(d=>{RC_PESOS[d.id]=d.data();});
   RC_RECEITAS={};r.forEach(d=>{RC_RECEITAS[d.id]=d.data();});
   try{const u=await db.collection('gestao').doc('ultimo_custo').get();RC_UCUSTO=u.exists?u.data():null;}catch(e){RC_UCUSTO=null;}
+  // v197: padrões das notas dizem quem é COMPRADO por unidade (maço, pé, un sem gramatura)
+  try{const pn=await db.collection('padroes_nf').get();RC_PADROES={};pn.forEach(d=>{RC_PADROES[d.id]=d.data();});}catch(e){}
   if(!Object.keys(ESTOQUE_SAIPOS).length){try{await carregarEstoqueSaipos();}catch(e){}}
   rcCarregadoEm=Date.now();
 }
@@ -8759,18 +8761,35 @@ function rcInsumosDasFichas(){
   Object.values(RC_RECEITAS).forEach(d=>[d.rascunho,d.publicada].forEach(r=>((r&&r.passos)||[]).forEach(p=>(p.ingredientes||[]).forEach(i=>s.add(String(i.cod))))));
   return [...s].filter(c=>getProd(c)).sort((a,b)=>rcNome(a).localeCompare(rcNome(b),'pt-BR'));
 }
+// v197: quem precisa de peso por unidade? Só o que é COMPRADO por unidade natural
+// (maço, pé, un sem gramatura no rótulo) — sai dos padrões das notas. Insumo em kg/L
+// no Saipos e comprado por peso ou embalagem (açúcar 1kg, farinha) usa direto em kg.
+function rcCompradoPorUnidade(cod){
+  const ps=Object.values(RC_PADROES||{}).filter(p=>String(p.cod)===String(cod)&&!p.gramatura&&/^(maço|pé|un)$/.test(p.unCompra||''));
+  if(!ps.length)return null;
+  const ucs=[...new Set(ps.map(p=>p.unCompra))];
+  return {unCompra:ucs.join('/'),padroes:ps};
+}
 function rcPesosHTML(){
   const cods=rcInsumosDasFichas();
-  const sem=cods.filter(c=>!Object.keys(rcUnidadesCozinha(c)).length);
-  const lista=(rcPesoFiltro==='sem'?sem:cods).filter(c=>!rcBusca||dnorm(rcNome(c)).includes(dnorm(rcBusca)));
-  let h=`<div class="tipb">Quanto pesa 1 unidade de cozinha (1 ovo, 1 dente, 1 maço) na unidade do estoque. Cadastrado uma vez, vale para todas as receitas. Nem todo insumo precisa: sal e farinha podem ficar em kg.</div>
+  const precisa=cods.filter(c=>/^(KG|L)$/i.test(rcUnBase(c))&&rcCompradoPorUnidade(c));
+  const pend=precisa.filter(c=>!Object.keys(rcUnidadesCozinha(c)).length);
+  const lista=(rcPesoFiltro==='un'?precisa:cods).filter(c=>!rcBusca||dnorm(rcNome(c)).includes(dnorm(rcBusca)));
+  let h=`<div class="tipb">A unidade de cada insumo é a do cadastro do Saipos. Insumo em kg ou L entra na receita direto em kg ou L — não precisa de nada aqui.<br><br>Peso por unidade só faz falta para o que a cozinha usa por unidade (1 maço, 1 pé, 1 dente): aparecem em "Comprados por unidade", tirados das notas fiscais.</div>
     <input class="srch" id="rc-pbusca" placeholder="Buscar insumo…" value="${esc(rcBusca)}" autocomplete="off"/>
-    <div class="chips" style="padding:2px 0"><span class="chip ${rcPesoFiltro==='sem'?'on':''}" data-pf="sem">Sem peso (${sem.length})</span><span class="chip ${rcPesoFiltro==='todos'?'on':''}" data-pf="todos">Insumos das fichas (${cods.length})</span></div>`;
+    <div class="chips" style="padding:2px 0"><span class="chip ${rcPesoFiltro==='un'?'on':''}" data-pf="un">Comprados por unidade (${pend.length} sem peso)</span><span class="chip ${rcPesoFiltro==='todos'?'on':''}" data-pf="todos">Insumos das fichas (${cods.length})</span></div>`;
   h+=lista.map(c=>{
     const us=rcUnidadesCozinha(c),ks=Object.keys(us);
-    const txt=ks.length?ks.map(k=>`1 ${esc(k)} = ${rcFmtQ(us[k].porUn)} ${esc(rcUnTxt(rcUnBase(c)))}${us[k].origem==='nome'?' <span class="bdg bdone">pelo nome</span>':''}`).join(' · '):'<span style="color:var(--tx2)">sem peso por unidade</span>';
+    const ub=rcUnTxt(rcUnBase(c)),cpu=rcCompradoPorUnidade(c);
+    let txt;
+    if(ks.length)txt=ks.map(k=>`1 ${esc(k)} = ${rcFmtQ(us[k].porUn)} ${esc(ub)}${us[k].origem==='nome'?' <span class="bdg bdone">pelo nome</span>':''}`).join(' · ');
+    else if(cpu&&/^(kg|L)$/.test(ub)){
+      const ref=cpu.padroes.filter(p=>p.porUn>0).map(p=>`${rcFornCurto(p.fornecedor)} ${rcFmtQ(p.porUn)}`).join(' · ');
+      txt=`<span class="bdg bwarn">comprado por ${esc(cpu.unCompra)} · sem peso</span>${ref?`<div style="font-size:12.5px;color:var(--tx2);margin-top:2px">nas notas: ${esc(ref)} ${esc(ub)}</div>`:''}`;
+    }
+    else txt=`<span style="color:var(--tx2)">usa em ${esc(ub||'?')} (unidade do Saipos)</span>`;
     return `<div class="row" data-pcod="${esc(c)}"><div style="flex:1;min-width:0"><div style="font-size:15px">${esc(rcNome(c))}</div><div style="font-size:13.5px;margin-top:3px">${txt}</div></div><span style="color:var(--acc)">+</span></div>`;
-  }).join('')||'<div class="ok" style="padding:14px;font-size:14.5px">✓ Nada pendente neste filtro.</div>';
+  }).join('')||'<div class="ok" style="padding:14px;font-size:14.5px">✓ Nada neste filtro.</div>';
   return h;
 }
 function rcWirePesos(el){

@@ -122,7 +122,17 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   [...g.querySelectorAll('[data-pnf]')].find(x=>x.dataset.pnf==='confirmado').click();await sleep(50);
   const b=g.querySelector('#pnf-busca');b.value='zaffari';b.dispatchEvent(new w.Event('input'));await sleep(50);
   assert.ok(g.textContent.includes('TOMATE GRAPE 500G')&&!g.textContent.includes('TEMPERO VERDE UN'),'filtra por fornecedor');
+  // 5) v197: aba Peso por unidade usa a unidade do Saipos; pendente = comprado por unidade
+  w.__store.set('pesos_unidade/x',{});
+  E(`rcGTab='pesos';rcPesoFiltro='un';rcBusca=''`);E(`renderGestao`)(g);await sleep(150);
+  let tp=g.textContent;
+  assert.ok(tp.includes('SALSINHA')&&tp.includes('comprado por'),'salsinha: comprada por unidade, sem peso: '+tp.slice(0,600));
+  assert.ok(!tp.includes('SAL MARINHO'),'sal (kg, comprado por pacote) não é pendência');
+  assert.ok(tp.includes('(1 sem peso)'),'1 pendente');
+  [...g.querySelectorAll('[data-pf]')].find(x=>x.dataset.pf==='todos').click();await sleep(50);
+  tp=g.textContent;
+  assert.ok(tp.includes('SAL MARINHO 1kg')&&tp.includes('usa em kg (unidade do Saipos)'),'sal usa em kg');
   assert.deepStrictEqual(erros,[],'erros de script: '+erros.join(' | '));
-  console.log('OK — conferir compras da v196 passou (4 blocos)');
+  console.log('OK — conferir compras da v196 + peso por unidade da v197 passaram (5 blocos)');
   process.exit(0);
 })().catch(e=>{console.error('FALHOU:',e.message);console.error(erros.slice(0,5));process.exit(1);});
