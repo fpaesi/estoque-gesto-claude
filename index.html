@@ -8765,6 +8765,8 @@ function rcInsumosDasFichas(){
 // (maço, pé, un sem gramatura no rótulo) — sai dos padrões das notas. Insumo em kg/L
 // no Saipos e comprado por peso ou embalagem (açúcar 1kg, farinha) usa direto em kg.
 function rcCompradoPorUnidade(cod){
+  // nome do cadastro do Saipos já traz a embalagem ("GIN 1L", "PELATI 2,5kg") → é embalagem, não unidade natural
+  if(/\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|lt)\b/i.test(rcNome(cod)))return null;
   const ps=Object.values(RC_PADROES||{}).filter(p=>String(p.cod)===String(cod)&&!p.gramatura&&/^(maço|pé|un)$/.test(p.unCompra||''));
   if(!ps.length)return null;
   const ucs=[...new Set(ps.map(p=>p.unCompra))];
