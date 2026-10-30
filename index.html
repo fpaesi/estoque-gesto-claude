@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v198</title>
+<title>Gesto Operação v199</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -2117,7 +2117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v198';
+const APP_VERSION = 'v199';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -5027,51 +5027,7 @@ function renderGestao(c){
         <i class="ti ti-refresh" style="font-size:24px;color:var(--acc);flex-shrink:0"></i>
         <div><div style="font-size:15.5px;font-weight:400;color:var(--acc)">Atualizar pelo Saipos</div>
         <div style="font-size:12px;color:var(--acc);opacity:.8;margin-top:2px">Importa a lista de ingredientes e sincroniza o catálogo</div></div></button>
-      <div class="sec">Sem vínculo${semV.length?` · ${semV.length}`:''}</div>`;
-    if(!semV.length){
-      h+=`<div class="empty" style="padding:24px 0"><span>Todos os itens estão vinculados ou marcados como não controlados</span></div>`;
-    } else {
-      h+=`<div style="font-size:12px;color:var(--tx2);margin:-2px 0 6px">Marque <i class="ti ti-square" style="font-size:13px"></i> nos itens que não precisam ser contados para tirá-los desta fila.</div>`;
-      const byGrupo={};
-      semV.forEach(p=>{const g=p.grupo||'Sem grupo';(byGrupo[g]=byGrupo[g]||[]).push(p);});
-      h+=`<div class="ms"><div style="padding:4px 0">`;
-      Object.keys(byGrupo).sort().forEach(g=>{
-        h+=`<div style="padding:6px 14px;font-size:12px;font-weight:400;color:var(--tx2);background:var(--bg2)">${g} · ${byGrupo[g].length}</div>`;
-        byGrupo[g].forEach(p=>{
-          const novo=(catalogoMeta[p.cod]&&catalogoMeta[p.cod].addedAt)?'<span style="font-size:10px;font-weight:500;background:#EEECDC;color:var(--acc);padding:1px 5px;border-radius:0;margin-left:4px">NOVO</span>':'';
-          h+=`<div class="spi">
-            <label class="chk-nc-wrap" title="Não controlar este item"><input type="checkbox" class="chk-naocontrol" data-cod="${p.cod}"><span>Não contar</span></label>
-            <div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}${novo}</div>
-            <div style="font-size:12px;color:var(--tx2)">Saipos: ${p.cod} · ${p.unidade||'—'}</div></div>
-            <button class="ib primary btn-vincular" data-cod="${p.cod}"><i class="ti ti-link"></i></button></div>`;
-        });
-      });
-      h+=`</div></div>`;
-    }
-    h+=`<div class="ms" style="margin-top:8px">
-      <div class="msh msh-clickable" id="nc-toggle" style="gap:8px">
-        <div style="width:32px;height:32px;border-radius:0;background:var(--bg2);border:.5px solid var(--bd3);display:flex;align-items:center;justify-content:center;font-size:17.5px;color:var(--tx2);flex-shrink:0"><i class="ti ti-eye-off"></i></div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:15.5px;font-weight:400;color:var(--tx1)">Não controlados</div>
-          <div style="font-size:13px;color:var(--tx2);margin-top:2px">${naoCtrl.length?naoCtrl.length+' item(ns) fora da contagem':'Nenhum item marcado'}</div>
-        </div>
-        <i class="ti ti-chevron-down" style="font-size:17.5px;color:var(--tx2);transition:transform .2s${gestaoNaoControlOpen?';transform:rotate(180deg)':''};flex-shrink:0"></i>
-      </div>`;
-    if(gestaoNaoControlOpen){
-      h+=`<div class="msb open"><div style="padding:4px 0">`;
-      if(!naoCtrl.length){
-        h+=`<div style="padding:16px 14px;font-size:13px;color:var(--tx2);text-align:center">Nenhum item marcado como não controlado.</div>`;
-      } else {
-        naoCtrl.forEach(p=>{
-          h+=`<div class="spi">
-            <label class="chk-nc-wrap" title="Voltar a controlar este item"><input type="checkbox" class="chk-naocontrol" data-cod="${p.cod}" checked><span>Não contar</span></label>
-            <div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div>
-            <div style="font-size:12px;color:var(--tx2)">Saipos: ${p.cod} · ${p.unidade||'—'} · ${p.grupo||'Sem grupo'}</div></div></div>`;
-        });
-      }
-      h+=`</div></div>`;
-    }
-    h+=`</div>`;
+      ${htmlBaseItens()}`;
   } else if(gestaoTabId==='usuarios'){
     h+='<div id="gestao-usuarios-list"></div>';
   } else if(gestaoTabId==='acessos'){
@@ -5197,7 +5153,7 @@ function renderGestao(c){
   const btnAttBase=c.querySelector('#btn-atualizar-base');if(btnAttBase)btnAttBase.addEventListener('click',abrirAtualizarBase);
   c.querySelectorAll('.btn-vincular').forEach(el=>el.addEventListener('click',()=>abrirVincular(el.dataset.cod)));
   c.querySelectorAll('.chk-naocontrol').forEach(el=>el.addEventListener('change',()=>setNaoControlado(el.dataset.cod,el.checked)));
-  const ncT=c.querySelector('#nc-toggle');if(ncT)ncT.addEventListener('click',()=>{gestaoNaoControlOpen=!gestaoNaoControlOpen;renderHome();});
+  wireBaseItens(c);
 }
 
 function renderSpecList(lid,term){
@@ -9702,6 +9658,74 @@ function itensSemVinculo(){
   return CATALOGO.filter(it=>!v.has(it.cod)&&!isNaoControlado(it.cod)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
 }
 
+// v199: Base mostra TODOS os itens (sem vínculo, vinculados, não contar) com os locais de cada um
+let baseFiltro='todos',baseBusca='';
+function mapaLocaisDosItens(){
+  const m=new Map();
+  locais.forEach(l=>{
+    const nomesSub=new Map((getContableSubs(l.id)||[]).map(s=>[s.id,(s._parentNome?s._parentNome+' › ':'')+s.nome]));
+    getProdsLocal(l.id).forEach(p=>{
+      const v=getVinculo(l.id,p.cod);
+      if(!m.has(p.cod))m.set(p.cod,[]);
+      m.get(p.cod).push({lid:l.id,nome:l.nome,sub:v&&nomesSub.has(v)?nomesSub.get(v):null});
+    });
+  });
+  return m;
+}
+function htmlBaseItens(){
+  const mapa=mapaLocaisDosItens();
+  const st=p=>isNaoControlado(p.cod)?'nc':(mapa.has(p.cod)?'vinc':'sem');
+  const cont={todos:CATALOGO.length,sem:0,vinc:0,nc:0};
+  CATALOGO.forEach(p=>cont[st(p)]++);
+  const chip=(id,txt)=>`<div class="chip base-fil ${baseFiltro===id?'on':''}" data-fil="${id}">${txt} (${cont[id]})</div>`;
+  let h=`<div class="sec">Itens da base</div>
+    <input class="srch" id="base-srch" placeholder="Buscar por nome, código ou grupo..." value="${esc(baseBusca)}" style="margin-bottom:8px"/>
+    <div class="chips" style="margin-bottom:8px">${chip('todos','Todos')}${chip('sem','Sem vínculo')}${chip('vinc','Vinculados')}${chip('nc','Não contar')}</div>
+    <div id="base-vazio" class="empty" style="display:none;padding:24px 0"><span>Nenhum item com esse filtro.</span></div>
+    <div class="ms" id="base-lista"><div style="padding:4px 0">`;
+  const byGrupo={};
+  CATALOGO.forEach(p=>{const g=p.grupo||'Sem grupo';(byGrupo[g]=byGrupo[g]||[]).push(p);});
+  Object.keys(byGrupo).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(g=>{
+    h+=`<div class="base-gh" data-g="${esc(g)}" style="padding:6px 14px;font-size:12px;font-weight:400;color:var(--tx2);background:var(--bg2)">${esc(g)}</div>`;
+    byGrupo[g].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR')).forEach(p=>{
+      const s=st(p),locs=mapa.get(p.cod)||[];
+      const novo=(catalogoMeta[p.cod]&&catalogoMeta[p.cod].addedAt)?'<span style="font-size:10px;font-weight:500;background:#EEECDC;color:var(--acc);padding:1px 5px;margin-left:4px">NOVO</span>':'';
+      const tags=s==='nc'?'<span class="tns">Não contar</span>':
+        locs.length?locs.map(l=>`<span class="tsl">${esc(l.nome)}${l.sub?' › '+esc(l.sub):''}</span>`).join(''):
+        '<span style="font-size:12px;padding:2px 7px;background:#FEF3C7;color:#92400E">Sem vínculo</span>';
+      const busca=`${p.nome||''} ${p.cod} ${g}`.toLowerCase();
+      h+=`<div class="spi base-it" data-st="${s}" data-g="${esc(g)}" data-busca="${esc(busca)}">
+        <label class="chk-nc-wrap" title="Não contar este item"><input type="checkbox" class="chk-naocontrol" data-cod="${p.cod}" ${s==='nc'?'checked':''}><span>Não contar</span></label>
+        <div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}${novo}</div>
+        <div style="font-size:12px;color:var(--tx2)">Saipos: ${p.cod} · ${p.unidade||'—'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${tags}</div></div>
+        ${s==='nc'?'':`<button class="ib ${s==='sem'?'primary':''} btn-vincular" data-cod="${p.cod}" title="${s==='sem'?'Vincular a locais':'Editar locais'}"><i class="ti ti-${s==='sem'?'link':'pencil'}"></i></button>`}</div>`;
+    });
+  });
+  return h+`</div></div>`;
+}
+function aplicarFiltroBase(c){
+  const q=baseBusca.trim().toLowerCase();
+  const vis=new Set();let n=0;
+  c.querySelectorAll('.base-it').forEach(el=>{
+    const ok=(baseFiltro==='todos'||el.dataset.st===baseFiltro)&&(!q||el.dataset.busca.includes(q));
+    el.style.display=ok?'':'none';if(ok){vis.add(el.dataset.g);n++;}
+  });
+  c.querySelectorAll('.base-gh').forEach(el=>{el.style.display=vis.has(el.dataset.g)?'':'none';});
+  const lv=c.querySelector('#base-lista'),vz=c.querySelector('#base-vazio');
+  if(lv)lv.style.display=n?'':'none';if(vz)vz.style.display=n?'none':'';
+}
+function wireBaseItens(c){
+  const inp=c.querySelector('#base-srch');if(!inp)return;
+  inp.addEventListener('input',()=>{baseBusca=inp.value;aplicarFiltroBase(c);});
+  c.querySelectorAll('.base-fil').forEach(el=>el.addEventListener('click',()=>{
+    baseFiltro=el.dataset.fil;
+    c.querySelectorAll('.base-fil').forEach(x=>x.classList.toggle('on',x===el));
+    aplicarFiltroBase(c);
+  }));
+  aplicarFiltroBase(c);
+}
+
 let _basePreview=null;
 function abrirAtualizarBase(){
   if(!isAdminRole()){showToast('Apenas administradores podem atualizar a base.',{type:'err'});return;}
@@ -9897,22 +9921,28 @@ async function aplicarBaseSaipos(){
   renderHome();
 }
 
-let _vincCod=null;
+let _vincCod=null,_vincEdicao=false;
 function abrirVincular(cod){
   if(!isAdminRole()){showToast('Apenas administradores podem vincular itens.',{type:'err'});return;}
   const prod=getProd(cod);if(!prod)return;
   _vincCod=cod;
   document.getElementById('vinc-item').textContent=`${prod.nome} · ${prod.grupo||'sem grupo'} · ${prod.unidade||''}`;
   // v198: vínculo em vários locais de uma vez — cada local marcado tem o seu sublocal
+  // v199: abre já marcado nos locais onde o item está — desmarcar tira o item do local
   const box=document.getElementById('vinc-locais');
+  let nAtuais=0;
   box.innerHTML=locais.map(l=>{
     const subs=getContableSubs(l.id)||[];
-    const opts=`<option value="">— Sem sublocal —</option>`+subs.map(s=>`<option value="${s.id}">${s._parentNome?esc(s._parentNome)+' › ':''}${esc(s.nome)}</option>`).join('');
-    return `<div class="vinc-row" data-lid="${l.id}" style="border:.5px solid var(--bd3);padding:8px 10px">
+    const esta=getProdsLocal(l.id).some(p=>p.cod===cod);if(esta)nAtuais++;
+    const atual=esta?getVinculo(l.id,cod):null;
+    const opts=`<option value="">— Sem sublocal —</option>`+subs.map(s=>`<option value="${s.id}" ${s.id===atual?'selected':''}>${s._parentNome?esc(s._parentNome)+' › ':''}${esc(s.nome)}</option>`).join('');
+    return `<div class="vinc-row" data-lid="${l.id}" data-esta="${esta?1:0}" style="border:.5px solid ${esta?'var(--acc)':'var(--bd3)'};padding:8px 10px">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15.5px">
-        <input type="checkbox" class="vinc-chk" style="width:20px;height:20px;accent-color:var(--acc);flex-shrink:0">${esc(l.nome)}</label>
-      <select class="fi vinc-sub" style="width:100%;margin-top:8px;display:none">${opts}</select></div>`;
+        <input type="checkbox" class="vinc-chk" ${esta?'checked':''} style="width:20px;height:20px;accent-color:var(--acc);flex-shrink:0">${esc(l.nome)}</label>
+      <select class="fi vinc-sub" style="width:100%;margin-top:8px;display:${esta?'block':'none'}">${opts}</select></div>`;
   }).join('')||'<span style="font-size:13px;color:var(--tx2)">Nenhum local cadastrado.</span>';
+  _vincEdicao=nAtuais>0;
+  document.getElementById('vinc-title').textContent=_vincEdicao?'Locais do item':'Vincular item';
   box.querySelectorAll('.vinc-row').forEach(row=>{
     const chk=row.querySelector('.vinc-chk'),sel=row.querySelector('.vinc-sub');
     chk.addEventListener('change',()=>{sel.style.display=chk.checked?'block':'none';row.style.borderColor=chk.checked?'var(--acc)':'';atualizarVincBtn();});
@@ -9923,15 +9953,35 @@ function abrirVincular(cod){
 function atualizarVincBtn(){
   const n=document.querySelectorAll('#vinc-locais .vinc-chk:checked').length;
   const b=document.getElementById('vinc-save');if(!b)return;
-  b.disabled=!n;b.style.opacity=n?1:.5;b.style.cursor=n?'pointer':'not-allowed';
-  b.textContent=n>1?`Vincular a ${n} locais`:'Vincular';
+  const ok=n||_vincEdicao; // na edição, desmarcar tudo = tirar o item de todos os locais
+  b.disabled=!ok;b.style.opacity=ok?1:.5;b.style.cursor=ok?'pointer':'not-allowed';
+  b.textContent=_vincEdicao?'Salvar':(n>1?`Vincular a ${n} locais`:'Vincular');
 }
-function vincularItem(){
+async function vincularItem(){
   if(!_vincCod||!isAdminRole())return;
-  const escolhidos=[...document.querySelectorAll('#vinc-locais .vinc-row')]
-    .filter(r=>r.querySelector('.vinc-chk').checked)
+  const cod=_vincCod;
+  const rows=[...document.querySelectorAll('#vinc-locais .vinc-row')];
+  const escolhidos=rows.filter(r=>r.querySelector('.vinc-chk').checked)
     .map(r=>({lid:r.dataset.lid,slId:r.querySelector('.vinc-sub').value||null}));
-  if(!escolhidos.length){showToast('Marque pelo menos um local.',{type:'err'});return;}
+  const tirar=rows.filter(r=>r.dataset.esta==='1'&&!r.querySelector('.vinc-chk').checked).map(r=>r.dataset.lid);
+  if(!escolhidos.length&&!tirar.length){showToast('Marque pelo menos um local.',{type:'err'});return;}
+  const nomeL=lid=>(locais.find(l=>l.id===lid)||{}).nome||lid;
+  if(tirar.length){
+    const contados=tirar.filter(lid=>counts[lid]&&counts[lid][cod]&&counts[lid][cod].touched);
+    const ok=await appConfirmAsync(`O item sai da contagem de: ${tirar.map(nomeL).join(', ')}.`+
+      (contados.length?`\n\nAtenção: já foi contado em ${contados.map(nomeL).join(', ')} nesta contagem.`:''),
+      {title:'Tirar item do local?',okText:'Tirar',danger:true});
+    if(!ok)return;
+  }
+  _vincCod=cod;
+  tirar.forEach(lid=>{
+    if(!ajustes[lid])ajustes[lid]={extras:[],removidos:[]};
+    if(!ajustes[lid].removidos)ajustes[lid].removidos=[];
+    const ei=(ajustes[lid].extras||[]).indexOf(cod);
+    if(ei>=0)ajustes[lid].extras.splice(ei,1);
+    if((BASE[lid]||[]).includes(cod)&&!ajustes[lid].removidos.includes(cod))ajustes[lid].removidos.push(cod);
+    if(vinculos[lid])delete vinculos[lid][cod];
+  });
   escolhidos.forEach(({lid,slId})=>{
     if(!ajustes[lid])ajustes[lid]={extras:[],removidos:[]};
     if(!ajustes[lid].extras)ajustes[lid].extras=[];
@@ -9939,10 +9989,11 @@ function vincularItem(){
     if(remIdx>=0)ajustes[lid].removidos.splice(remIdx,1);
     if(!ajustes[lid].extras.includes(_vincCod))ajustes[lid].extras.push(_vincCod);
     if(slId){if(!vinculos[lid])vinculos[lid]={};vinculos[lid][_vincCod]=slId;}
+    else if(vinculos[lid])delete vinculos[lid][_vincCod];
   });
   salvar(); // uma gravação só, para todos os locais
-  const nomes=escolhidos.map(e=>(locais.find(l=>l.id===e.lid)||{}).nome).filter(Boolean);
-  showToast(`Vinculado a ${nomes.join(', ')}`,{type:'ok'});
+  const nomes=escolhidos.map(e=>nomeL(e.lid));
+  showToast(nomes.length?`Locais: ${nomes.join(', ')}`:'Item tirado de todos os locais',{type:'ok'});
   closeModal('modal-vincular');_vincCod=null;
   renderHome();
 }
