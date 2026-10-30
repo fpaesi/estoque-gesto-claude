@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v197</title>
+<title>Gesto Operação v198</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -1077,8 +1077,8 @@ body.tab-l .tsd-brand{display:flex;flex-direction:column;align-items:flex-start;
   <div class="modal-box" style="gap:12px">
     <div id="vinc-title" style="font-size:16.5px;font-weight:400">Vincular item</div>
     <div id="vinc-item" style="font-size:13px;color:var(--tx2)"></div>
-    <div><div class="fl">Local</div><select id="vinc-local" class="fi" style="width:100%"></select></div>
-    <div><div class="fl">Sublocal (opcional)</div><select id="vinc-sub" class="fi" style="width:100%"></select></div>
+    <div><div class="fl">Locais <span style="text-transform:none;letter-spacing:0">· marque um ou mais</span></div>
+      <div id="vinc-locais" style="display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow-y:auto"></div></div>
     <div style="display:flex;gap:8px">
       <button id="vinc-cancel" style="flex:1;padding:10px;border-radius:var(--r2);background:none;border:.5px solid var(--bd3);font-size:15.5px;cursor:pointer;color:var(--tx2)">Cancelar</button>
       <button id="vinc-save" style="flex:2;padding:10px;border-radius:var(--r2);background:var(--acc);border:none;font-size:15.5px;font-weight:400;cursor:pointer;color:#FFFFFF">Vincular</button>
@@ -2117,7 +2117,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v197';
+const APP_VERSION = 'v198';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -9903,27 +9903,46 @@ function abrirVincular(cod){
   const prod=getProd(cod);if(!prod)return;
   _vincCod=cod;
   document.getElementById('vinc-item').textContent=`${prod.nome} · ${prod.grupo||'sem grupo'} · ${prod.unidade||''}`;
-  const selL=document.getElementById('vinc-local');
-  selL.innerHTML=locais.map(l=>`<option value="${l.id}">${esc(l.nome)}</option>`).join('');
-  preencherVincSubs(locais[0]?.id);
-  selL.onchange=()=>preencherVincSubs(selL.value);
+  // v198: vínculo em vários locais de uma vez — cada local marcado tem o seu sublocal
+  const box=document.getElementById('vinc-locais');
+  box.innerHTML=locais.map(l=>{
+    const subs=getContableSubs(l.id)||[];
+    const opts=`<option value="">— Sem sublocal —</option>`+subs.map(s=>`<option value="${s.id}">${s._parentNome?esc(s._parentNome)+' › ':''}${esc(s.nome)}</option>`).join('');
+    return `<div class="vinc-row" data-lid="${l.id}" style="border:.5px solid var(--bd3);padding:8px 10px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15.5px">
+        <input type="checkbox" class="vinc-chk" style="width:20px;height:20px;accent-color:var(--acc);flex-shrink:0">${esc(l.nome)}</label>
+      <select class="fi vinc-sub" style="width:100%;margin-top:8px;display:none">${opts}</select></div>`;
+  }).join('')||'<span style="font-size:13px;color:var(--tx2)">Nenhum local cadastrado.</span>';
+  box.querySelectorAll('.vinc-row').forEach(row=>{
+    const chk=row.querySelector('.vinc-chk'),sel=row.querySelector('.vinc-sub');
+    chk.addEventListener('change',()=>{sel.style.display=chk.checked?'block':'none';row.style.borderColor=chk.checked?'var(--acc)':'';atualizarVincBtn();});
+  });
+  atualizarVincBtn();
   document.getElementById('modal-vincular').classList.add('on');
 }
-function preencherVincSubs(lid){
-  const sel=document.getElementById('vinc-sub');
-  const subs=getContableSubs(lid)||[];
-  sel.innerHTML=`<option value="">— Sem sublocal —</option>`+subs.map(s=>`<option value="${s.id}">${s._parentNome?esc(s._parentNome)+' › ':''}${esc(s.nome)}</option>`).join('');
+function atualizarVincBtn(){
+  const n=document.querySelectorAll('#vinc-locais .vinc-chk:checked').length;
+  const b=document.getElementById('vinc-save');if(!b)return;
+  b.disabled=!n;b.style.opacity=n?1:.5;b.style.cursor=n?'pointer':'not-allowed';
+  b.textContent=n>1?`Vincular a ${n} locais`:'Vincular';
 }
 function vincularItem(){
   if(!_vincCod||!isAdminRole())return;
-  const lid=document.getElementById('vinc-local').value;
-  const slId=document.getElementById('vinc-sub').value||null;
-  if(!lid)return;
-  if(!ajustes[lid])ajustes[lid]={extras:[],removidos:[]};
-  const remIdx=(ajustes[lid].removidos||[]).indexOf(_vincCod);
-  if(remIdx>=0)ajustes[lid].removidos.splice(remIdx,1);
-  if(!(ajustes[lid].extras||[]).includes(_vincCod))ajustes[lid].extras.push(_vincCod);
-  if(slId)setVinculo(lid,_vincCod,slId);else salvar();
+  const escolhidos=[...document.querySelectorAll('#vinc-locais .vinc-row')]
+    .filter(r=>r.querySelector('.vinc-chk').checked)
+    .map(r=>({lid:r.dataset.lid,slId:r.querySelector('.vinc-sub').value||null}));
+  if(!escolhidos.length){showToast('Marque pelo menos um local.',{type:'err'});return;}
+  escolhidos.forEach(({lid,slId})=>{
+    if(!ajustes[lid])ajustes[lid]={extras:[],removidos:[]};
+    if(!ajustes[lid].extras)ajustes[lid].extras=[];
+    const remIdx=(ajustes[lid].removidos||[]).indexOf(_vincCod);
+    if(remIdx>=0)ajustes[lid].removidos.splice(remIdx,1);
+    if(!ajustes[lid].extras.includes(_vincCod))ajustes[lid].extras.push(_vincCod);
+    if(slId){if(!vinculos[lid])vinculos[lid]={};vinculos[lid][_vincCod]=slId;}
+  });
+  salvar(); // uma gravação só, para todos os locais
+  const nomes=escolhidos.map(e=>(locais.find(l=>l.id===e.lid)||{}).nome).filter(Boolean);
+  showToast(`Vinculado a ${nomes.join(', ')}`,{type:'ok'});
   closeModal('modal-vincular');_vincCod=null;
   renderHome();
 }
