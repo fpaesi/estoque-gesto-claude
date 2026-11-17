@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v199</title>
+<title>Gesto Operação v200</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -320,7 +320,7 @@
 .etq-seg div.on{background:var(--bg1);color:var(--tx1);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .etq-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--bd3);font-size:15.5px}.etq-kv:last-child{border-bottom:none}
 .etq-kv .k{color:var(--tx2);font-size:14.5px}.etq-kv .v{font-weight:400;text-align:right}
-.etq-kv input{font-size:15.5px;padding:6px 8px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:150px}
+.etq-kv input{font-size:16px;padding:6px 8px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit;max-width:150px}
 .etq-blank{width:60mm;height:40mm;background:#fff;color:#000;border:.5px solid #999;padding:2.2mm 2.5mm;display:flex;flex-direction:column;justify-content:space-between;font-family:"Helvetica Neue",Arial,sans-serif;font-size:7.5pt;font-weight:600;line-height:1;flex-shrink:0;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always}
 .etq-blank .l{display:flex;align-items:flex-end;gap:1.2mm;white-space:nowrap;min-width:0}
 .etq-blank .u{flex:1;min-width:0;border-bottom:.3mm solid #000;height:3.2mm}.etq-blank .u.d{flex:0 0 6.5mm}
@@ -621,6 +621,9 @@ body.tab-l .tsd-brand{display:flex;flex-direction:column;align-items:flex-start;
 .hist-final{border-left:4px solid #3B6D11}
 .hist-entry{padding:14px}
 @media print{.gesto-logo{display:none}}
+
+/* v200: tablet sem zoom — toque duplo não amplia, foco em campo não amplia (viewport max-scale=1 + campos >=16px) */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}button,a,[onclick],.chip,.row,.ntab,.cbt,.cctr,.bbtn,.pcard{touch-action:manipulation}
 </style>
 </head>
 <body>
@@ -2117,7 +2120,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v199';
+const APP_VERSION = 'v200';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -4917,7 +4920,7 @@ function renderGestao(c){
           <!-- v20: edição de ícone + nome no painel expandido, com auto-save no blur (melhoria 1 + 5) -->
           <div class="local-edit-row">
             <input class="ii inp-local-icon" data-lid="${l.id}" value="${esc(l.icon)}" style="width:44px;text-align:center;font-size:20px;padding:4px;flex-shrink:0" title="Ícone do local (emoji)"/>
-            <input class="ii inp-local-nome" data-lid="${l.id}" value="${esc(l.nome)}" placeholder="Nome do local" style="font-size:15.5px;font-weight:400;flex:1"/>
+            <input class="ii inp-local-nome" data-lid="${l.id}" value="${esc(l.nome)}" placeholder="Nome do local" style="font-size:16px;font-weight:400;flex:1"/>
             <!-- v20: botão deletar local isolado no painel (melhoria 1) -->
             <button class="ib danger btn-del-local" data-lid="${l.id}" style="flex-shrink:0" title="Remover local"><i class="ti ti-trash"></i></button>
           </div>
@@ -4929,7 +4932,7 @@ function renderGestao(c){
             return `<div class="msr" style="flex-direction:column;align-items:stretch;padding:0">
               <div style="display:flex;align-items:center;gap:8px;padding:8px 14px 8px 32px">
                 <i class="ti ti-corner-down-right" style="font-size:14.5px;color:var(--tx2);flex-shrink:0"></i>
-                <input class="ii inp-sub" data-lid="${l.id}" data-slid="${sl.id}" value="${esc(sl.nome)}" style="font-size:14.5px"/>
+                <input class="ii inp-sub" data-lid="${l.id}" data-slid="${sl.id}" value="${esc(sl.nome)}" style="font-size:16px"/>
                 ${ssubBadge}
                 <!-- v20: botão delete de sublocal, confirmação adicionada no JS (melhoria 2) -->
                 <button class="ib danger btn-del-sub" data-lid="${l.id}" data-slid="${sl.id}" style="width:28px;height:28px" title="Remover sublocal"><i class="ti ti-trash" style="font-size:14.5px"></i></button>
@@ -4938,13 +4941,13 @@ function renderGestao(c){
               <div id="ssub-${sl.id}" style="display:${ssubs.length?'flex':'none'};flex-direction:column;background:var(--bg2)">
                 ${ssubs.map(ssl=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 14px 6px 48px;border-top:.5px solid var(--bd3)">
                   <i class="ti ti-corner-down-right" style="font-size:13px;color:var(--tx2);flex-shrink:0"></i>
-                  <input class="ii inp-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" value="${esc(ssl.nome)}" style="font-size:13px"/>
+                  <input class="ii inp-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" value="${esc(ssl.nome)}" style="font-size:16px"/>
                   <!-- v20: confirmação adicionada no JS (melhoria 2) -->
                   <button class="ib danger btn-del-ssub" data-lid="${l.id}" data-slid="${sl.id}" data-sslid="${ssl.id}" style="width:26px;height:26px" title="Remover sub-sublocal"><i class="ti ti-trash" style="font-size:13px"></i></button>
                 </div>`).join('')}
                 <div style="display:flex;align-items:center;gap:8px;padding:6px 14px 6px 48px;border-top:.5px solid var(--bd3)">
                   <i class="ti ti-plus" style="font-size:13px;color:var(--acc);flex-shrink:0"></i>
-                  <input class="ii inp-new-ssub" data-lid="${l.id}" data-slid="${sl.id}" id="new-ssl-${sl.id}" placeholder="Novo sub-sublocal..." style="font-size:13px"/>
+                  <input class="ii inp-new-ssub" data-lid="${l.id}" data-slid="${sl.id}" id="new-ssl-${sl.id}" placeholder="Novo sub-sublocal..." style="font-size:16px"/>
                   <button class="ib primary btn-add-ssub" data-lid="${l.id}" data-slid="${sl.id}" style="width:26px;height:26px"><i class="ti ti-check" style="font-size:13px"></i></button>
                 </div>
               </div>
@@ -4953,7 +4956,7 @@ function renderGestao(c){
           <!-- Adicionar sublocal nível 1 -->
           <div class="msa">
             <i class="ti ti-plus" style="font-size:15.5px;color:var(--acc);flex-shrink:0"></i>
-            <input class="ii inp-new-sub" data-lid="${l.id}" id="new-sl-${l.id}" placeholder="Novo sublocal..." style="font-size:14.5px"/>
+            <input class="ii inp-new-sub" data-lid="${l.id}" id="new-sl-${l.id}" placeholder="Novo sublocal..." style="font-size:16px"/>
             <button class="ib primary btn-add-sub" data-lid="${l.id}"><i class="ti ti-check"></i></button>
           </div>
         </div>
@@ -4976,7 +4979,7 @@ function renderGestao(c){
           </div>
           <div style="flex:1">
             <div class="fi-lbl">Nome do local</div>
-            <input id="new-local-nome" class="ii" placeholder="Ex: Galpão Norte" style="width:100%;font-size:15.5px"/>
+            <input id="new-local-nome" class="ii" placeholder="Ex: Galpão Norte" style="width:100%;font-size:16px"/>
           </div>
         </div>
         <button class="btn-criar-local" id="btn-add-local"><i class="ti ti-check" style="font-size:16.5px"></i>Criar local</button>
@@ -7327,13 +7330,13 @@ function renderGetqItens(el){
       <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">${esc(x.grupo)} · ${esc(unidSigla(x.unidade))}</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">
         ${ETQ_CONS_ORD.map(c=>`<label style="font-size:11.5px;color:var(--tx2)">${ETQ_CONS[c].nome}<input type="text" inputmode="numeric" data-c="${c}" value="${esc(ov[c]??'')}" placeholder="—" ${inp}/></label>`).join('')}
-        <label style="font-size:11.5px;color:var(--tx2)">Padrão<select data-c="padrao" style="width:100%;margin-top:2px;font-size:14.5px;padding:7px 2px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit"><option value="">auto</option>${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${ov.padrao===c?'selected':''} ${pz.dias[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></label>
+        <label style="font-size:11.5px;color:var(--tx2)">Padrão<select data-c="padrao" style="width:100%;margin-top:2px;font-size:16px;padding:7px 2px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit"><option value="">auto</option>${ETQ_CONS_ORD.map(c=>`<option value="${c}" ${ov.padrao===c?'selected':''} ${pz.dias[c]?'':'disabled'}>${ETQ_CONS[c].nome}</option>`).join('')}</select></label>
       </div>
-      <label style="font-size:11.5px;color:var(--tx2);display:block;margin-top:8px">Base normativa (códigos separados por ;) — vai impressa na etiqueta<input type="text" data-b="base" list="etq-bases-dl" value="${esc(ov.base||'')}" placeholder="ex.: P10.09; P10.10" style="width:100%;margin-top:2px;font-size:15.5px;padding:7px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label>
+      <label style="font-size:11.5px;color:var(--tx2);display:block;margin-top:8px">Base normativa (códigos separados por ;) — vai impressa na etiqueta<input type="text" data-b="base" list="etq-bases-dl" value="${esc(ov.base||'')}" placeholder="ex.: P10.09; P10.10" style="width:100%;margin-top:2px;font-size:16px;padding:7px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label>
       ${etqBaseCodigos(cod).length?`<div style="font-size:11.5px;color:var(--tx2);margin-top:3px;line-height:1.35">${etqBaseCodigos(cod).map(k=>esc(ETQ_BASES[k].norma+' — '+ETQ_BASES[k].diz)).join('<br>')}</div>`:''}
       ${(proc&&!cont)?`<div style="display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-top:8px">
         <label style="font-size:11.5px;color:var(--tx2)">Porção (${esc(unidSigla(x.unidade))})<input type="text" inputmode="decimal" data-p="q" value="${esc(ov.porcao?ov.porcao.q:'')}" placeholder="ex.: 0,25" ${inp}/></label>
-        <label style="font-size:11.5px;color:var(--tx2)">Nome da porção<input type="text" data-p="nome" value="${esc(ov.porcao?ov.porcao.nome||'':'')}" placeholder="ex.: bola 250 g" style="width:100%;margin-top:2px;font-size:15.5px;padding:7px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label></div>
+        <label style="font-size:11.5px;color:var(--tx2)">Nome da porção<input type="text" data-p="nome" value="${esc(ov.porcao?ov.porcao.nome||'':'')}" placeholder="ex.: bola 250 g" style="width:100%;margin-top:2px;font-size:16px;padding:7px;border:.5px solid var(--bd3);border-radius:0;background:var(--bg2);color:var(--tx1);font-family:inherit"/></label></div>
         <div style="font-size:12px;color:var(--tx2);margin-top:4px">${rendimentoDe(cod)?'1 receita = '+fmtNum(rendimentoDe(cod))+' '+esc(unidSigla(x.unidade).toLowerCase())+(etqPorcao(cod).definida?' = '+Math.round(rendimentoDe(cod)/etqPorcao(cod).q)+' etiquetas':' — sem porção: 1 etiqueta por '+esc(unidSigla(x.unidade).toLowerCase())):'Sem rendimento de ficha sincronizado'}</div>`:''}
     </div>`;
   });
