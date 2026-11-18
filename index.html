@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v200</title>
+<title>Gesto Operação v201</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -623,7 +623,8 @@ body.tab-l .tsd-brand{display:flex;flex-direction:column;align-items:flex-start;
 @media print{.gesto-logo{display:none}}
 
 /* v200: tablet sem zoom — toque duplo não amplia, foco em campo não amplia (viewport max-scale=1 + campos >=16px) */
-html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}button,a,[onclick],.chip,.row,.ntab,.cbt,.cctr,.bbtn,.pcard{touch-action:manipulation}
+/* v201: touch-action não é herdado e para em cada área com rolagem (.content, modais, listas) — por isso vale em TODOS os elementos */
+*,*::before,*::after{touch-action:manipulation}html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 </style>
 </head>
 <body>
@@ -2120,7 +2121,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v200';
+const APP_VERSION = 'v201';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
