@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Gesto Operação v201</title>
+<title>Gesto Operação v202</title>
 <!-- v111: o caminho sem /dist/ devolve 404 no @tabler/icons-webfont 3.x — os 230 ícones do app ficavam invisíveis. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
 <!-- Firebase SDKs -->
@@ -2121,7 +2121,7 @@ try {
 } catch(e) { console.warn('Firebase não configurado:', e.message); }
 
 // ── Status de sync ────────────────────────────────────────────────────────────
-const APP_VERSION = 'v201';
+const APP_VERSION = 'v202';
 const FOTOS_ENABLED = false; // v73: fotos desativadas (risco de doc Firestore >1MB com foto offline em dataURL). Para reativar: mudar para true e implementar fila de upload offline para o Storage.
 let syncState = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 let lastSyncTime=null;
@@ -9848,9 +9848,9 @@ async function atualizarBaseAuto(){
   const st=document.getElementById('ab-auto-status');
   if(!functionsSvc){if(st){st.style.color='#A32D2D';st.textContent='Função indisponível — use o método manual abaixo.';}return;}
   if(btn){btn.disabled=true;btn.style.opacity=.6;btn.style.cursor='wait';}
-  if(st){st.style.color='var(--tx2)';st.textContent='Sincronizando a base com o Saipos…';}
+  if(st){st.style.color='var(--tx2)';st.textContent='Sincronizando a base com o Saipos… (leva cerca de 1 a 2 minutos)';}
   try{
-    const fn=functionsSvc.httpsCallable('sincronizarBaseManual');
+    const fn=functionsSvc.httpsCallable('sincronizarBaseManual',{timeout:540000}); // v202: a base paginada leva ~90 s; o padrão do SDK (70 s) desistia antes
     const res=await fn({});
     const dd=(res&&res.data)||{};
     if(!dd.ok)throw new Error('resposta inesperada');
